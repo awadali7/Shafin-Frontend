@@ -94,12 +94,10 @@ export default function CoursesPage() {
                                         {/* Cover Image */}
                                         <div className="relative h-48 w-full overflow-hidden bg-[#B00000]">
                                             {course.cover_image ? (
-                                                <Image
+                                                <img
                                                     src={course.cover_image}
                                                     alt={course.name}
-                                                    fill
-                                                    className="object-cover"
-                                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                                    className="absolute inset-0 w-full h-full object-cover"
                                                 />
                                             ) : null}
                                             <div className="absolute inset-0 bg-black/20 hover:bg-black/10 transition-all duration-300"></div>

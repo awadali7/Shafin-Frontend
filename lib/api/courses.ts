@@ -19,7 +19,10 @@ export const coursesApi = {
     },
 
     // Create course (Admin only)
-    create: async (data: Partial<Course>): Promise<ApiResponse<Course>> => {
+    // Accepts FormData (with image file) or Course object
+    create: async (
+        data: Partial<Course> | FormData
+    ): Promise<ApiResponse<Course>> => {
         return apiClient.post<Course>("/courses", data);
     },
 

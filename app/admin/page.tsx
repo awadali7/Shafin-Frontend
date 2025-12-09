@@ -103,8 +103,11 @@ export default function AdminPage() {
         slug: "",
         description: "",
         price: 0,
-        cover_image: "",
+        cover_image: null as File | null,
     });
+    const [coverImagePreview, setCoverImagePreview] = useState<string | null>(
+        null
+    );
     const [isSubmittingCourse, setIsSubmittingCourse] = useState(false);
     const [courseFormSuccess, setCourseFormSuccess] = useState<string | null>(
         null
@@ -588,8 +591,9 @@ export default function AdminPage() {
             slug: "",
             description: "",
             price: 0,
-            cover_image: "",
+            cover_image: null,
         });
+        setCoverImagePreview(null);
         setError(null);
         setCourseFormSuccess(null);
         setIsCourseModalOpen(true);
@@ -602,8 +606,9 @@ export default function AdminPage() {
             slug: course.slug || "",
             description: course.description || "",
             price: course.price || 0,
-            cover_image: course.cover_image || "",
+            cover_image: null,
         });
+        setCoverImagePreview(course.cover_image || null);
         setError(null);
         setCourseFormSuccess(null);
         setIsCourseModalOpen(true);
@@ -656,13 +661,26 @@ export default function AdminPage() {
                 courseFormData.slug || generateSlug(courseFormData.name);
 
             if (editingCourse) {
+                // For updates, we'll use the existing approach (URL or upload separately)
+                // If a new file was selected, upload it first
+                let coverImageUrl = coverImagePreview;
+                if (courseFormData.cover_image) {
+                    const uploadResponse = await uploadsApi.uploadSingle(
+                        courseFormData.cover_image,
+                        "images"
+                    );
+                    if (uploadResponse.success && uploadResponse.data) {
+                        coverImageUrl = uploadResponse.data.url;
+                    }
+                }
+
                 // Update existing course
                 const response = await coursesApi.update(editingCourse.id, {
                     name: courseFormData.name,
                     slug: slug,
                     description: courseFormData.description,
                     price: parseFloat(courseFormData.price.toString()),
-                    cover_image: courseFormData.cover_image || undefined,
+                    cover_image: coverImageUrl || undefined,
                 });
 
                 if (response.success) {
@@ -677,14 +695,48 @@ export default function AdminPage() {
                     }, 1500);
                 }
             } else {
-                // Create new course
-                const response = await coursesApi.create({
+                // Create new course - send as JSON with base64 encoded image
+                let coverImageBase64 = null;
+
+                // Convert image file to base64 if provided
+                if (courseFormData.cover_image) {
+                    try {
+                        coverImageBase64 = await new Promise<string>(
+                            (resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    if (typeof reader.result === "string") {
+                                        resolve(reader.result);
+                                    } else {
+                                        reject(
+                                            new Error("Failed to read file")
+                                        );
+                                    }
+                                };
+                                reader.onerror = reject;
+                                reader.readAsDataURL(
+                                    courseFormData.cover_image!
+                                );
+                            }
+                        );
+                    } catch (error) {
+                        throw new Error("Failed to process image file");
+                    }
+                }
+
+                // Create course with JSON payload (includes base64 encoded image)
+                const payload: any = {
                     name: courseFormData.name,
                     slug: slug,
-                    description: courseFormData.description,
+                    description: courseFormData.description || "",
                     price: parseFloat(courseFormData.price.toString()),
-                    cover_image: courseFormData.cover_image || undefined,
-                });
+                };
+
+                if (coverImageBase64) {
+                    payload.cover_image = coverImageBase64;
+                }
+
+                const response = await coursesApi.create(payload);
 
                 if (response.success) {
                     setCourseFormSuccess("Course created successfully!");
@@ -701,8 +753,9 @@ export default function AdminPage() {
                             slug: "",
                             description: "",
                             price: 0,
-                            cover_image: "",
+                            cover_image: null,
                         });
+                        setCoverImagePreview(null);
                     }, 1500);
                 }
             }
@@ -1769,7 +1822,7 @@ export default function AdminPage() {
                                 className="flex items-center space-x-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-all duration-300 text-sm font-medium"
                             >
                                 <Plus className="w-4 h-4" />
-                                <span>Add Course</span>
+                                <span>Add New Course</span>
                             </button>
                         </div>
                         <div className="overflow-x-auto">
@@ -3057,23 +3110,42 @@ export default function AdminPage() {
                                     />
                                 </div>
 
-                                {/* Cover Image URL */}
+                                {/* Cover Image Upload */}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-900 mb-2">
-                                        Cover Image URL
+                                        Cover Image
                                     </label>
                                     <input
-                                        type="url"
-                                        value={courseFormData.cover_image}
-                                        onChange={(e) =>
-                                            setCourseFormData({
-                                                ...courseFormData,
-                                                cover_image: e.target.value,
-                                            })
-                                        }
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                        placeholder="https://example.com/image.jpg"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                setCourseFormData({
+                                                    ...courseFormData,
+                                                    cover_image: file,
+                                                });
+                                                // Create preview
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    setCoverImagePreview(
+                                                        reader.result as string
+                                                    );
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
                                     />
+                                    {coverImagePreview && (
+                                        <div className="mt-4">
+                                            <img
+                                                src={coverImagePreview}
+                                                alt="Cover preview"
+                                                className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Buttons */}

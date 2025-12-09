@@ -21,11 +21,8 @@ export const uploadsApi = {
         formData.append("file", file);
         formData.append("type", type);
 
-        return apiClient.post<UploadedFile>("/uploads/single", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        });
+        // Don't set Content-Type header - let browser set it with boundary
+        return apiClient.post<UploadedFile>("/uploads/single", formData);
     },
 
     // Upload multiple files
@@ -39,11 +36,8 @@ export const uploadsApi = {
         });
         formData.append("type", type);
 
-        return apiClient.post<UploadedFile[]>("/uploads/multiple", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        });
+        // Don't set Content-Type header - let browser set it with boundary
+        return apiClient.post<UploadedFile[]>("/uploads/multiple", formData);
     },
 
     // Delete file
@@ -54,4 +48,3 @@ export const uploadsApi = {
         return apiClient.delete<void>(`/uploads/${type}/${filename}`);
     },
 };
-
