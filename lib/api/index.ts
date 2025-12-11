@@ -8,4 +8,5 @@ export { adminApi } from "./admin";
 export { notificationsApi } from "./notifications";
 export { blogsApi } from "./blogs";
 export { uploadsApi } from "./uploads";
+export { kycApi } from "./kyc";
 export * from "./types";

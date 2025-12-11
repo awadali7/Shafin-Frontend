@@ -77,4 +77,3 @@ export const blogsApi = {
         return apiClient.delete<void>(`/blogs/${id}`);
     },
 };
-

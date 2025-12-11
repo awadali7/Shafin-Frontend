@@ -340,3 +340,26 @@ export interface UpdateBlogPostRequest {
     cover_image?: string;
     is_published?: boolean;
 }
+
+// KYC Types
+export interface KYCVerification {
+    id: string;
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    address: string;
+    contact_number: string;
+    whatsapp_number: string;
+    id_proof_url: string;
+    profile_photo_url: string;
+    status: "pending" | "verified" | "rejected";
+    rejection_reason?: string;
+    verified_by?: string;
+    verified_at?: string;
+    created_at?: string;
+    updated_at?: string;
+    user_email?: string;
+    user_first_name?: string;
+    user_last_name?: string;
+    verifier_email?: string;
+}

@@ -19,6 +19,7 @@ import {
 import { coursesApi } from "@/lib/api/courses";
 import { requestsApi } from "@/lib/api/requests";
 import { progressApi } from "@/lib/api/progress";
+import { kycApi } from "@/lib/api/kyc";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginDrawer from "@/components/LoginDrawer";
 import RegisterDrawer from "@/components/RegisterDrawer";
@@ -43,6 +44,10 @@ export default function CourseDetailPage() {
     const [errorModalMessage, setErrorModalMessage] = useState<string>("");
     const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
+    const [kycStatus, setKycStatus] = useState<
+        "pending" | "verified" | "rejected" | null
+    >(null);
+    const [checkingKYC, setCheckingKYC] = useState(false);
 
     // Fetch course and videos
     useEffect(() => {
@@ -264,14 +269,63 @@ export default function CourseDetailPage() {
         }
     }, [videos, currentVideoIndex]);
 
-    const handleRequestAccessClick = () => {
+    // Check KYC status
+    useEffect(() => {
+        const checkKYC = async () => {
+            if (!user) {
+                setKycStatus(null);
+                return;
+            }
+
+            try {
+                setCheckingKYC(true);
+                const response = await kycApi.getMyKYC();
+                if (response.success && response.data) {
+                    setKycStatus(response.data.status);
+                } else {
+                    setKycStatus(null); // No KYC submitted
+                }
+            } catch (err) {
+                console.error("Failed to check KYC:", err);
+                setKycStatus(null);
+            } finally {
+                setCheckingKYC(false);
+            }
+        };
+
+        checkKYC();
+    }, [user]);
+
+    const handleRequestAccessClick = async () => {
         if (!user) {
             // Open login drawer if not authenticated
             setIsLoginDrawerOpen(true);
             return;
         }
-        setShowRequestModal(true);
-        setRequestError(null);
+
+        // Check KYC status before showing request modal
+        try {
+            const kycResponse = await kycApi.getMyKYC();
+            if (!kycResponse.success || !kycResponse.data) {
+                // No KYC submitted - redirect to KYC page
+                router.push("/kyc?redirect=/courses/" + slug);
+                return;
+            }
+
+            const kyc = kycResponse.data;
+            if (kyc.status !== "verified") {
+                // KYC not verified - redirect to KYC page
+                router.push("/kyc?redirect=/courses/" + slug);
+                return;
+            }
+
+            // KYC is verified - show request modal
+            setShowRequestModal(true);
+            setRequestError(null);
+        } catch (err) {
+            // If error checking KYC, redirect to KYC page to be safe
+            router.push("/kyc?redirect=/courses/" + slug);
+        }
     };
 
     const handleConfirmRequest = async () => {
@@ -320,6 +374,19 @@ export default function CourseDetailPage() {
                 errorMessage = err.message;
             } else if (typeof err === "string") {
                 errorMessage = err;
+            }
+
+            // Check if it's a KYC requirement error
+            if (
+                errorMessage.toLowerCase().includes("kyc") ||
+                errorMessage
+                    .toLowerCase()
+                    .includes("verification is required") ||
+                err.response?.data?.requires_kyc === true
+            ) {
+                // Redirect to KYC page
+                router.push("/kyc?redirect=/courses/" + slug);
+                return;
             }
 
             // Check if it's a duplicate request error
@@ -1005,6 +1072,43 @@ export default function CourseDetailPage() {
                                             ).toFixed(2)}
                                         </div>
                                     </div>
+
+                                    {/* KYC Status Indicator */}
+                                    {user &&
+                                        kycStatus &&
+                                        kycStatus !== "verified" && (
+                                            <div
+                                                className={`mb-3 p-3 rounded-lg ${
+                                                    kycStatus === "pending"
+                                                        ? "bg-yellow-50 border border-yellow-200"
+                                                        : "bg-red-50 border border-red-200"
+                                                }`}
+                                            >
+                                                <div className="flex items-start space-x-2">
+                                                    {kycStatus === "pending" ? (
+                                                        <Loader2 className="w-5 h-5 text-yellow-600 mt-0.5 animate-spin" />
+                                                    ) : (
+                                                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                                                    )}
+                                                    <div className="flex-1">
+                                                        <p
+                                                            className={`text-sm font-medium ${
+                                                                kycStatus ===
+                                                                "pending"
+                                                                    ? "text-yellow-800"
+                                                                    : "text-red-800"
+                                                            }`}
+                                                        >
+                                                            {kycStatus ===
+                                                            "pending"
+                                                                ? "KYC verification pending. Please wait for admin approval."
+                                                                : "KYC verification required. Please complete your KYC to request course access."}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                     {!user ? (
                                         <button
                                             onClick={() =>
@@ -1018,6 +1122,31 @@ export default function CourseDetailPage() {
                                         <div className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium text-center">
                                             Request Submitted ✓
                                         </div>
+                                    ) : checkingKYC ? (
+                                        <button
+                                            disabled
+                                            className="w-full px-4 py-2.5 bg-gray-400 text-white rounded-lg font-medium flex items-center justify-center space-x-2 cursor-not-allowed"
+                                        >
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            <span>Checking...</span>
+                                        </button>
+                                    ) : kycStatus &&
+                                      kycStatus !== "verified" ? (
+                                        <button
+                                            onClick={() =>
+                                                router.push(
+                                                    "/kyc?redirect=/courses/" +
+                                                        slug
+                                                )
+                                            }
+                                            className="w-full px-4 py-2.5 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-all duration-300 flex items-center justify-center space-x-2"
+                                        >
+                                            <span>
+                                                {kycStatus === "pending"
+                                                    ? "View KYC Status"
+                                                    : "Complete KYC Verification"}
+                                            </span>
+                                        </button>
                                     ) : (
                                         <button
                                             onClick={handleRequestAccessClick}

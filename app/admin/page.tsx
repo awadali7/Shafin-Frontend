@@ -40,6 +40,17 @@ import { requestsApi } from "@/lib/api/requests";
 import { coursesApi } from "@/lib/api/courses";
 import { blogsApi } from "@/lib/api/blogs";
 import { uploadsApi } from "@/lib/api/uploads";
+import { kycApi } from "@/lib/api/kyc";
+import { AdminTabs } from "@/components/admin/AdminTabs";
+import { DashboardTab } from "@/components/admin/DashboardTab";
+import { UsersTab } from "@/components/admin/UsersTab";
+import { RequestsTab } from "@/components/admin/RequestsTab";
+import { CoursesTab } from "@/components/admin/CoursesTab";
+import { BlogsTab } from "@/components/admin/BlogsTab";
+import { KYCTab } from "@/components/admin/KYCTab";
+import { KYCModal } from "@/components/admin/KYCModal";
+import { formatDate, generateSlug } from "@/components/admin/utils";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 import type {
     DashboardStats,
     User,
@@ -47,6 +58,7 @@ import type {
     Course,
     Video,
     BlogPost,
+    KYCVerification,
 } from "@/lib/api/types";
 
 export default function AdminPage() {
@@ -54,13 +66,16 @@ export default function AdminPage() {
     const { user, loading: authLoading, isAuth } = useAuth();
 
     const [activeTab, setActiveTab] = useState<
-        "dashboard" | "users" | "requests" | "courses" | "blogs"
+        "dashboard" | "users" | "requests" | "courses" | "blogs" | "kyc"
     >("dashboard");
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [users, setUsers] = useState<User[]>([]);
     const [requests, setRequests] = useState<CourseRequest[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
     const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+    const [kycApplications, setKycApplications] = useState<KYCVerification[]>(
+        []
+    );
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -186,6 +201,19 @@ export default function AdminPage() {
         string | null
     >(null);
 
+    // KYC modal states
+    const [isKycModalOpen, setIsKycModalOpen] = useState(false);
+    const [selectedKyc, setSelectedKyc] = useState<KYCVerification | null>(
+        null
+    );
+    const [isProcessingKyc, setIsProcessingKyc] = useState(false);
+    const [kycAction, setKycAction] = useState<"verify" | "reject" | null>(
+        null
+    );
+    const [rejectionReason, setRejectionReason] = useState("");
+    const [kycSuccess, setKycSuccess] = useState<string | null>(null);
+    const [kycError, setKycError] = useState<string | null>(null);
+
     // Check admin access
     useEffect(() => {
         if (!authLoading) {
@@ -251,6 +279,19 @@ export default function AdminPage() {
                             ? blogsResponse.data.data
                             : []
                     );
+                }
+            } else if (activeTab === "kyc") {
+                const kycResponse = await kycApi.getAll({ page: 1, limit: 50 });
+                if (kycResponse.success && kycResponse.data) {
+                    const kycData = kycResponse.data;
+                    if (
+                        kycData.kyc_verifications &&
+                        Array.isArray(kycData.kyc_verifications)
+                    ) {
+                        setKycApplications(kycData.kyc_verifications);
+                    } else if (Array.isArray(kycData as any)) {
+                        setKycApplications(kycData as any);
+                    }
                 }
             }
         } catch (err: any) {
@@ -408,6 +449,88 @@ export default function AdminPage() {
             setRequestError(err.message || "Failed to reject request");
         } finally {
             setIsProcessingRequest(false);
+        }
+    };
+
+    // KYC handlers
+    const handleViewKyc = async (kyc: KYCVerification) => {
+        try {
+            const response = await kycApi.getById(kyc.id);
+            if (response.success && response.data) {
+                setSelectedKyc(response.data);
+                setIsKycModalOpen(true);
+                setKycAction(null);
+                setRejectionReason("");
+                setKycError(null);
+                setKycSuccess(null);
+            }
+        } catch (err: any) {
+            setError(err.message || "Failed to load KYC details");
+        }
+    };
+
+    const handleVerifyKyc = (kyc: KYCVerification) => {
+        setSelectedKyc(kyc);
+        setKycAction("verify");
+        setRejectionReason("");
+        setKycError(null);
+        setKycSuccess(null);
+        setIsKycModalOpen(true);
+    };
+
+    const handleRejectKyc = (kyc: KYCVerification) => {
+        setSelectedKyc(kyc);
+        setKycAction("reject");
+        setRejectionReason("");
+        setKycError(null);
+        setKycSuccess(null);
+        setIsKycModalOpen(true);
+    };
+
+    const handleKycAction = async () => {
+        if (!selectedKyc || !kycAction) return;
+
+        if (kycAction === "reject" && !rejectionReason.trim()) {
+            setKycError("Rejection reason is required");
+            return;
+        }
+
+        setIsProcessingKyc(true);
+        setKycError(null);
+        setKycSuccess(null);
+
+        try {
+            const response = await kycApi.verify(selectedKyc.id, {
+                status: kycAction === "verify" ? "verified" : "rejected",
+                rejection_reason:
+                    kycAction === "reject" ? rejectionReason : undefined,
+            });
+
+            if (response.success) {
+                setKycSuccess(
+                    `KYC ${
+                        kycAction === "verify" ? "verified" : "rejected"
+                    } successfully!`
+                );
+                // Refresh KYC list and close modal after 1.5 seconds
+                await fetchData();
+                setTimeout(() => {
+                    setIsKycModalOpen(false);
+                    setSelectedKyc(null);
+                    setKycAction(null);
+                    setRejectionReason("");
+                    setKycSuccess(null);
+                    setKycError(null);
+                }, 1500);
+            } else {
+                setKycError(
+                    (response as any).message || `Failed to ${kycAction} KYC`
+                );
+            }
+        } catch (err: any) {
+            setKycError(err.message || `Failed to ${kycAction} KYC`);
+        } finally {
+            setIsProcessingKyc(false);
         }
     };
 
@@ -1244,44 +1367,7 @@ export default function AdminPage() {
         }
     };
 
-    const formatDate = (dateString?: string) => {
-        if (!dateString) return "N/A";
-        return new Date(dateString).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-        });
-    };
-
-    const getStatusBadge = (status: string) => {
-        const baseClasses = "px-3 py-1 rounded-full text-xs font-medium";
-        switch (status) {
-            case "pending":
-                return (
-                    <span
-                        className={`${baseClasses} bg-yellow-100 text-yellow-800`}
-                    >
-                        Pending
-                    </span>
-                );
-            case "approved":
-                return (
-                    <span
-                        className={`${baseClasses} bg-green-100 text-green-800`}
-                    >
-                        Approved
-                    </span>
-                );
-            case "rejected":
-                return (
-                    <span className={`${baseClasses} bg-red-100 text-red-800`}>
-                        Rejected
-                    </span>
-                );
-            default:
-                return <span className={baseClasses}>{status}</span>;
-        }
-    };
+    // formatDate and getStatusBadge are now imported from components/admin/utils and StatusBadge
 
     if (authLoading || loading) {
         return (
@@ -1310,62 +1396,7 @@ export default function AdminPage() {
             </div>
 
             {/* Tabs */}
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex space-x-8">
-                        <button
-                            onClick={() => setActiveTab("dashboard")}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                activeTab === "dashboard"
-                                    ? "border-[#B00000] text-[#B00000]"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                            }`}
-                        >
-                            Dashboard
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("users")}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                activeTab === "users"
-                                    ? "border-[#B00000] text-[#B00000]"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                            }`}
-                        >
-                            Users
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("requests")}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                activeTab === "requests"
-                                    ? "border-[#B00000] text-[#B00000]"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                            }`}
-                        >
-                            Course Requests
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("courses")}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                activeTab === "courses"
-                                    ? "border-[#B00000] text-[#B00000]"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                            }`}
-                        >
-                            Courses
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("blogs")}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                                activeTab === "blogs"
-                                    ? "border-[#B00000] text-[#B00000]"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                            }`}
-                        >
-                            Blogs
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <AdminTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -1376,917 +1407,59 @@ export default function AdminPage() {
                 )}
 
                 {activeTab === "dashboard" && (
-                    <div>
-                        {stats ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                                {/* Total Users */}
-                                <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">
-                                                Total Users
-                                            </p>
-                                            <p className="text-3xl font-bold text-slate-900 mt-2">
-                                                {stats.total_users}
-                                            </p>
-                                        </div>
-                                        <div className="p-3 bg-blue-100 rounded-lg">
-                                            <Users className="w-6 h-6 text-blue-600" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Total Courses */}
-                                <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">
-                                                Total Courses
-                                            </p>
-                                            <p className="text-3xl font-bold text-slate-900 mt-2">
-                                                {stats.total_courses}
-                                            </p>
-                                        </div>
-                                        <div className="p-3 bg-green-100 rounded-lg">
-                                            <BookOpen className="w-6 h-6 text-green-600" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Pending Requests */}
-                                <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">
-                                                Pending Requests
-                                            </p>
-                                            <p className="text-3xl font-bold text-slate-900 mt-2">
-                                                {stats.pending_requests}
-                                            </p>
-                                        </div>
-                                        <div className="p-3 bg-yellow-100 rounded-lg">
-                                            <Clock className="w-6 h-6 text-yellow-600" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Total Requests */}
-                                <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">
-                                                Total Requests
-                                            </p>
-                                            <p className="text-3xl font-bold text-slate-900 mt-2">
-                                                {stats.total_requests}
-                                            </p>
-                                        </div>
-                                        <div className="p-3 bg-purple-100 rounded-lg">
-                                            <TrendingUp className="w-6 h-6 text-purple-600" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center py-12">
-                                <Loader2 className="w-8 h-8 animate-spin text-[#B00000] mx-auto" />
-                            </div>
-                        )}
-
-                        {/* Request Status Breakdown */}
-                        {stats && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-                                    <div className="flex items-center space-x-3">
-                                        <CheckCircle className="w-5 h-5 text-green-600" />
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">
-                                                Approved
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {stats.approved_requests || 0}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-                                    <div className="flex items-center space-x-3">
-                                        <XCircle className="w-5 h-5 text-red-600" />
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">
-                                                Rejected
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {stats.rejected_requests || 0}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-                                    <div className="flex items-center space-x-3">
-                                        <AlertCircle className="w-5 h-5 text-yellow-600" />
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-600">
-                                                Pending
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {stats.pending_requests}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    <DashboardTab stats={stats} loading={loading} />
                 )}
 
                 {activeTab === "users" && (
-                    <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-slate-900">
-                                All Users
-                            </h2>
-                            <button
-                                onClick={handleAddUser}
-                                className="flex items-center space-x-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-all duration-300 text-sm font-medium"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Add User</span>
-                            </button>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            User
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Email
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Role
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Last Login
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Joined
-                                        </th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {users.length > 0 ? (
-                                        users.map((u) => (
-                                            <tr
-                                                key={u.id}
-                                                className="hover:bg-gray-50"
-                                            >
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        <div className="shrink-0 h-10 w-10 rounded-full bg-[#B00000] flex items-center justify-center text-white font-medium">
-                                                            {u
-                                                                .first_name?.[0] ||
-                                                                "U"}
-                                                        </div>
-                                                        <div className="ml-4">
-                                                            <div className="text-sm font-medium text-slate-900">
-                                                                {u.first_name}{" "}
-                                                                {u.last_name}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">
-                                                        {u.email}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span
-                                                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                            u.role === "admin"
-                                                                ? "bg-purple-100 text-purple-800"
-                                                                : "bg-gray-100 text-gray-800"
-                                                        }`}
-                                                    >
-                                                        {u.role || "user"}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {u.last_login_at
-                                                        ? formatDate(
-                                                              u.last_login_at
-                                                          )
-                                                        : "Never"}
-                                                    {u.last_login_device && (
-                                                        <div className="text-xs text-gray-400 mt-1">
-                                                            {u.last_login_device
-                                                                .deviceType ===
-                                                            "mobile"
-                                                                ? "📱"
-                                                                : u
-                                                                      .last_login_device
-                                                                      .deviceType ===
-                                                                  "tablet"
-                                                                ? "📱"
-                                                                : "💻"}{" "}
-                                                            {
-                                                                u
-                                                                    .last_login_device
-                                                                    .browser
-                                                            }{" "}
-                                                            {u.last_login_ip && (
-                                                                <span className="text-gray-400">
-                                                                    •{" "}
-                                                                    {
-                                                                        u.last_login_ip
-                                                                    }
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {formatDate(u.created_at)}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <div className="flex items-center justify-end space-x-2">
-                                                        <button
-                                                            onClick={() =>
-                                                                handleViewLoginDetails(
-                                                                    u
-                                                                )
-                                                            }
-                                                            className="text-green-600 hover:text-green-900 p-2 hover:bg-green-50 rounded-lg transition-colors"
-                                                            title="View Login Details"
-                                                        >
-                                                            <Monitor className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() =>
-                                                                handleEditUser(
-                                                                    u
-                                                                )
-                                                            }
-                                                            className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                                                            title="Edit User"
-                                                        >
-                                                            <Edit2 className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() =>
-                                                                handleDeleteUser(
-                                                                    u
-                                                                )
-                                                            }
-                                                            className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                                            title="Delete User"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td
-                                                colSpan={6}
-                                                className="px-6 py-4 text-center text-sm text-gray-500"
-                                            >
-                                                No users found
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <UsersTab
+                        users={users}
+                        onAddUser={handleAddUser}
+                        onEditUser={handleEditUser}
+                        onDeleteUser={handleDeleteUser}
+                        onViewLoginDetails={handleViewLoginDetails}
+                    />
                 )}
 
                 {activeTab === "requests" && (
-                    <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200">
-                            <h2 className="text-lg font-semibold text-slate-900">
-                                Course Requests
-                            </h2>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            User
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Course
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Requested
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {requests.length > 0 ? (
-                                        requests.map((request: any) => (
-                                            <tr
-                                                key={request.id}
-                                                className="hover:bg-gray-50"
-                                            >
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-slate-900">
-                                                        {(request as any)
-                                                            .user_first_name ||
-                                                        request.user?.first_name
-                                                            ? `${
-                                                                  (
-                                                                      request as any
-                                                                  )
-                                                                      .user_first_name ||
-                                                                  request.user
-                                                                      ?.first_name
-                                                              } ${
-                                                                  (
-                                                                      request as any
-                                                                  )
-                                                                      .user_last_name ||
-                                                                  request.user
-                                                                      ?.last_name
-                                                              }`
-                                                            : "Unknown User"}
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">
-                                                        {(request as any)
-                                                            .user_email ||
-                                                            request.user
-                                                                ?.email ||
-                                                            ""}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-slate-900">
-                                                        {(request as any)
-                                                            .course_name ||
-                                                            request.course
-                                                                ?.name ||
-                                                            "Unknown Course"}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {getStatusBadge(
-                                                        request.status
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {formatDate(
-                                                        request.created_at
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                    {request.status ===
-                                                        "pending" && (
-                                                        <div className="flex space-x-2">
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleApproveRequestClick(
-                                                                        request
-                                                                    )
-                                                                }
-                                                                className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors flex items-center space-x-1.5 text-sm font-medium"
-                                                            >
-                                                                <CheckCircle className="w-4 h-4" />
-                                                                <span>
-                                                                    Approve
-                                                                </span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleRejectRequestClick(
-                                                                        request
-                                                                    )
-                                                                }
-                                                                className="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors flex items-center space-x-1.5 text-sm font-medium"
-                                                            >
-                                                                <XCircle className="w-4 h-4" />
-                                                                <span>
-                                                                    Reject
-                                                                </span>
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                    {request.status !==
-                                                        "pending" && (
-                                                        <span className="text-gray-400">
-                                                            No actions
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td
-                                                colSpan={5}
-                                                className="px-6 py-4 text-center text-sm text-gray-500"
-                                            >
-                                                No requests found
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <RequestsTab
+                        requests={requests}
+                        onApproveRequest={handleApproveRequestClick}
+                        onRejectRequest={handleRejectRequestClick}
+                    />
                 )}
 
                 {activeTab === "courses" && (
-                    <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-slate-900">
-                                All Courses
-                            </h2>
-                            <button
-                                onClick={handleAddCourse}
-                                className="flex items-center space-x-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-all duration-300 text-sm font-medium"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Add New Course</span>
-                            </button>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Course
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Slug
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Price
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Videos
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Created
-                                        </th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {courses.length > 0 ? (
-                                        courses.map((course) => (
-                                            <React.Fragment key={course.id}>
-                                                <tr className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="flex items-center">
-                                                            {course.cover_image && (
-                                                                <img
-                                                                    src={
-                                                                        course.cover_image
-                                                                    }
-                                                                    alt={
-                                                                        course.name
-                                                                    }
-                                                                    className="w-10 h-10 rounded-lg object-cover mr-3"
-                                                                />
-                                                            )}
-                                                            <div>
-                                                                <div className="text-sm font-medium text-slate-900">
-                                                                    {
-                                                                        course.name
-                                                                    }
-                                                                </div>
-                                                                {course.description && (
-                                                                    <div className="text-xs text-gray-500 truncate max-w-xs">
-                                                                        {
-                                                                            course.description
-                                                                        }
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm text-gray-900">
-                                                            {course.slug}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm font-medium text-[#B00000]">
-                                                            ₹
-                                                            {(typeof course.price ===
-                                                            "number"
-                                                                ? course.price
-                                                                : parseFloat(
-                                                                      String(
-                                                                          course.price ||
-                                                                              "0"
-                                                                      )
-                                                                  )
-                                                            ).toFixed(2)}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <button
-                                                            onClick={() =>
-                                                                toggleCourseVideos(
-                                                                    course.id
-                                                                )
-                                                            }
-                                                            className="flex items-center space-x-2 text-sm text-gray-900 hover:text-[#B00000] transition-colors"
-                                                        >
-                                                            <span>
-                                                                {course.video_count ||
-                                                                    course
-                                                                        .videos
-                                                                        ?.length ||
-                                                                    0}{" "}
-                                                                Videos
-                                                            </span>
-                                                            {expandedCourseId ===
-                                                            course.id ? (
-                                                                <ChevronUp className="w-4 h-4" />
-                                                            ) : (
-                                                                <ChevronDown className="w-4 h-4" />
-                                                            )}
-                                                        </button>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {formatDate(
-                                                            course.created_at
-                                                        )}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                        <div className="flex items-center justify-end space-x-2">
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleManageVideos(
-                                                                        course
-                                                                    )
-                                                                }
-                                                                className="text-green-600 hover:text-green-900 p-2 hover:bg-green-50 rounded-lg transition-colors"
-                                                                title="Manage Videos"
-                                                            >
-                                                                <BookOpen className="w-4 h-4" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleEditCourse(
-                                                                        course
-                                                                    )
-                                                                }
-                                                                className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                                                                title="Edit Course"
-                                                            >
-                                                                <Edit2 className="w-4 h-4" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleDeleteCourse(
-                                                                        course
-                                                                    )
-                                                                }
-                                                                className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                                                title="Delete Course"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {/* Expanded Videos Row */}
-                                                {expandedCourseId ===
-                                                    course.id && (
-                                                    <tr>
-                                                        <td
-                                                            colSpan={6}
-                                                            className="px-6 py-4 bg-gray-50"
-                                                        >
-                                                            {loadingCourseVideos ===
-                                                            course.id ? (
-                                                                <div className="flex items-center justify-center py-8">
-                                                                    <Loader2 className="w-6 h-6 animate-spin text-[#B00000]" />
-                                                                </div>
-                                                            ) : (
-                                                                <div>
-                                                                    <h4 className="text-sm font-semibold text-slate-900 mb-3">
-                                                                        Course
-                                                                        Videos
-                                                                    </h4>
-                                                                    {courseVideosMap[
-                                                                        course
-                                                                            .id
-                                                                    ] &&
-                                                                    courseVideosMap[
-                                                                        course
-                                                                            .id
-                                                                    ].length >
-                                                                        0 ? (
-                                                                        <div className="space-y-2">
-                                                                            {courseVideosMap[
-                                                                                course
-                                                                                    .id
-                                                                            ]
-                                                                                .sort(
-                                                                                    (
-                                                                                        a,
-                                                                                        b
-                                                                                    ) =>
-                                                                                        (a.order_index ||
-                                                                                            0) -
-                                                                                        (b.order_index ||
-                                                                                            0)
-                                                                                )
-                                                                                .map(
-                                                                                    (
-                                                                                        video
-                                                                                    ) => (
-                                                                                        <div
-                                                                                            key={
-                                                                                                video.id
-                                                                                            }
-                                                                                            className="bg-white border border-gray-200 rounded-lg p-3 flex items-center justify-between hover:shadow-sm transition-shadow"
-                                                                                        >
-                                                                                            <div className="flex items-center space-x-3 flex-1">
-                                                                                                <div className="p-2 bg-[#B00000]/10 rounded-lg">
-                                                                                                    <Play className="w-4 h-4 text-[#B00000]" />
-                                                                                                </div>
-                                                                                                <div className="flex-1">
-                                                                                                    <div className="flex items-center space-x-2">
-                                                                                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-medium">
-                                                                                                            #
-                                                                                                            {
-                                                                                                                video.order_index
-                                                                                                            }
-                                                                                                        </span>
-                                                                                                        <h5 className="text-sm font-medium text-slate-900">
-                                                                                                            {
-                                                                                                                video.title
-                                                                                                            }
-                                                                                                        </h5>
-                                                                                                    </div>
-                                                                                                    {video.description && (
-                                                                                                        <p className="text-xs text-gray-600 mt-1">
-                                                                                                            {
-                                                                                                                video.description
-                                                                                                            }
-                                                                                                        </p>
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            </div>
-                                                                                            <div className="flex items-center space-x-2">
-                                                                                                <button
-                                                                                                    onClick={() => {
-                                                                                                        handleManageVideos(
-                                                                                                            course
-                                                                                                        );
-                                                                                                        setTimeout(
-                                                                                                            () => {
-                                                                                                                handleEditVideo(
-                                                                                                                    video
-                                                                                                                );
-                                                                                                            },
-                                                                                                            100
-                                                                                                        );
-                                                                                                    }}
-                                                                                                    className="text-blue-600 hover:text-blue-900 p-1.5 hover:bg-blue-50 rounded transition-colors"
-                                                                                                    title="Edit Video"
-                                                                                                >
-                                                                                                    <Edit2 className="w-3.5 h-3.5" />
-                                                                                                </button>
-                                                                                                <button
-                                                                                                    onClick={() => {
-                                                                                                        handleManageVideos(
-                                                                                                            course
-                                                                                                        );
-                                                                                                        setTimeout(
-                                                                                                            () => {
-                                                                                                                handleDeleteVideo(
-                                                                                                                    video
-                                                                                                                );
-                                                                                                            },
-                                                                                                            100
-                                                                                                        );
-                                                                                                    }}
-                                                                                                    className="text-red-600 hover:text-red-900 p-1.5 hover:bg-red-50 rounded transition-colors"
-                                                                                                    title="Delete Video"
-                                                                                                >
-                                                                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                                                                </button>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    )
-                                                                                )}
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="text-center py-6 bg-white rounded-lg border border-gray-200">
-                                                                            <BookOpen className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                                                            <p className="text-sm text-gray-600">
-                                                                                No
-                                                                                videos
-                                                                                in
-                                                                                this
-                                                                                course
-                                                                            </p>
-                                                                            <button
-                                                                                onClick={() =>
-                                                                                    handleManageVideos(
-                                                                                        course
-                                                                                    )
-                                                                                }
-                                                                                className="mt-2 text-sm text-[#B00000] hover:underline"
-                                                                            >
-                                                                                Add
-                                                                                videos
-                                                                            </button>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </React.Fragment>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td
-                                                colSpan={6}
-                                                className="px-6 py-4 text-center text-sm text-gray-500"
-                                            >
-                                                No courses found
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <CoursesTab
+                        courses={courses}
+                        expandedCourseId={expandedCourseId}
+                        courseVideosMap={courseVideosMap}
+                        loadingCourseVideos={loadingCourseVideos}
+                        onAddCourse={handleAddCourse}
+                        onEditCourse={handleEditCourse}
+                        onDeleteCourse={handleDeleteCourse}
+                        onManageVideos={handleManageVideos}
+                        onToggleCourseVideos={toggleCourseVideos}
+                        onEditVideo={handleEditVideo}
+                        onDeleteVideo={handleDeleteVideo}
+                    />
                 )}
 
                 {activeTab === "blogs" && (
-                    <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-slate-900">
-                                All Blog Posts
-                            </h2>
-                            <button
-                                onClick={handleAddBlog}
-                                className="flex items-center space-x-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-all duration-300 text-sm font-medium"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Add Blog Post</span>
-                            </button>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Title
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Author
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Views
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Published
-                                        </th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {blogPosts.length > 0 ? (
-                                        blogPosts.map((blog) => (
-                                            <tr
-                                                key={blog.id}
-                                                className="hover:bg-gray-50"
-                                            >
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center">
-                                                        {blog.cover_image && (
-                                                            <img
-                                                                src={
-                                                                    blog.cover_image
-                                                                }
-                                                                alt={blog.title}
-                                                                className="w-12 h-12 rounded-lg object-cover mr-3"
-                                                            />
-                                                        )}
-                                                        <div>
-                                                            <div className="text-sm font-medium text-slate-900">
-                                                                {blog.title}
-                                                            </div>
-                                                            {blog.excerpt && (
-                                                                <div className="text-xs text-gray-500 truncate max-w-md">
-                                                                    {
-                                                                        blog.excerpt
-                                                                    }
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">
-                                                        {blog.author_name}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span
-                                                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                                            blog.is_published
-                                                                ? "bg-green-100 text-green-800"
-                                                                : "bg-yellow-100 text-yellow-800"
-                                                        }`}
-                                                    >
-                                                        {blog.is_published
-                                                            ? "Published"
-                                                            : "Draft"}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">
-                                                        {blog.views || 0}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {blog.published_at
-                                                        ? new Date(
-                                                              blog.published_at
-                                                          ).toLocaleDateString()
-                                                        : blog.created_at
-                                                        ? new Date(
-                                                              blog.created_at
-                                                          ).toLocaleDateString()
-                                                        : "—"}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <div className="flex items-center justify-end space-x-2">
-                                                        <button
-                                                            onClick={() =>
-                                                                handleEditBlog(
-                                                                    blog
-                                                                )
-                                                            }
-                                                            className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                                                            title="Edit Blog Post"
-                                                        >
-                                                            <Edit2 className="w-4 h-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() =>
-                                                                handleDeleteBlog(
-                                                                    blog
-                                                                )
-                                                            }
-                                                            className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                                            title="Delete Blog Post"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td
-                                                colSpan={6}
-                                                className="px-6 py-4 text-center text-sm text-gray-500"
-                                            >
-                                                No blog posts found
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <BlogsTab
+                        blogPosts={blogPosts}
+                        onAddBlog={handleAddBlog}
+                        onEditBlog={handleEditBlog}
+                        onDeleteBlog={handleDeleteBlog}
+                    />
+                )}
+
+                {activeTab === "kyc" && (
+                    <KYCTab
+                        kycApplications={kycApplications}
+                        onViewKyc={handleViewKyc}
+                        onVerifyKyc={handleVerifyKyc}
+                        onRejectKyc={handleRejectKyc}
+                    />
                 )}
             </div>
 
@@ -4728,6 +3901,38 @@ export default function AdminPage() {
                     </div>
                 </>
             )}
+
+            {/* KYC Detail Modal */}
+            <KYCModal
+                isOpen={isKycModalOpen}
+                kyc={selectedKyc}
+                kycAction={kycAction}
+                rejectionReason={rejectionReason}
+                isProcessing={isProcessingKyc}
+                success={kycSuccess}
+                error={kycError}
+                onClose={() => {
+                    setIsKycModalOpen(false);
+                    setSelectedKyc(null);
+                    setKycAction(null);
+                    setRejectionReason("");
+                    setKycError(null);
+                    setKycSuccess(null);
+                }}
+                onVerify={() => {
+                    if (selectedKyc) handleVerifyKyc(selectedKyc);
+                }}
+                onReject={() => {
+                    if (selectedKyc) handleRejectKyc(selectedKyc);
+                }}
+                onAction={handleKycAction}
+                onRejectionReasonChange={setRejectionReason}
+                onCancelAction={() => {
+                    setKycAction(null);
+                    setRejectionReason("");
+                    setKycError(null);
+                }}
+            />
         </div>
     );
 }

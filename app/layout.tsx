@@ -10,6 +10,7 @@ import MainContent from "@/components/MainContent";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ConditionalSidebar from "@/components/ConditionalSidebar";
 import PushNotificationInitializer from "@/components/PushNotificationInitializer";
+import WhatsAppFloatingButton from "@/components/WhatsAppFloatingButton";
 
 // Bricolage Grotesque for headings
 const bricolageGrotesque = Bricolage_Grotesque({
@@ -135,6 +136,12 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en-IN">
+            <head>
+                <link
+                    rel="stylesheet"
+                    href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"
+                />
+            </head>
             <body
                 className={`${bricolageGrotesque.variable} ${onsetRegular.variable} antialiased`}
             >
@@ -148,6 +155,7 @@ export default function RootLayout({
                                 {children}
                             </MainContent>
                             <Footer />
+                            <WhatsAppFloatingButton />
                         </div>
                     </SidebarProvider>
                 </AuthProvider>
