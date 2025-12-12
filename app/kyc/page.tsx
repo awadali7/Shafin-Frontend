@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Upload, X, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { kycApi } from "@/lib/api/kyc";
 import { useAuth } from "@/contexts/AuthContext";
 import type { KYCVerification } from "@/lib/api/types";
 
-export default function KYCPage() {
+function KYCContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useAuth();
@@ -679,5 +679,19 @@ export default function KYCPage() {
                 </div>
             </section>
         </div>
+    );
+}
+
+export default function KYCPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-white flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-[#B00000]" />
+                </div>
+            }
+        >
+            <KYCContent />
+        </Suspense>
     );
 }
