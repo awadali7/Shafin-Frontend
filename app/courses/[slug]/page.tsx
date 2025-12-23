@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import LoginDrawer from "@/components/LoginDrawer";
 import RegisterDrawer from "@/components/RegisterDrawer";
 import type { CourseDetails, Video } from "@/lib/api/types";
+import { setRedirectPath, shouldPreserveRedirect } from "@/lib/utils/redirect";
 
 export default function CourseDetailPage() {
     const params = useParams();
@@ -48,6 +49,15 @@ export default function CourseDetailPage() {
         "pending" | "verified" | "rejected" | null
     >(null);
     const [checkingKYC, setCheckingKYC] = useState(false);
+
+    // Helper to open login drawer with redirect preservation
+    const handleOpenLoginDrawer = () => {
+        const currentPath = `/courses/${slug}`;
+        if (shouldPreserveRedirect(currentPath)) {
+            setRedirectPath(currentPath);
+        }
+        setIsLoginDrawerOpen(true);
+    };
 
     // Fetch course and videos
     useEffect(() => {
@@ -298,8 +308,8 @@ export default function CourseDetailPage() {
 
     const handleRequestAccessClick = async () => {
         if (!user) {
-            // Open login drawer if not authenticated
-            setIsLoginDrawerOpen(true);
+            // Open login drawer with redirect preservation
+            handleOpenLoginDrawer();
             return;
         }
 
@@ -570,10 +580,8 @@ export default function CourseDetailPage() {
                                             </p>
                                             {!user ? (
                                                 <button
-                                                    onClick={() =>
-                                                        setIsLoginDrawerOpen(
-                                                            true
-                                                        )
+                                                    onClick={
+                                                        handleOpenLoginDrawer
                                                     }
                                                     className="px-6 py-3 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-all duration-300 flex items-center space-x-2 mx-auto"
                                                 >
@@ -1111,9 +1119,7 @@ export default function CourseDetailPage() {
 
                                     {!user ? (
                                         <button
-                                            onClick={() =>
-                                                setIsLoginDrawerOpen(true)
-                                            }
+                                            onClick={handleOpenLoginDrawer}
                                             className="w-full px-4 py-2.5 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-all duration-300 flex items-center justify-center space-x-2"
                                         >
                                             <span>Login to Request Access</span>
@@ -1431,7 +1437,7 @@ export default function CourseDetailPage() {
                 onClose={() => setIsRegisterDrawerOpen(false)}
                 onSwitchToLogin={() => {
                     setIsRegisterDrawerOpen(false);
-                    setIsLoginDrawerOpen(true);
+                    handleOpenLoginDrawer();
                 }}
             />
         </div>

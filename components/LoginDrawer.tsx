@@ -1,12 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { X, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import ForgotPasswordDrawer from "./ForgotPasswordDrawer";
+import {
+    getAndClearRedirectPath,
+    setRedirectPath,
+    shouldPreserveRedirect,
+} from "@/lib/utils/redirect";
 
 interface LoginDrawerProps {
     isOpen: boolean;
@@ -22,6 +27,7 @@ export default function LoginDrawer({
     preventRedirect = false,
 }: LoginDrawerProps) {
     const router = useRouter();
+    const pathname = usePathname();
     const { login, isAuth } = useAuth();
 
     const [formData, setFormData] = useState({
@@ -34,15 +40,31 @@ export default function LoginDrawer({
     const [isForgotPasswordDrawerOpen, setIsForgotPasswordDrawerOpen] =
         useState(false);
 
+    // Preserve current path when drawer opens
+    React.useEffect(() => {
+        if (isOpen && pathname && shouldPreserveRedirect(pathname)) {
+            setRedirectPath(pathname);
+        }
+    }, [isOpen, pathname]);
+
     // Close drawer if user is authenticated
     React.useEffect(() => {
         if (isAuth && isOpen) {
             onClose();
             if (!preventRedirect) {
-                router.push("/");
+                // Use redirect path or default to current page or home
+                const redirectPath = getAndClearRedirectPath();
+                if (redirectPath) {
+                    router.push(redirectPath);
+                } else if (pathname && shouldPreserveRedirect(pathname)) {
+                    // Stay on current page if it's a valid page
+                    router.refresh();
+                } else {
+                    router.push("/");
+                }
             }
         }
-    }, [isAuth, isOpen, onClose, router, preventRedirect]);
+    }, [isAuth, isOpen, onClose, router, preventRedirect, pathname]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -62,7 +84,16 @@ export default function LoginDrawer({
             await login(formData);
             onClose();
             if (!preventRedirect) {
-                router.push("/dashboard");
+                // Use redirect path or default to current page or dashboard
+                const redirectPath = getAndClearRedirectPath();
+                if (redirectPath) {
+                    router.push(redirectPath);
+                } else if (pathname && shouldPreserveRedirect(pathname)) {
+                    // Stay on current page if it's a valid page
+                    router.refresh();
+                } else {
+                    router.push("/dashboard");
+                }
             }
         } catch (err: any) {
             setError(

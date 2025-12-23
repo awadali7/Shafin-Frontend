@@ -1,11 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { X, Mail, Lock, User, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+    getAndClearRedirectPath,
+    setRedirectPath,
+    shouldPreserveRedirect,
+} from "@/lib/utils/redirect";
 
 interface RegisterDrawerProps {
     isOpen: boolean;
@@ -21,6 +26,7 @@ export default function RegisterDrawer({
     preventRedirect = false,
 }: RegisterDrawerProps) {
     const router = useRouter();
+    const pathname = usePathname();
     const { register, isAuth } = useAuth();
 
     const [formData, setFormData] = useState({
@@ -38,15 +44,31 @@ export default function RegisterDrawer({
         [key: string]: string;
     }>({});
 
+    // Preserve current path when drawer opens
+    React.useEffect(() => {
+        if (isOpen && pathname && shouldPreserveRedirect(pathname)) {
+            setRedirectPath(pathname);
+        }
+    }, [isOpen, pathname]);
+
     // Close drawer if user is authenticated
     React.useEffect(() => {
         if (isAuth && isOpen) {
             onClose();
             if (!preventRedirect) {
-                router.push("/dashboard");
+                // Use redirect path or default to current page or dashboard
+                const redirectPath = getAndClearRedirectPath();
+                if (redirectPath) {
+                    router.push(redirectPath);
+                } else if (pathname && shouldPreserveRedirect(pathname)) {
+                    // Stay on current page if it's a valid page
+                    router.refresh();
+                } else {
+                    router.push("/dashboard");
+                }
             }
         }
-    }, [isAuth, isOpen, onClose, router, preventRedirect]);
+    }, [isAuth, isOpen, onClose, router, preventRedirect, pathname]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -121,7 +143,16 @@ export default function RegisterDrawer({
             });
             onClose();
             if (!preventRedirect) {
-                router.push("/dashboard");
+                // Use redirect path or default to current page or dashboard
+                const redirectPath = getAndClearRedirectPath();
+                if (redirectPath) {
+                    router.push(redirectPath);
+                } else if (pathname && shouldPreserveRedirect(pathname)) {
+                    // Stay on current page if it's a valid page
+                    router.refresh();
+                } else {
+                    router.push("/dashboard");
+                }
             }
         } catch (err: any) {
             setError(err.message || "Registration failed. Please try again.");

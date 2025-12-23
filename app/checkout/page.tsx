@@ -10,6 +10,7 @@ import { ordersApi } from "@/lib/api/orders";
 import { paymentsApi } from "@/lib/api/payments";
 import LoginDrawer from "@/components/LoginDrawer";
 import RegisterDrawer from "@/components/RegisterDrawer";
+import { setRedirectPath, shouldPreserveRedirect } from "@/lib/utils/redirect";
 
 type RazorpaySuccessResponse = {
     razorpay_order_id: string;
@@ -179,6 +180,10 @@ export default function CheckoutPage() {
         e.preventDefault();
 
         if (!isAuth) {
+            // Preserve checkout path for redirect after login
+            if (shouldPreserveRedirect("/checkout")) {
+                setRedirectPath("/checkout");
+            }
             setIsLoginDrawerOpen(true);
             return;
         }

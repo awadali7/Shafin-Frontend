@@ -10,6 +10,7 @@ import { useCart } from "@/contexts/CartContext";
 import LoginDrawer from "./LoginDrawer";
 import RegisterDrawer from "./RegisterDrawer";
 import NotificationBell from "./NotificationBell";
+import { setRedirectPath, shouldPreserveRedirect } from "@/lib/utils/redirect";
 
 export default function Header() {
     const router = useRouter();
@@ -21,6 +22,22 @@ export default function Header() {
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
 
     const toggleProfile = () => setIsProfileOpen(!isProfileOpen);
+
+    // Handle opening login drawer with redirect preservation
+    const handleOpenLogin = () => {
+        if (pathname && shouldPreserveRedirect(pathname)) {
+            setRedirectPath(pathname);
+        }
+        setIsLoginDrawerOpen(true);
+    };
+
+    // Handle opening register drawer with redirect preservation
+    const handleOpenRegister = () => {
+        if (pathname && shouldPreserveRedirect(pathname)) {
+            setRedirectPath(pathname);
+        }
+        setIsRegisterDrawerOpen(true);
+    };
 
     const handleLogout = async () => {
         try {
@@ -38,15 +55,18 @@ export default function Header() {
         : "Guest";
     const displayEmail = user?.email || "";
 
-    // Check if we're on a public page (not authenticated pages) to show navigation
-    const isPublicPage =
+    // Check if we should show navigation (exclude authenticated-only pages)
+    const shouldShowNav =
         pathname &&
         !pathname.startsWith("/dashboard") &&
         !pathname.startsWith("/admin") &&
         !pathname.startsWith("/profile") &&
         !pathname.startsWith("/my-learning") &&
         !pathname.startsWith("/settings") &&
-        !pathname.startsWith("/courses/") && // Don't show on individual course pages
+        !pathname.startsWith("/orders") &&
+        !pathname.startsWith("/downloads") &&
+        !pathname.startsWith("/checkout") &&
+        !pathname.startsWith("/kyc") &&
         pathname !== "/reset-password";
 
     return (
@@ -66,8 +86,8 @@ export default function Header() {
                     </div>
                 </Link>
 
-                {/* Middle Section - Navigation (on public pages) */}
-                {isPublicPage && !isAuth && (
+                {/* Middle Section - Navigation (show for all users on public pages) */}
+                {shouldShowNav && (
                     <nav className="hidden lg:flex items-center space-x-8">
                         <Link
                             href="/"
@@ -238,13 +258,13 @@ export default function Header() {
                         /* Login/Register Buttons */
                         <div className="flex items-center space-x-3">
                             <button
-                                onClick={() => setIsLoginDrawerOpen(true)}
+                                onClick={handleOpenLogin}
                                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-[#B00000] transition-colors"
                             >
                                 Login
                             </button>
                             <button
-                                onClick={() => setIsRegisterDrawerOpen(true)}
+                                onClick={handleOpenRegister}
                                 className="px-4 py-2.5 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-all duration-300 text-sm"
                             >
                                 Join Now
@@ -258,14 +278,20 @@ export default function Header() {
             <LoginDrawer
                 isOpen={isLoginDrawerOpen}
                 onClose={() => setIsLoginDrawerOpen(false)}
-                onSwitchToRegister={() => setIsRegisterDrawerOpen(true)}
+                onSwitchToRegister={() => {
+                    setIsLoginDrawerOpen(false);
+                    handleOpenRegister();
+                }}
             />
 
             {/* Register Drawer */}
             <RegisterDrawer
                 isOpen={isRegisterDrawerOpen}
                 onClose={() => setIsRegisterDrawerOpen(false)}
-                onSwitchToLogin={() => setIsLoginDrawerOpen(true)}
+                onSwitchToLogin={() => {
+                    setIsRegisterDrawerOpen(false);
+                    handleOpenLogin();
+                }}
             />
         </header>
     );
