@@ -2,21 +2,24 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Upload, X, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Upload, X, CheckCircle2, AlertCircle, Loader2, Plus } from "lucide-react";
 import { kycApi } from "@/lib/api/kyc";
+import { authApi } from "@/lib/api/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import type { KYCVerification } from "@/lib/api/types";
 
 function KYCContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { user } = useAuth();
+    const { user, refreshProfile } = useAuth();
     const redirectPath = searchParams.get("redirect");
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [kycData, setKycData] = useState<KYCVerification | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     // Form fields
     const [formData, setFormData] = useState({
@@ -28,12 +31,10 @@ function KYCContent() {
     });
 
     // File states
-    const [idProofFile, setIdProofFile] = useState<File | null>(null);
+    const [idProofFiles, setIdProofFiles] = useState<File[]>([]);
+    const [idProofPreviews, setIdProofPreviews] = useState<Array<{ file: File | null; preview: string }>>([]);
     const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
-    const [idProofPreview, setIdProofPreview] = useState<string | null>(null);
-    const [profilePhotoPreview, setProfilePhotoPreview] = useState<
-        string | null
-    >(null);
+    const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -61,15 +62,21 @@ function KYCContent() {
                         whatsapp_number: response.data.whatsapp_number || "",
                     });
 
-                    // Set preview URLs if files exist
+                    // Set preview URLs if files exist (handle both single URL and array)
                     if (response.data.id_proof_url) {
                         const baseUrl =
                             process.env.NEXT_PUBLIC_API_URL ||
                             "http://localhost:5001";
                         // Remove /api from baseUrl if present, as file URLs are relative to root
                         const cleanBaseUrl = baseUrl.replace(/\/api$/, "");
-                        setIdProofPreview(
-                            `${cleanBaseUrl}${response.data.id_proof_url}`
+                        const idProofUrls = Array.isArray(response.data.id_proof_url) 
+                            ? response.data.id_proof_url 
+                            : [response.data.id_proof_url];
+                        setIdProofPreviews(
+                            idProofUrls.map((url: string) => ({
+                                file: null,
+                                preview: `${cleanBaseUrl}${url}`
+                            }))
                         );
                     }
                     if (response.data.profile_photo_url) {
@@ -104,9 +111,8 @@ function KYCContent() {
     };
 
     const handleIdProofChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            // Validate file type
+        const files = Array.from(e.target.files || []);
+        if (files.length > 0) {
             const allowedTypes = [
                 "image/jpeg",
                 "image/jpg",
@@ -114,33 +120,49 @@ function KYCContent() {
                 "image/webp",
                 "application/pdf",
             ];
-            if (!allowedTypes.includes(file.type)) {
-                setError(
-                    "Invalid file type. Only JPEG, PNG, WebP images and PDF files are allowed."
-                );
-                return;
+
+            // Validate all files
+            for (const file of files) {
+                if (!allowedTypes.includes(file.type)) {
+                    setError(
+                        "Invalid file type. Only JPEG, PNG, WebP images and PDF files are allowed."
+                    );
+                    return;
+                }
+
+                if (file.size > 10 * 1024 * 1024) {
+                    setError("File size must be less than 10MB per file");
+                    return;
+                }
             }
 
-            // Validate file size (10MB)
-            if (file.size > 10 * 1024 * 1024) {
-                setError("File size must be less than 10MB");
-                return;
-            }
-
-            setIdProofFile(file);
+            // Add new files to existing ones
+            const newFiles = [...idProofFiles, ...files];
+            setIdProofFiles(newFiles);
             setError(null);
 
-            // Create preview for images
-            if (file.type.startsWith("image/")) {
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setIdProofPreview(reader.result as string);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                setIdProofPreview(null);
-            }
+            // Create previews for images
+            files.forEach((file) => {
+                if (file.type.startsWith("image/")) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setIdProofPreviews((prev) => [
+                            ...prev,
+                            { file, preview: reader.result as string },
+                        ]);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    // For PDFs, just add file without preview
+                    setIdProofPreviews((prev) => [
+                        ...prev,
+                        { file, preview: "" },
+                    ]);
+                }
+            });
         }
+        // Reset input to allow selecting same files again
+        e.target.value = "";
     };
 
     const handleProfilePhotoChange = (
@@ -178,9 +200,9 @@ function KYCContent() {
         }
     };
 
-    const removeIdProof = () => {
-        setIdProofFile(null);
-        setIdProofPreview(null);
+    const removeIdProof = (index: number) => {
+        setIdProofFiles((prev) => prev.filter((_, i) => i !== index));
+        setIdProofPreviews((prev) => prev.filter((_, i) => i !== index));
     };
 
     const removeProfilePhoto = () => {
@@ -206,8 +228,8 @@ function KYCContent() {
         }
 
         // Check if files are provided (either new files or existing KYC)
-        if (!idProofFile && !kycData?.id_proof_url) {
-            setError("ID proof is required");
+        if (idProofFiles.length === 0 && !kycData?.id_proof_url) {
+            setError("At least one ID proof image is required");
             return;
         }
 
@@ -227,9 +249,10 @@ function KYCContent() {
             formDataToSend.append("contact_number", formData.contact_number);
             formDataToSend.append("whatsapp_number", formData.whatsapp_number);
 
-            if (idProofFile) {
-                formDataToSend.append("id_proof", idProofFile);
-            }
+            // Append all ID proof files
+            idProofFiles.forEach((file) => {
+                formDataToSend.append("id_proof", file);
+            });
             if (profilePhotoFile) {
                 formDataToSend.append("profile_photo", profilePhotoFile);
             }
@@ -245,12 +268,8 @@ function KYCContent() {
                     setKycData(kycResponse.data);
                 }
 
-                // Redirect after successful submission if redirect path is provided
-                if (redirectPath) {
-                    setTimeout(() => {
-                        router.push(redirectPath);
-                    }, 2000);
-                }
+                // Show terms and conditions modal
+                setShowTermsModal(true);
             } else {
                 setError(
                     response.message ||
@@ -262,6 +281,32 @@ function KYCContent() {
                 err.message ||
                     "Failed to submit KYC. Please check your connection and try again."
             );
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleTermsAccept = async () => {
+        if (!termsAccepted) return;
+
+        try {
+            setSubmitting(true);
+            // Call API to accept terms
+            const response = await authApi.acceptTerms();
+
+            if (response.success) {
+                setShowTermsModal(false);
+                // Refresh user profile to get updated terms_accepted_at
+                await refreshProfile();
+                // Redirect after accepting terms if redirect path is provided
+                if (redirectPath) {
+                    router.push(redirectPath);
+                }
+            } else {
+                setError(response.message || "Failed to accept terms. Please try again.");
+            }
+        } catch (err: any) {
+            setError(err.message || "Failed to accept terms. Please try again.");
         } finally {
             setSubmitting(false);
         }
@@ -280,23 +325,18 @@ function KYCContent() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Hero Section */}
-            <section className="bg-gradient-to-br from-[#B00000] to-red-800 text-white py-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
-                        KYC Verification
-                    </h1>
-                    <p className="text-xl sm:text-2xl text-gray-100 max-w-3xl mx-auto">
-                        Complete your KYC verification to request course access
-                    </p>
-                </div>
-            </section>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Header */}
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold text-slate-900 flex items-center">
+                    KYC Verification
+                </h1>
+                <p className="text-sm text-slate-600 mt-2">
+                    Complete your KYC verification to access course features
+                </p>
+            </div>
 
-            {/* Main Content Section */}
-            <section className="py-16 lg:py-24">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Status Banner */}
+            {/* Status Banner */}
                     {kycData && (
                         <div
                             className={`mb-8 p-4 rounded-lg ${
@@ -501,39 +541,66 @@ function KYCContent() {
                                 ID Proof
                             </h2>
                             <p className="text-sm text-slate-600 mb-4">
-                                Upload a valid ID proof (Aadhaar, PAN, Passport,
+                                Upload ID proof images (Aadhaar, PAN, Passport,
                                 etc.) in JPEG, PNG, WebP, or PDF format (Max
-                                10MB)
+                                10MB per file). You can upload multiple images.
                             </p>
 
-                            {idProofPreview ? (
-                                <div className="relative">
-                                    {idProofFile?.type.startsWith("image/") ||
-                                    (idProofPreview &&
-                                        !idProofPreview.includes(".pdf")) ? (
-                                        <img
-                                            src={idProofPreview}
-                                            alt="ID Proof Preview"
-                                            className="w-full max-w-md h-auto rounded-lg border border-gray-300"
-                                        />
-                                    ) : (
-                                        <div className="w-full max-w-md p-8 border border-gray-300 rounded-lg bg-gray-50">
-                                            <p className="text-center text-slate-600">
-                                                PDF File Selected
-                                            </p>
-                                            <p className="text-center text-sm text-slate-500 mt-2">
-                                                {idProofFile?.name}
-                                            </p>
-                                        </div>
-                                    )}
+                            {idProofPreviews.length > 0 ? (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {idProofPreviews.map((previewItem, index) => (
+                                            <div key={index} className="relative">
+                                                {previewItem.file?.type.startsWith("image/") ||
+                                                (previewItem.preview &&
+                                                    !previewItem.preview.includes(".pdf")) ? (
+                                                    <img
+                                                        src={previewItem.preview}
+                                                        alt={`ID Proof ${index + 1}`}
+                                                        className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-48 p-8 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                                                        <p className="text-center text-slate-600">
+                                                            PDF File
+                                                        </p>
+                                                        <p className="text-center text-sm text-slate-500 mt-2">
+                                                            {previewItem.file?.name}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {kycData?.status !== "verified" && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeIdProof(index)}
+                                                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
                                     {kycData?.status !== "verified" && (
-                                        <button
-                                            type="button"
-                                            onClick={removeIdProof}
-                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex justify-center">
+                                            <label
+                                                htmlFor="id_proof_add"
+                                                className="flex items-center justify-center px-6 py-3 bg-white border-2 border-dashed border-[#B00000] rounded-lg cursor-pointer hover:bg-[#B00000] hover:text-white transition-all duration-200 group"
+                                            >
+                                                <Plus className="w-5 h-5 mr-2 text-[#B00000] group-hover:text-white transition-colors" />
+                                                <span className="text-sm font-semibold text-[#B00000] group-hover:text-white transition-colors">
+                                                    Add More ID Proof Images
+                                                </span>
+                                                <input
+                                                    id="id_proof_add"
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                                                    onChange={handleIdProofChange}
+                                                    multiple
+                                                />
+                                            </label>
+                                        </div>
                                     )}
                                 </div>
                             ) : (
@@ -554,7 +621,7 @@ function KYCContent() {
                                             or drag and drop
                                         </p>
                                         <p className="text-xs text-gray-500">
-                                            JPEG, PNG, WebP, or PDF (MAX. 10MB)
+                                            JPEG, PNG, WebP, or PDF (MAX. 10MB per file)
                                         </p>
                                     </div>
                                     <input
@@ -563,6 +630,7 @@ function KYCContent() {
                                         className="hidden"
                                         accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
                                         onChange={handleIdProofChange}
+                                        multiple
                                         disabled={
                                             kycData?.status === "verified"
                                         }
@@ -676,8 +744,200 @@ function KYCContent() {
                             </div>
                         )}
                     </form>
+
+            {/* Terms and Conditions Modal */}
+            {showTermsModal && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    {/* Backdrop - non-clickable */}
+                    <div className="fixed inset-0 bg-black/50 transition-opacity duration-300"></div>
+
+                    {/* Modal */}
+                    <div className="relative min-h-screen flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] my-8 flex flex-col">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
+                                <h2 className="text-2xl font-bold text-slate-900">
+                                    Terms and Conditions
+                                </h2>
+                                <button
+                                    onClick={() => {}}
+                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-not-allowed opacity-50"
+                                    disabled
+                                    aria-label="Close modal"
+                                    title="Please accept terms to continue"
+                                >
+                                    <X className="w-5 h-5 text-gray-600" />
+                                </button>
+                            </div>
+
+                            {/* Content - Scrollable */}
+                            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                                {/* Section 1: Account Usage */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-3">
+                                        1. Account Usage
+                                    </h3>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        1.1 Each user account is strictly for personal use only.
+                                    </p>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        1.2 Sharing of username, password, login access, videos, files, or study materials is strictly prohibited.
+                                    </p>
+                                    <p className="text-sm text-slate-700">
+                                        1.3 The system monitors multiple logins. If repeated unauthorized/multiple logins are detected:
+                                    </p>
+                                    <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-sm text-slate-700">
+                                        <li>The account will be automatically blocked,</li>
+                                        <li>Access will be permanently terminated,</li>
+                                        <li>No refund will be provided under any circumstances.</li>
+                                    </ul>
+                                </div>
+
+                                {/* Section 2: Misuse of Knowledge */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-3">
+                                        2. Misuse of Knowledge
+                                    </h3>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        2.1 The training provided includes topics related to vehicle security systems, ECU programming, odometer calibration, keys, immobilizer systems, etc.
+                                    </p>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        2.2 Students must not misuse the knowledge for illegal activities, including but not limited to:
+                                    </p>
+                                    <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-sm text-slate-700">
+                                        <li>Vehicle theft / bypassing security without authorization</li>
+                                        <li>Illegal odometer correction</li>
+                                        <li>Any activity against the laws of the Government of India</li>
+                                    </ul>
+                                    <p className="text-sm text-slate-700 mt-2">
+                                        2.3 The student is solely responsible for how the knowledge is used. The training provider and website hold no responsibility for misuse.
+                                    </p>
+                                </div>
+
+                                {/* Section 3: Educational Purpose */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-3">
+                                        3. Educational Purpose
+                                    </h3>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        3.1 The training is provided for educational purposes only.
+                                    </p>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        3.2 Some demonstrations/theories may be simplified for easy learning.
+                                    </p>
+                                    <p className="text-sm text-slate-700">
+                                        3.3 Students are expected to learn, research, and gain in-depth knowledge on their own before doing any real-life work on vehicles.
+                                    </p>
+                                </div>
+
+                                {/* Section 4: Copyright & Intellectual Property */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-3">
+                                        4. Copyright & Intellectual Property
+                                    </h3>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        4.1 All videos, course materials, lecture notes, downloads, and documents belong to the website and training provider.
+                                    </p>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        4.2 Recording, screen-capture, broadcasting, reselling, uploading, sharing, or distributing course content is strictly prohibited.
+                                    </p>
+                                    <p className="text-sm text-slate-700">
+                                        4.3 Legal action may be taken for copyright violation.
+                                    </p>
+                                </div>
+
+                                {/* Section 5: Refund & Cancellation */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-3">
+                                        5. Refund & Cancellation
+                                    </h3>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        5.1 Once payment is made and access is granted, no refunds will be issued.
+                                    </p>
+                                    <p className="text-sm text-slate-700">
+                                        5.2 Refund is not applicable for account termination caused by rule violations.
+                                    </p>
+                                </div>
+
+                                {/* Section 6: Liability */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-3">
+                                        6. Liability
+                                    </h3>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        6.1 The student is responsible for safe handling of automotive electronics equipment.
+                                    </p>
+                                    <p className="text-sm text-slate-700">
+                                        6.2 The training provider is not liable for any damage to vehicle, tools, property, or injury caused by improper application of knowledge.
+                                    </p>
+                                </div>
+
+                                {/* Section 7: Account Termination */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-3">
+                                        7. Account Termination
+                                    </h3>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        The training provider reserves the right to terminate access without refund if:
+                                    </p>
+                                    <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-sm text-slate-700">
+                                        <li>Rules are violated</li>
+                                        <li>Misuse or illegal activity is suspected</li>
+                                        <li>System detects repeated unauthorized logins or content sharing</li>
+                                    </ul>
+                                </div>
+
+                                {/* Section 8: Agreement Confirmation */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-3">
+                                        8. Agreement Confirmation
+                                    </h3>
+                                    <p className="text-sm text-slate-700 mb-2">
+                                        By creating an account or purchasing a course, the student confirms that they:
+                                    </p>
+                                    <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-sm text-slate-700">
+                                        <li>Have read and understood this Agreement</li>
+                                        <li>Agree to comply with all rules</li>
+                                        <li>Accept responsibility for any misuse of knowledge</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Footer - Sticky */}
+                            <div className="p-6 border-t border-gray-200 bg-white sticky bottom-0">
+                                {/* Agreement Checkbox */}
+                                <label className="flex items-start space-x-3 cursor-pointer mb-4">
+                                    <input
+                                        type="checkbox"
+                                        checked={termsAccepted}
+                                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                                        className="mt-1 w-5 h-5 text-[#B00000] border-gray-300 rounded focus:ring-[#B00000] focus:ring-2"
+                                    />
+                                    <span className="text-sm text-slate-700">
+                                        I have read and understood the Terms and Conditions. I agree to comply with all rules and accept responsibility for any misuse of knowledge.
+                                    </span>
+                                </label>
+
+                                {/* Accept Button */}
+                                <button
+                                    onClick={handleTermsAccept}
+                                    disabled={!termsAccepted || submitting}
+                                    className="w-full px-6 py-3 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                                >
+                                    {submitting ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            <span>Processing...</span>
+                                        </>
+                                    ) : (
+                                        <span>Accept and Continue</span>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </section>
+            )}
         </div>
     );
 }

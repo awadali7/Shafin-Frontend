@@ -371,6 +371,12 @@ export interface KYCVerification {
 export type ProductType = "physical" | "digital";
 export type DigitalFileFormat = "zip" | "rar";
 
+export interface ProductVideo {
+    title: string;
+    url: string;
+    thumbnail?: string;
+}
+
 export interface Product {
     id: string;
     name: string;
@@ -382,6 +388,8 @@ export interface Product {
     product_type?: ProductType;
     type: ProductType;
     cover_image?: string | null;
+    images?: string[];
+    videos?: ProductVideo[];
 
     // Digital product fields
     digital_file_name?: string | null;

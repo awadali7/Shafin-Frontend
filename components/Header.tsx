@@ -55,19 +55,7 @@ export default function Header() {
         : "Guest";
     const displayEmail = user?.email || "";
 
-    // Check if we should show navigation (exclude authenticated-only pages)
-    const shouldShowNav =
-        pathname &&
-        !pathname.startsWith("/dashboard") &&
-        !pathname.startsWith("/admin") &&
-        !pathname.startsWith("/profile") &&
-        !pathname.startsWith("/my-learning") &&
-        !pathname.startsWith("/settings") &&
-        !pathname.startsWith("/orders") &&
-        !pathname.startsWith("/downloads") &&
-        !pathname.startsWith("/checkout") &&
-        !pathname.startsWith("/kyc") &&
-        pathname !== "/reset-password";
+    // Navigation is always visible in header (public navigation)
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white border-b border-gray-200">
@@ -86,51 +74,58 @@ export default function Header() {
                     </div>
                 </Link>
 
-                {/* Middle Section - Navigation (show for all users on public pages) */}
-                {shouldShowNav && (
-                    <nav className="hidden lg:flex items-center space-x-8">
-                        <Link
-                            href="/"
-                            className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
-                                pathname === "/" ? "text-[#B00000]" : ""
-                            }`}
-                        >
-                            Home
-                        </Link>
-                        <Link
-                            href="/about"
-                            className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
-                                pathname === "/about" ? "text-[#B00000]" : ""
-                            }`}
-                        >
-                            About Us
-                        </Link>
-                        <Link
-                            href="/courses"
-                            className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
-                                pathname === "/courses" ? "text-[#B00000]" : ""
-                            }`}
-                        >
-                            Course
-                        </Link>
-                        <Link
-                            href="/shop"
-                            className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
-                                pathname === "/shop" ? "text-[#B00000]" : ""
-                            }`}
-                        >
-                            Shop
-                        </Link>
-                        <Link
-                            href="/blog"
-                            className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
-                                pathname === "/blog" ? "text-[#B00000]" : ""
-                            }`}
-                        >
-                            Blog
-                        </Link>
-                    </nav>
-                )}
+                {/* Middle Section - Public Navigation (always visible) */}
+                <nav className="hidden lg:flex items-center space-x-8">
+                    <Link
+                        href="/"
+                        className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
+                            pathname === "/" ? "text-[#B00000]" : ""
+                        }`}
+                    >
+                        Home
+                    </Link>
+                    <Link
+                        href="/about"
+                        className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
+                            pathname === "/about" ? "text-[#B00000]" : ""
+                        }`}
+                    >
+                        About Us
+                    </Link>
+                    <Link
+                        href="/courses"
+                        className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
+                            pathname === "/courses" ||
+                            pathname?.startsWith("/courses/")
+                                ? "text-[#B00000]"
+                                : ""
+                        }`}
+                    >
+                        Courses
+                    </Link>
+                    <Link
+                        href="/shop"
+                        className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
+                            pathname === "/shop" ||
+                            pathname?.startsWith("/shop/")
+                                ? "text-[#B00000]"
+                                : ""
+                        }`}
+                    >
+                        Shop
+                    </Link>
+                    <Link
+                        href="/blog"
+                        className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
+                            pathname === "/blog" ||
+                            pathname?.startsWith("/blog/")
+                                ? "text-[#B00000]"
+                                : ""
+                        }`}
+                    >
+                        Blog
+                    </Link>
+                </nav>
 
                 {/* Right Section - Auth Buttons or User Profile */}
                 <div className="flex items-center space-x-4">

@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { X, Plus, Minus, ShoppingBag } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { useCart } from "@/contexts/CartContext";
 
 export default function ShoppingCart() {
@@ -16,18 +17,32 @@ export default function ShoppingCart() {
         setIsOpen,
     } = useCart();
 
-    if (!isOpen) return null;
-
     return (
-        <>
-            {/* Overlay */}
-            <div
-                className="fixed inset-0 bg-black/50 z-40"
-                onClick={() => setIsOpen(false)}
-            />
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    {/* Overlay */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fixed inset-0 bg-black/50 z-40"
+                        onClick={() => setIsOpen(false)}
+                    />
 
-            {/* Cart Drawer */}
-            <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col">
+                    {/* Cart Drawer */}
+                    <motion.div
+                        initial={{ x: "100%" }}
+                        animate={{ x: 0 }}
+                        exit={{ x: "100%" }}
+                        transition={{
+                            type: "spring",
+                            damping: 25,
+                            stiffness: 200,
+                        }}
+                        className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-xl z-50 flex flex-col"
+                    >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                     <h2 className="text-xl font-semibold text-slate-900">
@@ -156,7 +171,9 @@ export default function ShoppingCart() {
                         </Link>
                     </div>
                 )}
-            </div>
-        </>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
     );
 }

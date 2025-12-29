@@ -211,9 +211,9 @@ export default function NotificationBell() {
                     {notifications.length > 0 && (
                         <div className="p-3 border-t border-gray-200 text-center">
                             <Link
-                                href="/dashboard"
+                                href="/notifications"
                                 onClick={() => setIsOpen(false)}
-                                className="text-sm text-[#B00000] hover:underline"
+                                className="text-sm text-[#B00000] hover:underline font-medium"
                             >
                                 View all notifications
                             </Link>

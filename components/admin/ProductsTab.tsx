@@ -1,11 +1,24 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Edit2, Plus, Trash2, X } from "lucide-react";
+import { Edit2, Plus, Trash2, X, Image as ImageIcon, Video, Trash } from "lucide-react";
 import { productsApi } from "@/lib/api/products";
 import { adminApi } from "@/lib/api/admin";
-import type { Product, ProductType, User } from "@/lib/api/types";
+import type { Product, ProductType, User, ProductVideo } from "@/lib/api/types";
 import { generateSlug } from "./utils";
+
+type ImageFile = {
+    file: File | null;
+    preview: string | null; // For preview purposes only
+};
+
+type VideoFile = {
+    title: string;
+    file: File | null;
+    thumbnail: File | null;
+    preview: string | null; // For preview purposes only
+    thumbnailPreview: string | null; // For preview purposes only
+};
 
 type ProductFormState = {
     name: string;
@@ -18,6 +31,18 @@ type ProductFormState = {
     is_active: boolean;
     cover_image: File | null;
     digital_file: File | null;
+    images: ImageFile[];
+    videos: VideoFile[];
+};
+
+// Helper function to convert file to data URL for preview only
+const fileToDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 };
 
 const defaultForm: ProductFormState = {
@@ -31,6 +56,8 @@ const defaultForm: ProductFormState = {
     is_active: true,
     cover_image: null,
     digital_file: null,
+    images: [],
+    videos: [],
 };
 
 export const ProductsTab: React.FC = () => {
@@ -49,13 +76,27 @@ export const ProductsTab: React.FC = () => {
     const [grantUserId, setGrantUserId] = useState("");
     const [grantNote, setGrantNote] = useState("");
     const [grantLoading, setGrantLoading] = useState(false);
+    const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+    const [existingCategories, setExistingCategories] = useState<string[]>([]);
+    const [categoryInputValue, setCategoryInputValue] = useState("");
+    const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
     const fetchProducts = async () => {
         try {
             setLoading(true);
             setError(null);
             const resp = await productsApi.adminListAll();
-            setProducts(Array.isArray(resp.data) ? resp.data : []);
+            const productsList = Array.isArray(resp.data) ? resp.data : [];
+            setProducts(productsList);
+            
+            // Extract unique categories
+            const categories = new Set<string>();
+            productsList.forEach(p => {
+                if (p.category && p.category.trim()) {
+                    categories.add(p.category.trim());
+                }
+            });
+            setExistingCategories(Array.from(categories).sort());
         } catch (e: any) {
             setError(e?.message || "Failed to load products");
         } finally {
@@ -70,11 +111,28 @@ export const ProductsTab: React.FC = () => {
     const openCreate = () => {
         setEditing(null);
         setForm(defaultForm);
+        setSlugManuallyEdited(false);
+        setCategoryInputValue("");
         setIsModalOpen(true);
     };
 
     const openEdit = (p: Product) => {
         setEditing(p);
+        // Convert existing image URLs to ImageFile objects
+        const existingImages: ImageFile[] = (p.images || []).map(url => ({
+            file: null,
+            preview: url
+        }));
+        
+        // Convert existing videos to VideoFile objects
+        const existingVideos: VideoFile[] = (p.videos || []).map(video => ({
+            title: video.title || "",
+            file: null,
+            thumbnail: null,
+            preview: video.url || "",
+            thumbnailPreview: video.thumbnail || null
+        }));
+        
         setForm({
             name: p.name,
             slug: p.slug,
@@ -86,7 +144,11 @@ export const ProductsTab: React.FC = () => {
             is_active: p.is_active !== false,
             cover_image: null,
             digital_file: null,
+            images: existingImages,
+            videos: existingVideos,
         });
+        setSlugManuallyEdited(true);
+        setCategoryInputValue(p.category || "");
         setIsModalOpen(true);
     };
 
@@ -94,7 +156,15 @@ export const ProductsTab: React.FC = () => {
         setForm((prev) => ({
             ...prev,
             name: val,
-            slug: prev.slug || generateSlug(val),
+            slug: slugManuallyEdited ? prev.slug : generateSlug(val),
+        }));
+    };
+
+    const onSlugChange = (val: string) => {
+        setSlugManuallyEdited(true);
+        setForm((prev) => ({
+            ...prev,
+            slug: val,
         }));
     };
 
@@ -115,6 +185,23 @@ export const ProductsTab: React.FC = () => {
                 throw new Error("Digital file (ZIP/RAR) is required");
             }
 
+            // Extract files from ImageFile and VideoFile objects
+            const imageFiles = form.images
+                .map(img => img.file)
+                .filter((file): file is File => file !== null);
+            
+            const videoFiles = form.videos
+                .map(video => video.file)
+                .filter((file): file is File => file !== null);
+            
+            const videoTitles = form.videos
+                .map(video => video.title)
+                .filter(title => title.trim() !== "");
+            
+            const videoThumbnailFiles = form.videos
+                .map(video => video.thumbnail)
+                .filter((file): file is File => file !== null);
+
             if (!editing) {
                 await productsApi.adminCreate({
                     name: form.name,
@@ -126,6 +213,10 @@ export const ProductsTab: React.FC = () => {
                     stock_quantity: form.stock_quantity,
                     cover_image: form.cover_image,
                     digital_file: form.digital_file,
+                    images: imageFiles.length > 0 ? imageFiles : undefined,
+                    videos: videoFiles.length > 0 ? videoFiles : undefined,
+                    videoTitles: videoTitles.length > 0 ? videoTitles : undefined,
+                    videoThumbnails: videoThumbnailFiles.length > 0 ? videoThumbnailFiles : undefined,
                 });
             } else {
                 await productsApi.adminUpdate(editing.id, {
@@ -139,12 +230,18 @@ export const ProductsTab: React.FC = () => {
                     is_active: form.is_active,
                     cover_image: form.cover_image,
                     digital_file: form.digital_file,
+                    images: imageFiles.length > 0 ? imageFiles : undefined,
+                    videos: videoFiles.length > 0 ? videoFiles : undefined,
+                    videoTitles: videoTitles.length > 0 ? videoTitles : undefined,
+                    videoThumbnails: videoThumbnailFiles.length > 0 ? videoThumbnailFiles : undefined,
                 });
             }
 
             setIsModalOpen(false);
             setEditing(null);
             setForm(defaultForm);
+            setSlugManuallyEdited(false);
+            setCategoryInputValue("");
             await fetchProducts();
         } catch (e: any) {
             setError(e?.message || "Failed to save product");
@@ -351,7 +448,12 @@ export const ProductsTab: React.FC = () => {
                 <>
                     <div
                         className="fixed inset-0 bg-black/50 z-50"
-                        onClick={() => setIsModalOpen(false)}
+                        onClick={() => {
+                            setIsModalOpen(false);
+                            setForm(defaultForm);
+                            setSlugManuallyEdited(false);
+                            setCategoryInputValue("");
+                        }}
                     />
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
@@ -360,7 +462,12 @@ export const ProductsTab: React.FC = () => {
                                     {editing ? "Edit Product" : "Add Product"}
                                 </h2>
                                 <button
-                                    onClick={() => setIsModalOpen(false)}
+                                    onClick={() => {
+                                        setIsModalOpen(false);
+                                        setForm(defaultForm);
+                                        setSlugManuallyEdited(false);
+                                        setCategoryInputValue("");
+                                    }}
                                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                     aria-label="Close modal"
                                 >
@@ -388,12 +495,7 @@ export const ProductsTab: React.FC = () => {
                                         </label>
                                         <input
                                             value={form.slug}
-                                            onChange={(e) =>
-                                                setForm((p) => ({
-                                                    ...p,
-                                                    slug: e.target.value,
-                                                }))
-                                            }
+                                            onChange={(e) => onSlugChange(e.target.value)}
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                         />
                                     </div>
@@ -423,20 +525,49 @@ export const ProductsTab: React.FC = () => {
                                             </option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div className="relative">
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Category
                                         </label>
                                         <input
-                                            value={form.category}
-                                            onChange={(e) =>
+                                            value={categoryInputValue}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                setCategoryInputValue(value);
                                                 setForm((p) => ({
                                                     ...p,
-                                                    category: e.target.value,
-                                                }))
-                                            }
+                                                    category: value,
+                                                }));
+                                                setShowCategoryDropdown(true);
+                                            }}
+                                            onFocus={() => setShowCategoryDropdown(true)}
+                                            onBlur={() => setTimeout(() => setShowCategoryDropdown(false), 200)}
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                            placeholder="Type or select category"
                                         />
+                                        {showCategoryDropdown && existingCategories.length > 0 && (
+                                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                                {existingCategories
+                                                    .filter(cat => 
+                                                        !categoryInputValue || 
+                                                        cat.toLowerCase().includes(categoryInputValue.toLowerCase())
+                                                    )
+                                                    .map((cat) => (
+                                                        <button
+                                                            key={cat}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setCategoryInputValue(cat);
+                                                                setForm((p) => ({ ...p, category: cat }));
+                                                                setShowCategoryDropdown(false);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-700"
+                                                        >
+                                                            {cat}
+                                                        </button>
+                                                    ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -499,28 +630,196 @@ export const ProductsTab: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Cover Image
-                                        </label>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) =>
-                                                setForm((p) => ({
-                                                    ...p,
-                                                    cover_image:
-                                                        e.target.files?.[0] ||
-                                                        null,
-                                                }))
-                                            }
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
-                                        />
+                                {/* Cover Image (legacy - kept for backward compatibility) */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Cover Image (optional - will be added to images array)
+                                    </label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) =>
+                                            setForm((p) => ({
+                                                ...p,
+                                                cover_image:
+                                                    e.target.files?.[0] ||
+                                                    null,
+                                            }))
+                                        }
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                                    />
+                                </div>
+
+                                {/* Multiple Images */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <ImageIcon className="w-4 h-4 inline mr-1" />
+                                        Images
+                                    </label>
+                                    <div className="space-y-3">
+                                        {form.images.map((img, index) => (
+                                            <div key={index} className="flex gap-2 items-center">
+                                                {(img.preview || (img.file && URL.createObjectURL(img.file))) && (
+                                                    <img 
+                                                        src={img.preview || (img.file ? URL.createObjectURL(img.file) : "")} 
+                                                        alt={`Preview ${index + 1}`}
+                                                        className="w-16 h-16 object-cover rounded border border-gray-200"
+                                                    />
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            try {
+                                                                const preview = await fileToDataURL(file);
+                                                                const newImages = [...form.images];
+                                                                newImages[index] = { file, preview };
+                                                                setForm((p) => ({ ...p, images: newImages }));
+                                                            } catch (error) {
+                                                                alert("Failed to load image");
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newImages = form.images.filter((_, i) => i !== index);
+                                                        setForm((p) => ({ ...p, images: newImages }));
+                                                    }}
+                                                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg border border-red-200"
+                                                >
+                                                    <Trash className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setForm((p) => ({ ...p, images: [...p.images, { file: null, preview: null }] }));
+                                            }}
+                                            className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#B00000] hover:text-[#B00000] transition-colors"
+                                        >
+                                            + Add Image
+                                        </button>
                                     </div>
+                                </div>
+
+                                {/* Videos */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <Video className="w-4 h-4 inline mr-1" />
+                                        Videos
+                                    </label>
+                                    <div className="space-y-4">
+                                        {form.videos.map((video, index) => (
+                                            <div key={index} className="p-4 border border-gray-200 rounded-lg space-y-2">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-sm font-medium text-gray-700">Video {index + 1}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newVideos = form.videos.filter((_, i) => i !== index);
+                                                            setForm((p) => ({ ...p, videos: newVideos }));
+                                                        }}
+                                                        className="text-red-600 hover:text-red-800"
+                                                    >
+                                                        <Trash className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={video.title}
+                                                    onChange={(e) => {
+                                                        const newVideos = [...form.videos];
+                                                        newVideos[index] = { ...newVideos[index], title: e.target.value };
+                                                        setForm((p) => ({ ...p, videos: newVideos }));
+                                                    }}
+                                                    placeholder="Video Title"
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                />
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">Video File</label>
+                                                    <input
+                                                        type="file"
+                                                        accept="video/*"
+                                                        onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                try {
+                                                                    const preview = await fileToDataURL(file);
+                                                                    const newVideos = [...form.videos];
+                                                                    newVideos[index] = { ...newVideos[index], file, preview };
+                                                                    setForm((p) => ({ ...p, videos: newVideos }));
+                                                                } catch (error) {
+                                                                    alert("Failed to load video");
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">Thumbnail (optional)</label>
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                try {
+                                                                    const thumbnailPreview = await fileToDataURL(file);
+                                                                    const newVideos = [...form.videos];
+                                                                    newVideos[index] = { ...newVideos[index], thumbnail: file, thumbnailPreview };
+                                                                    setForm((p) => ({ ...p, videos: newVideos }));
+                                                                } catch (error) {
+                                                                    alert("Failed to load thumbnail");
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                                                    />
+                                                </div>
+                                                {(video.preview || video.thumbnailPreview) && (
+                                                    <div className="mt-2 flex gap-2">
+                                                        {video.thumbnailPreview && (
+                                                            <img 
+                                                                src={video.thumbnailPreview} 
+                                                                alt="Thumbnail"
+                                                                className="w-24 h-24 object-cover rounded border border-gray-200"
+                                                            />
+                                                        )}
+                                                        {video.preview && (
+                                                            <video 
+                                                                src={video.preview} 
+                                                                controls 
+                                                                className="flex-1 max-h-48 rounded border border-gray-200"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setForm((p) => ({ ...p, videos: [...p.videos, { title: "", url: "", thumbnail: "" }] }));
+                                            }}
+                                            className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#B00000] hover:text-[#B00000] transition-colors"
+                                        >
+                                            + Add Video
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Digital File */}
+                                {form.product_type === "digital" && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Digital File (ZIP/RAR)
+                                            Digital File (ZIP/RAR) *
                                         </label>
                                         <input
                                             type="file"
@@ -533,13 +832,10 @@ export const ProductsTab: React.FC = () => {
                                                         null,
                                                 }))
                                             }
-                                            disabled={
-                                                form.product_type !== "digital"
-                                            }
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer disabled:bg-gray-50"
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
                                         />
                                     </div>
-                                </div>
+                                )}
 
                                 <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                                     <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -560,9 +856,12 @@ export const ProductsTab: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         <button
                                             type="button"
-                                            onClick={() =>
-                                                setIsModalOpen(false)
-                                            }
+                                            onClick={() => {
+                                                setIsModalOpen(false);
+                                                setForm(defaultForm);
+                                                setSlugManuallyEdited(false);
+                                                setCategoryInputValue("");
+                                            }}
                                             className="px-4 py-2 border border-gray-300 text-slate-900 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                                         >
                                             Cancel

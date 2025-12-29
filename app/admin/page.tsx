@@ -51,6 +51,7 @@ import { KYCTab } from "@/components/admin/KYCTab";
 import { ProductsTab } from "@/components/admin/ProductsTab";
 import { OrdersTab } from "@/components/admin/OrdersTab";
 import { KYCModal } from "@/components/admin/KYCModal";
+import { GrantAccessModal } from "@/components/admin/GrantAccessModal";
 import { formatDate, generateSlug } from "@/components/admin/utils";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type {
@@ -334,6 +335,11 @@ export default function AdminPage() {
     const [accessStartDate, setAccessStartDate] = useState<string>("");
     const [accessEndDate, setAccessEndDate] = useState<string>("");
 
+    // Grant access modal states
+    const [showGrantAccessModal, setShowGrantAccessModal] = useState(false);
+    const [selectedCourseForGrant, setSelectedCourseForGrant] =
+        useState<Course | null>(null);
+
     const handleApproveRequestClick = (request: CourseRequest) => {
         setSelectedRequest(request);
         setRequestError(null);
@@ -360,6 +366,16 @@ export default function AdminPage() {
         setRequestError(null);
         setRequestSuccess(null);
         setShowRejectModal(true);
+    };
+
+    const handleGrantAccessClick = (course: Course) => {
+        setSelectedCourseForGrant(course);
+        setShowGrantAccessModal(true);
+    };
+
+    const handleGrantAccessSuccess = async () => {
+        // Refresh courses data if needed
+        await fetchData();
     };
 
     const handleApproveRequest = async () => {
@@ -1519,6 +1535,17 @@ export default function AdminPage() {
                     />
                 )}
 
+                {/* Grant Access Modal */}
+                <GrantAccessModal
+                    course={selectedCourseForGrant}
+                    isOpen={showGrantAccessModal}
+                    onClose={() => {
+                        setShowGrantAccessModal(false);
+                        setSelectedCourseForGrant(null);
+                    }}
+                    onSuccess={handleGrantAccessSuccess}
+                />
+
                 {activeTab === "courses" && (
                     <CoursesTab
                         courses={courses}
@@ -1532,6 +1559,7 @@ export default function AdminPage() {
                         onToggleCourseVideos={toggleCourseVideos}
                         onEditVideo={handleEditVideo}
                         onDeleteVideo={handleDeleteVideo}
+                        onGrantAccess={handleGrantAccessClick}
                     />
                 )}
 

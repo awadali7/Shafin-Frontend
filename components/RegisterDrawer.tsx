@@ -127,6 +127,7 @@ export default function RegisterDrawer({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+        setValidationErrors({});
 
         if (!validateForm()) {
             return;
@@ -155,7 +156,38 @@ export default function RegisterDrawer({
                 }
             }
         } catch (err: any) {
-            setError(err.message || "Registration failed. Please try again.");
+            // Handle validation errors from backend
+            if (err?.data?.errors && Array.isArray(err.data.errors)) {
+                const fieldErrors: { [key: string]: string } = {};
+                let generalError = null;
+
+                err.data.errors.forEach((error: any) => {
+                    if (error.path) {
+                        // Map backend field names to form field names
+                        const fieldName = error.path;
+                        fieldErrors[fieldName] = error.msg || error.message;
+                    } else {
+                        generalError = error.msg || error.message;
+                    }
+                });
+
+                setValidationErrors(fieldErrors);
+                // Only show general error if there are no field-specific errors
+                setError(
+                    Object.keys(fieldErrors).length === 0
+                        ? generalError ||
+                              err.data.message ||
+                              "Validation failed. Please check the form."
+                        : null
+                );
+            } else {
+                // Handle general errors
+                setError(
+                    err.message ||
+                        err.data?.message ||
+                        "Registration failed. Please try again."
+                );
+            }
         } finally {
             setIsSubmitting(false);
         }

@@ -11,13 +11,24 @@ export default function Footer() {
     const pathname = usePathname();
     const { isAuth } = useAuth();
 
-    // Hide footer when user is logged in and on blog, courses, dashboard, or admin routes
+    // Hide footer on specific routes
+    const routesWithoutFooter = [
+        "/my-learning",
+        "/orders",
+        "/downloads",
+        "/kyc",
+        "/profile",
+        "/settings",
+        "/shop",
+        "/notifications",
+        "/blog",
+        "/courses",
+        "/dashboard",
+        "/admin",
+    ];
+
     const shouldHideFooter =
-        isAuth &&
-        (pathname?.startsWith("/blog") ||
-            pathname?.startsWith("/courses") ||
-            pathname?.startsWith("/dashboard") ||
-            pathname?.startsWith("/admin"));
+        routesWithoutFooter.some((route) => pathname?.startsWith(route));
 
     if (shouldHideFooter) {
         return null;

@@ -148,9 +148,13 @@ class ApiClient {
 
             // Handle errors
             if (!response.ok) {
-                throw new Error(
+                const error: any = new Error(
                     data.message || `HTTP error! status: ${response.status}`
                 );
+                // Preserve error response data for handling specific error types (e.g., requires_kyc)
+                error.response = { data, status: response.status };
+                error.data = data;
+                throw error;
             }
 
             return data;

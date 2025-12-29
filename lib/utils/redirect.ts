@@ -56,3 +56,4 @@ export function shouldPreserveRedirect(path: string): boolean {
 
     return !excludedPaths.some((excluded) => path.startsWith(excluded));
 }
+

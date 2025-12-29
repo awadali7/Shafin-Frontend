@@ -10,6 +10,7 @@ import {
     ChevronUp,
     Play,
     Loader2,
+    UserPlus,
 } from "lucide-react";
 import { formatDate } from "./utils";
 import type { Course, Video } from "@/lib/api/types";
@@ -26,6 +27,7 @@ interface CoursesTabProps {
     onToggleCourseVideos: (courseId: string) => void;
     onEditVideo: (video: Video) => void;
     onDeleteVideo: (video: Video) => void;
+    onGrantAccess: (course: Course) => void;
 }
 
 export const CoursesTab: React.FC<CoursesTabProps> = ({
@@ -40,6 +42,7 @@ export const CoursesTab: React.FC<CoursesTabProps> = ({
     onToggleCourseVideos,
     onEditVideo,
     onDeleteVideo,
+    onGrantAccess,
 }) => {
     return (
         <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
@@ -153,6 +156,15 @@ export const CoursesTab: React.FC<CoursesTabProps> = ({
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex items-center justify-end space-x-2">
+                                                <button
+                                                    onClick={() =>
+                                                        onGrantAccess(course)
+                                                    }
+                                                    className="text-purple-600 hover:text-purple-900 p-2 hover:bg-purple-50 rounded-lg transition-colors"
+                                                    title="Grant Access to User"
+                                                >
+                                                    <UserPlus className="w-4 h-4" />
+                                                </button>
                                                 <button
                                                     onClick={() =>
                                                         onManageVideos(course)

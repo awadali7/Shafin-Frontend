@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Download, Package, ShoppingCart, Star } from "lucide-react";
+import { ArrowLeft, Download, Package, ShoppingCart, Star, Play, X } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { productsApi } from "@/lib/api/products";
 import type { Product } from "@/lib/api/types";
@@ -17,6 +17,12 @@ type ShopProductDetails = {
     slug: string;
     price: number;
     image: string;
+    images?: string[];
+    videos?: Array<{
+        title: string;
+        url: string;
+        thumbnail?: string;
+    }>;
     category: string;
     type: ProductType;
     rating: number;
@@ -33,12 +39,18 @@ const FALLBACK_IMAGE =
     "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&h=600&fit=crop";
 
 function mapApiProductToDetails(p: Product): ShopProductDetails {
+    const allImages = p.images && p.images.length > 0 
+        ? p.images 
+        : (p.cover_image ? [p.cover_image] : [FALLBACK_IMAGE]);
+    
     return {
         id: p.id,
         name: p.name,
         slug: p.slug,
         price: Number(p.price),
-        image: p.cover_image || FALLBACK_IMAGE,
+        image: allImages[0] || FALLBACK_IMAGE,
+        images: allImages,
+        videos: p.videos || [],
         category: p.category || "Other",
         type: p.type,
         rating: Number(p.rating ?? 0),
@@ -65,12 +77,14 @@ function mapApiProductToDetails(p: Product): ShopProductDetails {
 export default function ProductDetailPage() {
     const params = useParams();
     const slug = params.slug as string;
-    const { addToCart } = useCart();
+    const { addToCart, setIsOpen } = useCart();
 
     const [product, setProduct] = useState<ShopProductDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [selectedVideo, setSelectedVideo] = useState<{ title: string; url: string } | null>(null);
 
     useEffect(() => {
         let mounted = true;
@@ -149,6 +163,9 @@ export default function ProductDetailPage() {
             quantity: finalQty,
             slug: product.slug,
         });
+
+        // Open the cart drawer
+        setIsOpen(true);
     };
 
     if (loading) {
@@ -173,7 +190,7 @@ export default function ProductDetailPage() {
 
     if (error || !product) {
         return (
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                     <p className="text-sm text-red-600">
                         {error || "Product not found"}
@@ -202,13 +219,39 @@ export default function ProductDetailPage() {
             </Link>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Product Image */}
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                    <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-96 object-cover"
-                    />
+                {/* Product Images */}
+                <div className="space-y-4">
+                    {/* Main Image */}
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <img
+                            src={product.images?.[selectedImageIndex] || product.image}
+                            alt={product.name}
+                            className="w-full h-96 object-cover"
+                        />
+                    </div>
+                    
+                    {/* Image Thumbnails */}
+                    {product.images && product.images.length > 1 && (
+                        <div className="grid grid-cols-4 gap-2">
+                            {product.images.map((img, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setSelectedImageIndex(index)}
+                                    className={`relative border-2 rounded-lg overflow-hidden aspect-square ${
+                                        selectedImageIndex === index
+                                            ? "border-[#B00000]"
+                                            : "border-gray-200 hover:border-gray-300"
+                                    }`}
+                                >
+                                    <img
+                                        src={img}
+                                        alt={`${product.name} ${index + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Product Info */}
@@ -360,6 +403,73 @@ export default function ProductDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Videos Section */}
+            {product.videos && product.videos.length > 0 && (
+                <div className="mt-12">
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6">
+                        Product Videos
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {product.videos.map((video, index) => (
+                            <button
+                                key={index}
+                                onClick={() => setSelectedVideo(video)}
+                                className="group relative bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[#B00000] transition-colors"
+                            >
+                                <div className="relative aspect-video bg-gray-100">
+                                    {video.thumbnail ? (
+                                        <img
+                                            src={video.thumbnail}
+                                            alt={video.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                                            <Play className="w-12 h-12 text-gray-400" />
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-opacity">
+                                        <Play className="w-16 h-16 text-white" />
+                                    </div>
+                                </div>
+                                <div className="p-4">
+                                    <h3 className="text-sm font-medium text-slate-900 text-left line-clamp-2">
+                                        {video.title}
+                                    </h3>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Video Modal */}
+            {selectedVideo && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
+                    <div className="relative w-full max-w-4xl bg-white rounded-lg overflow-hidden">
+                        <button
+                            onClick={() => setSelectedVideo(null)}
+                            className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+                        >
+                            <X className="w-5 h-5 text-gray-700" />
+                        </button>
+                        <div className="aspect-video">
+                            <iframe
+                                src={selectedVideo.url}
+                                className="w-full h-full"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            />
+                        </div>
+                        <div className="p-6">
+                            <h3 className="text-xl font-semibold text-slate-900">
+                                {selectedVideo.title}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Specifications and Features */}
             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">

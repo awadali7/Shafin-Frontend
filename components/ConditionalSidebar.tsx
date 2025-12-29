@@ -9,16 +9,39 @@ export default function ConditionalSidebar() {
     const pathname = usePathname();
     const { isAuth } = useAuth();
 
-    // Show sidebar only on dashboard and authenticated pages
+    // Pages where sidebar should NOT be shown (public pages)
+    const publicPages = [
+        "/",
+        "/about",
+        "/login",
+        "/register",
+        "/reset-password",
+        "/terms",
+    ];
+
+    // Pages where sidebar should be shown (authenticated pages)
+    const authenticatedPages = [
+        "/dashboard",
+        "/profile",
+        "/my-learning",
+        "/orders",
+        "/downloads",
+        "/kyc",
+        "/settings",
+        "/admin",
+        "/notifications",
+        "/checkout",
+    ];
+
+    // Show sidebar if user is authenticated AND on an authenticated page
+    // OR on courses/blog pages (but only if authenticated)
     const showSidebar =
         isAuth &&
-        (pathname?.startsWith("/dashboard") ||
-            pathname?.startsWith("/courses") ||
-            pathname?.startsWith("/blog") ||
-            pathname?.startsWith("/profile") ||
-            pathname?.startsWith("/my-learning") ||
-            pathname?.startsWith("/settings") ||
-            pathname?.startsWith("/admin"));
+        (authenticatedPages.some((page) => pathname?.startsWith(page)) ||
+            (pathname?.startsWith("/courses") &&
+                !publicPages.includes(pathname)) ||
+            (pathname?.startsWith("/blog") && !publicPages.includes(pathname)) ||
+            (pathname?.startsWith("/shop") && !publicPages.includes(pathname)));
 
     if (!showSidebar) {
         return null;

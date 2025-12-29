@@ -9,17 +9,13 @@ import {
     ChevronRight,
     CheckCircle2,
     Lock,
-    ShoppingCart,
     FileText,
     Download,
     Loader2,
-    X,
-    AlertCircle,
 } from "lucide-react";
 import { coursesApi } from "@/lib/api/courses";
-import { requestsApi } from "@/lib/api/requests";
 import { progressApi } from "@/lib/api/progress";
-import { kycApi } from "@/lib/api/kyc";
+import { paymentsApi } from "@/lib/api/payments";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginDrawer from "@/components/LoginDrawer";
 import RegisterDrawer from "@/components/RegisterDrawer";
@@ -37,18 +33,9 @@ export default function CourseDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [hasAccess, setHasAccess] = useState(false);
-    const [requestLoading, setRequestLoading] = useState(false);
-    const [requestSuccess, setRequestSuccess] = useState(false);
-    const [requestError, setRequestError] = useState<string | null>(null);
-    const [showRequestModal, setShowRequestModal] = useState(false);
-    const [showErrorModal, setShowErrorModal] = useState(false);
-    const [errorModalMessage, setErrorModalMessage] = useState<string>("");
     const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
-    const [kycStatus, setKycStatus] = useState<
-        "pending" | "verified" | "rejected" | null
-    >(null);
-    const [checkingKYC, setCheckingKYC] = useState(false);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
     // Helper to open login drawer with redirect preservation
     const handleOpenLoginDrawer = () => {
@@ -279,141 +266,174 @@ export default function CourseDetailPage() {
         }
     }, [videos, currentVideoIndex]);
 
-    // Check KYC status
-    useEffect(() => {
-        const checkKYC = async () => {
-            if (!user) {
-                setKycStatus(null);
-                return;
-            }
+    async function loadRazorpayScript(): Promise<boolean> {
+        if (typeof window === "undefined") return false;
+        if ((window as any).Razorpay) return true;
+        return await new Promise((resolve) => {
+            const script = document.createElement("script");
+            script.src = "https://checkout.razorpay.com/v1/checkout.js";
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    }
 
-            try {
-                setCheckingKYC(true);
-                const response = await kycApi.getMyKYC();
-                if (response.success && response.data) {
-                    setKycStatus(response.data.status);
-                } else {
-                    setKycStatus(null); // No KYC submitted
-                }
-            } catch (err) {
-                console.error("Failed to check KYC:", err);
-                setKycStatus(null);
-            } finally {
-                setCheckingKYC(false);
-            }
-        };
-
-        checkKYC();
-    }, [user]);
-
-    const handleRequestAccessClick = async () => {
-        if (!user) {
-            // Open login drawer with redirect preservation
-            handleOpenLoginDrawer();
-            return;
-        }
-
-        // Check KYC status before showing request modal
-        try {
-            const kycResponse = await kycApi.getMyKYC();
-            if (!kycResponse.success || !kycResponse.data) {
-                // No KYC submitted - redirect to KYC page
-                router.push("/kyc?redirect=/courses/" + slug);
-                return;
-            }
-
-            const kyc = kycResponse.data;
-            if (kyc.status !== "verified") {
-                // KYC not verified - redirect to KYC page
-                router.push("/kyc?redirect=/courses/" + slug);
-                return;
-            }
-
-            // KYC is verified - show request modal
-            setShowRequestModal(true);
-            setRequestError(null);
-        } catch (err) {
-            // If error checking KYC, redirect to KYC page to be safe
-            router.push("/kyc?redirect=/courses/" + slug);
-        }
+    type RazorpaySuccessResponse = {
+        razorpay_order_id: string;
+        razorpay_payment_id: string;
+        razorpay_signature: string;
     };
 
-    const handleConfirmRequest = async () => {
+    type RazorpayOptions = {
+        key: string;
+        amount: number;
+        currency: string;
+        name: string;
+        description?: string;
+        order_id: string;
+        handler: (response: RazorpaySuccessResponse) => void;
+        prefill?: { name?: string; email?: string; contact?: string };
+        notes?: Record<string, string>;
+        theme?: { color?: string };
+        modal?: {
+            ondismiss?: () => void;
+        };
+    };
+
+    type RazorpayInstance = {
+        open: () => void;
+        on?: (event: string, cb: (response?: any) => void) => void;
+    };
+    type RazorpayCtor = new (options: RazorpayOptions) => RazorpayInstance;
+
+    declare global {
+        interface Window {
+            Razorpay?: RazorpayCtor;
+        }
+    }
+
+    const handlePurchaseCourse = async () => {
         if (!course || !user) {
+            if (!user) {
+                handleOpenLoginDrawer();
+            }
             return;
         }
 
-        setRequestLoading(true);
-        setRequestError(null);
-        setRequestSuccess(false);
-        setShowRequestModal(false);
+        setIsProcessingPayment(true);
 
         try {
-            const response = await requestsApi.create({
-                course_id: course.id,
-                request_message: `Requesting access to ${course.name}`,
+            // Create course purchase order
+            const purchaseResponse = await coursesApi.purchase(course.id);
+            const orderId = purchaseResponse.data?.order_id;
+            if (!orderId)
+                throw new Error("Failed to create course purchase order");
+
+            // Load Razorpay SDK
+            const ok = await loadRazorpayScript();
+            if (!ok || !window.Razorpay) {
+                setIsProcessingPayment(false);
+                throw new Error(
+                    "Razorpay payment gateway failed to load. Please refresh and try again."
+                );
+            }
+
+            // Create Razorpay order
+            const rp = await paymentsApi.createRazorpayOrder({
+                order_id: orderId,
+            });
+            if (!rp.data) {
+                setIsProcessingPayment(false);
+                throw new Error(
+                    "Failed to initialize payment. Please try again."
+                );
+            }
+
+            const options: RazorpayOptions = {
+                key: rp.data.key_id,
+                amount: rp.data.amount,
+                currency: rp.data.currency,
+                name: "DiagTools",
+                description: `Course: ${course.name}`,
+                order_id: rp.data.razorpay_order_id,
+                handler: async (response) => {
+                    try {
+                        setIsProcessingPayment(true);
+                        // Verify payment with backend
+                        await paymentsApi.verifyRazorpayPayment({
+                            internal_order_id: orderId,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                        });
+                        // Payment verified successfully - refresh page to show access
+                        setIsProcessingPayment(false);
+                        window.location.reload();
+                    } catch (e: any) {
+                        setIsProcessingPayment(false);
+                        const errorMsg =
+                            e?.response?.data?.message ||
+                            e?.message ||
+                            "Payment verification failed";
+                        alert(`Payment verification failed: ${errorMsg}`);
+                    }
+                },
+                prefill: {
+                    name: `${user.first_name || ""} ${
+                        user.last_name || ""
+                    }`.trim(),
+                    email: user.email || "",
+                    contact: user.phone || "",
+                },
+                notes: { course_id: course.id },
+                theme: { color: "#B00000" },
+            };
+
+            const rzp = new window.Razorpay({
+                ...options,
+                modal: {
+                    ondismiss: () => {
+                        setIsProcessingPayment(false);
+                    },
+                },
             });
 
-            if (response.success) {
-                setRequestSuccess(true);
-            } else {
-                // Check if it's a duplicate request error
-                const errorMessage =
-                    (response as any).message ||
-                    response.message ||
-                    "Failed to submit request. Please try again.";
-                if (
-                    errorMessage
-                        .toLowerCase()
-                        .includes("already have a pending request") ||
-                    errorMessage.toLowerCase().includes("pending request") ||
-                    errorMessage.toLowerCase().includes("already have")
-                ) {
-                    setErrorModalMessage(errorMessage);
-                    setShowErrorModal(true);
-                } else {
-                    setRequestError(errorMessage);
-                }
-            }
-        } catch (err: any) {
-            // Extract error message from response
-            let errorMessage = "Failed to submit request. Please try again.";
-            if (err.response?.data?.message) {
-                errorMessage = err.response.data.message;
-            } else if (err.message) {
-                errorMessage = err.message;
-            } else if (typeof err === "string") {
-                errorMessage = err;
-            }
+            // Handle payment failure
+            rzp.on?.("payment.failed", (response: any) => {
+                setIsProcessingPayment(false);
+                const errorMsg =
+                    response?.error?.description ||
+                    response?.error?.reason ||
+                    "Payment failed";
+                alert(`Payment failed: ${errorMsg}`);
+            });
 
-            // Check if it's a KYC requirement error
+            // Open Razorpay payment modal
+            rzp.open();
+            setIsProcessingPayment(false); // Modal opened, user can interact
+        } catch (err: any) {
+            setIsProcessingPayment(false);
+
+            // Check for KYC or Terms requirement errors
+            // The API client returns the error response in err.response.data or directly in err
+            const errorResponse = err?.response?.data || err?.data || err || {};
+
             if (
-                errorMessage.toLowerCase().includes("kyc") ||
-                errorMessage
-                    .toLowerCase()
-                    .includes("verification is required") ||
-                err.response?.data?.requires_kyc === true
+                errorResponse.requires_kyc ||
+                errorResponse.requires_terms_acceptance
             ) {
-                // Redirect to KYC page
-                router.push("/kyc?redirect=/courses/" + slug);
+                // Redirect to KYC page with redirect path
+                setRedirectPath(`/courses/${slug}`);
+                router.push(`/kyc?redirect=/courses/${slug}`);
                 return;
             }
 
-            // Check if it's a duplicate request error
-            if (
-                errorMessage
-                    .toLowerCase()
-                    .includes("already have a pending request") ||
-                errorMessage.toLowerCase().includes("pending request") ||
-                errorMessage.toLowerCase().includes("already have")
-            ) {
-                setErrorModalMessage(errorMessage);
-                setShowErrorModal(true);
-            } else {
-                setRequestError(errorMessage);
-            }
-        } finally {
-            setRequestLoading(false);
+            // Show generic error for other cases
+            const errorMessage =
+                errorResponse.message ||
+                err?.message ||
+                "Purchase failed. Please try again.";
+            alert(errorMessage);
         }
     };
 
@@ -575,7 +595,7 @@ export default function CourseDetailPage() {
                                                 This video is locked
                                             </h3>
                                             <p className="text-gray-300 mb-4">
-                                                Request course access to unlock
+                                                Purchase this course to unlock
                                                 all videos
                                             </p>
                                             {!user ? (
@@ -586,54 +606,38 @@ export default function CourseDetailPage() {
                                                     className="px-6 py-3 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-all duration-300 flex items-center space-x-2 mx-auto"
                                                 >
                                                     <span>
-                                                        Login to Request Access
+                                                        Login to Purchase
                                                     </span>
                                                 </button>
-                                            ) : requestSuccess ? (
+                                            ) : hasAccess ? (
                                                 <div className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium">
-                                                    Request Submitted
-                                                    Successfully!
+                                                    Course Purchased ✓
                                                 </div>
                                             ) : (
                                                 <button
                                                     onClick={
-                                                        handleRequestAccessClick
+                                                        handlePurchaseCourse
                                                     }
                                                     disabled={
-                                                        requestLoading ||
-                                                        requestSuccess
+                                                        isProcessingPayment
                                                     }
                                                     className="px-6 py-3 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-all duration-300 flex items-center space-x-2 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                                                 >
-                                                    {requestLoading ? (
+                                                    {isProcessingPayment ? (
                                                         <>
                                                             <Loader2 className="w-5 h-5 animate-spin" />
                                                             <span>
-                                                                Submitting...
-                                                            </span>
-                                                        </>
-                                                    ) : requestSuccess ? (
-                                                        <>
-                                                            <CheckCircle2 className="w-5 h-5" />
-                                                            <span>
-                                                                Request
-                                                                Submitted
+                                                                Processing...
                                                             </span>
                                                         </>
                                                     ) : (
                                                         <>
                                                             <span>
-                                                                Request Course
-                                                                Access
+                                                                Purchase Course
                                                             </span>
                                                         </>
                                                     )}
                                                 </button>
-                                            )}
-                                            {requestError && (
-                                                <p className="text-red-400 mt-2 text-sm">
-                                                    {requestError}
-                                                </p>
                                             )}
                                         </div>
                                     </div>
@@ -924,7 +928,7 @@ export default function CourseDetailPage() {
                             </div>
                         </div>
 
-                        {/* Course Request Banner - Show after first video */}
+                        {/* Course Purchase Banner - Show after first video */}
                         {currentVideoIndex === 0 &&
                             videos.length > 1 &&
                             !hasAccess && (
@@ -935,22 +939,9 @@ export default function CourseDetailPage() {
                                                 Want to continue learning?
                                             </h3>
                                             <p className="text-sm sm:text-base text-white/90">
-                                                Request access to unlock all{" "}
-                                                {videos.length} lessons in this
-                                                course
+                                                Purchase this course to unlock
+                                                all {videos.length} lessons
                                             </p>
-                                            {requestError && (
-                                                <p className="text-red-200 mt-2 text-sm">
-                                                    {requestError}
-                                                </p>
-                                            )}
-                                            {requestSuccess && (
-                                                <p className="text-green-200 mt-2 text-sm">
-                                                    Request submitted
-                                                    successfully! Admin will
-                                                    review your request.
-                                                </p>
-                                            )}
                                         </div>
                                         <div className="shrink-0">
                                             {!user ? (
@@ -962,43 +953,35 @@ export default function CourseDetailPage() {
                                                     }
                                                     className="px-4 sm:px-6 py-2 sm:py-3 bg-white text-[#B00000] rounded-lg font-medium hover:bg-gray-100 transition-all duration-300 whitespace-nowrap"
                                                 >
-                                                    Login to Request
+                                                    Login to Purchase
                                                 </button>
-                                            ) : requestSuccess ? (
+                                            ) : hasAccess ? (
                                                 <div className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg font-medium whitespace-nowrap">
-                                                    Request Submitted ✓
+                                                    Course Purchased ✓
                                                 </div>
                                             ) : (
                                                 <button
                                                     onClick={
-                                                        handleRequestAccessClick
+                                                        handlePurchaseCourse
                                                     }
                                                     disabled={
-                                                        requestLoading ||
-                                                        requestSuccess
+                                                        isProcessingPayment
                                                     }
                                                     className="px-4 sm:px-6 py-2 sm:py-3 bg-white text-[#B00000] rounded-lg font-medium hover:bg-gray-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center space-x-2"
                                                 >
-                                                    {requestLoading ? (
+                                                    {isProcessingPayment ? (
                                                         <>
                                                             <Loader2 className="w-4 h-4 animate-spin" />
                                                             <span>
-                                                                Submitting...
-                                                            </span>
-                                                        </>
-                                                    ) : requestSuccess ? (
-                                                        <>
-                                                            <CheckCircle2 className="w-4 h-4" />
-                                                            <span>
-                                                                Request
-                                                                Submitted
+                                                                Processing...
                                                             </span>
                                                         </>
                                                     ) : (
-                                                        <span>
-                                                            Request Course
-                                                            Access
-                                                        </span>
+                                                        <>
+                                                            <span>
+                                                                Purchase Course
+                                                            </span>
+                                                        </>
                                                     )}
                                                 </button>
                                             )}
@@ -1081,103 +1064,31 @@ export default function CourseDetailPage() {
                                         </div>
                                     </div>
 
-                                    {/* KYC Status Indicator */}
-                                    {user &&
-                                        kycStatus &&
-                                        kycStatus !== "verified" && (
-                                            <div
-                                                className={`mb-3 p-3 rounded-lg ${
-                                                    kycStatus === "pending"
-                                                        ? "bg-yellow-50 border border-yellow-200"
-                                                        : "bg-red-50 border border-red-200"
-                                                }`}
-                                            >
-                                                <div className="flex items-start space-x-2">
-                                                    {kycStatus === "pending" ? (
-                                                        <Loader2 className="w-5 h-5 text-yellow-600 mt-0.5 animate-spin" />
-                                                    ) : (
-                                                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                                                    )}
-                                                    <div className="flex-1">
-                                                        <p
-                                                            className={`text-sm font-medium ${
-                                                                kycStatus ===
-                                                                "pending"
-                                                                    ? "text-yellow-800"
-                                                                    : "text-red-800"
-                                                            }`}
-                                                        >
-                                                            {kycStatus ===
-                                                            "pending"
-                                                                ? "KYC verification pending. Please wait for admin approval."
-                                                                : "KYC verification required. Please complete your KYC to request course access."}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
                                     {!user ? (
                                         <button
                                             onClick={handleOpenLoginDrawer}
                                             className="w-full px-4 py-2.5 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-all duration-300 flex items-center justify-center space-x-2"
                                         >
-                                            <span>Login to Request Access</span>
+                                            <span>Login to Purchase</span>
                                         </button>
-                                    ) : requestSuccess ? (
+                                    ) : hasAccess ? (
                                         <div className="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg font-medium text-center">
-                                            Request Submitted ✓
+                                            Course Purchased ✓
                                         </div>
-                                    ) : checkingKYC ? (
-                                        <button
-                                            disabled
-                                            className="w-full px-4 py-2.5 bg-gray-400 text-white rounded-lg font-medium flex items-center justify-center space-x-2 cursor-not-allowed"
-                                        >
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            <span>Checking...</span>
-                                        </button>
-                                    ) : kycStatus &&
-                                      kycStatus !== "verified" ? (
-                                        <button
-                                            onClick={() =>
-                                                router.push(
-                                                    "/kyc?redirect=/courses/" +
-                                                        slug
-                                                )
-                                            }
-                                            className="w-full px-4 py-2.5 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-all duration-300 flex items-center justify-center space-x-2"
-                                        >
-                                            <span>
-                                                {kycStatus === "pending"
-                                                    ? "View KYC Status"
-                                                    : "Complete KYC Verification"}
-                                            </span>
-                                        </button>
                                     ) : (
                                         <button
-                                            onClick={handleRequestAccessClick}
-                                            disabled={
-                                                requestLoading || requestSuccess
-                                            }
+                                            onClick={handlePurchaseCourse}
+                                            disabled={isProcessingPayment}
                                             className="w-full px-4 py-2.5 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            {requestLoading ? (
+                                            {isProcessingPayment ? (
                                                 <>
                                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                                    <span>Submitting...</span>
-                                                </>
-                                            ) : requestSuccess ? (
-                                                <>
-                                                    <CheckCircle2 className="w-5 h-5" />
-                                                    <span>
-                                                        Request Submitted
-                                                    </span>
+                                                    <span>Processing...</span>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <span>
-                                                        Request Course Access
-                                                    </span>
+                                                    <span>Purchase Course</span>
                                                 </>
                                             )}
                                         </button>
@@ -1288,134 +1199,6 @@ export default function CourseDetailPage() {
                     </div>
                 </div>
             </div>
-
-            {/* Course Request Confirmation Modal */}
-            {showRequestModal && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
-                        onClick={() => setShowRequestModal(false)}
-                    ></div>
-
-                    {/* Modal */}
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                <div className="flex items-center space-x-3">
-                                    <div className="p-2 bg-[#B00000]/10 rounded-lg">
-                                        <AlertCircle className="w-6 h-6 text-[#B00000]" />
-                                    </div>
-                                    <h2 className="text-xl font-bold text-slate-900">
-                                        Request Course Access
-                                    </h2>
-                                </div>
-                                <button
-                                    onClick={() => setShowRequestModal(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                    aria-label="Close modal"
-                                >
-                                    <X className="w-5 h-5 text-gray-600" />
-                                </button>
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-6">
-                                <p className="text-gray-700 mb-4">
-                                    Are you sure you want to request access to{" "}
-                                    <span className="font-semibold text-slate-900">
-                                        {course?.name}
-                                    </span>
-                                    ?
-                                </p>
-                                <p className="text-sm text-gray-600 mb-6">
-                                    Your request will be sent to the admin for
-                                    review. You will be notified once your
-                                    request is approved.
-                                </p>
-
-                                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            setShowRequestModal(false)
-                                        }
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={handleConfirmRequest}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-[#B00000] rounded-lg hover:bg-red-800 transition-colors flex items-center space-x-2"
-                                    >
-                                        <span>Confirm Request</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
-
-            {/* Error Modal for Duplicate Request */}
-            {showErrorModal && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
-                        onClick={() => setShowErrorModal(false)}
-                    ></div>
-
-                    {/* Modal */}
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                <div className="flex items-center space-x-3">
-                                    <div className="p-2 bg-yellow-100 rounded-lg">
-                                        <AlertCircle className="w-6 h-6 text-yellow-600" />
-                                    </div>
-                                    <h2 className="text-xl font-bold text-slate-900">
-                                        Request Already Submitted
-                                    </h2>
-                                </div>
-                                <button
-                                    onClick={() => setShowErrorModal(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                    aria-label="Close modal"
-                                >
-                                    <X className="w-5 h-5 text-gray-600" />
-                                </button>
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-6">
-                                <p className="text-gray-700 mb-4">
-                                    {errorModalMessage ||
-                                        "You already have a pending request for this course."}
-                                </p>
-                                <p className="text-sm text-gray-600 mb-6">
-                                    Please wait for the admin to review your
-                                    existing request. You will be notified once
-                                    it's approved.
-                                </p>
-
-                                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowErrorModal(false)}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-[#B00000] rounded-lg hover:bg-red-800 transition-colors"
-                                    >
-                                        OK
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
 
             {/* Login Drawer */}
             <LoginDrawer

@@ -40,6 +40,10 @@ export const productsApi = {
         reviews_count?: number;
         cover_image?: File | null;
         digital_file?: File | null;
+        images?: File[];
+        videos?: File[];
+        videoTitles?: string[];
+        videoThumbnails?: File[];
     }): Promise<ApiResponse<Product>> => {
         const form = new FormData();
         form.append("name", data.name);
@@ -57,6 +61,35 @@ export const productsApi = {
         }
         if (data.cover_image) form.append("cover_image", data.cover_image);
         if (data.digital_file) form.append("digital_file", data.digital_file);
+        
+        // Append image files directly
+        if (data.images && data.images.length > 0) {
+            data.images.forEach((file) => {
+                if (file) form.append("images", file);
+            });
+        }
+        
+        // Append video files directly
+        if (data.videos && data.videos.length > 0) {
+            data.videos.forEach((file) => {
+                if (file) form.append("videos", file);
+            });
+        }
+        
+        // Append video titles
+        if (data.videoTitles && data.videoTitles.length > 0) {
+            data.videoTitles.forEach((title, index) => {
+                form.append(`video_titles[${index}]`, title);
+            });
+        }
+        
+        // Append video thumbnails
+        if (data.videoThumbnails && data.videoThumbnails.length > 0) {
+            data.videoThumbnails.forEach((file) => {
+                if (file) form.append("video_thumbnails", file);
+            });
+        }
+        
         return apiClient.post<Product>("/products/admin", form);
     },
 
@@ -75,12 +108,20 @@ export const productsApi = {
             is_active: boolean;
             cover_image: File | null;
             digital_file: File | null;
+            images?: File[];
+            videos?: File[];
+            videoTitles?: string[];
+            videoThumbnails?: File[];
         }>
     ): Promise<ApiResponse<Product>> => {
         const form = new FormData();
         Object.entries(data).forEach(([k, v]) => {
             if (v === undefined || v === null) return;
             if (v instanceof File) return;
+            if (k === "images" || k === "videos" || k === "videoTitles" || k === "videoThumbnails") {
+                // Skip these, handle separately
+                return;
+            }
             form.append(k, String(v));
         });
         if (data.cover_image instanceof File) {
@@ -89,6 +130,35 @@ export const productsApi = {
         if (data.digital_file instanceof File) {
             form.append("digital_file", data.digital_file);
         }
+        
+        // Append image files directly
+        if (data.images && data.images.length > 0) {
+            data.images.forEach((file) => {
+                if (file) form.append("images", file);
+            });
+        }
+        
+        // Append video files directly
+        if (data.videos && data.videos.length > 0) {
+            data.videos.forEach((file) => {
+                if (file) form.append("videos", file);
+            });
+        }
+        
+        // Append video titles
+        if (data.videoTitles && data.videoTitles.length > 0) {
+            data.videoTitles.forEach((title, index) => {
+                form.append(`video_titles[${index}]`, title);
+            });
+        }
+        
+        // Append video thumbnails
+        if (data.videoThumbnails && data.videoThumbnails.length > 0) {
+            data.videoThumbnails.forEach((file) => {
+                if (file) form.append("video_thumbnails", file);
+            });
+        }
+        
         return apiClient.put<Product>(`/products/admin/${id}`, form);
     },
 

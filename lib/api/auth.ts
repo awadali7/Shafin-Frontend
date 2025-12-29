@@ -133,4 +133,9 @@ export const authApi = {
     getUserDashboard: async (): Promise<ApiResponse<UserDashboardData>> => {
         return apiClient.get<UserDashboardData>("/users/dashboard");
     },
+
+    // Accept terms and conditions
+    acceptTerms: async (): Promise<ApiResponse<void>> => {
+        return apiClient.post<void>("/users/accept-terms", {});
+    },
 };

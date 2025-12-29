@@ -6,6 +6,7 @@ import { ArrowRight, Play } from "lucide-react";
 import Image from "next/image";
 import RegisterDrawer from "@/components/RegisterDrawer";
 import LoginDrawer from "@/components/LoginDrawer";
+import { ContainerTextFlip } from "@/components/ui/container-text-flip";
 
 export default function LandingPage() {
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
@@ -107,11 +108,22 @@ export default function LandingPage() {
                     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                             <div>
-                                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                                    Master Automotive Technology with{" "}
-                                    <span className="text-white">
-                                        DiagTools
+                                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight flex flex-wrap items-center gap-2">
+                                    <span>
+                                        Master Automotive Technology with
                                     </span>
+                                    <ContainerTextFlip
+                                        words={[
+                                            "DiagTools",
+                                            "Expert Training",
+                                            "Advanced Tools",
+                                            "Innovation",
+                                        ]}
+                                        interval={3000}
+                                        className="text-3xl sm:text-4xl lg:text-5xl [background:linear-gradient(to_bottom,#ffffff,#f3f4f6)] shadow-[inset_0_-1px_#ffffff,inset_0_0_0_1px_#ffffff,0_4px_8px_rgba(0,0,0,0.3)] text-[#B00000] dark:text-[#B00000]"
+                                        textClassName="text-[#B00000] font-bold"
+                                        animationDuration={700}
+                                    />
                                 </h1>
                                 <p className="text-xl sm:text-2xl mb-8 text-gray-100">
                                     India's leading e-learning platform for

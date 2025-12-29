@@ -4,20 +4,18 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-    Home,
-    BookOpen,
-    FileText,
-    Target,
-    Settings,
-    User,
     Menu,
     X,
     ChevronRight,
     ChevronLeft,
-    Shield,
 } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+    sidebarSections,
+    isNavigationVisible,
+    type NavigationItem,
+} from "@/lib/navigation";
 
 export default function Sidebar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -89,280 +87,119 @@ export default function Sidebar() {
 
                     {/* Navigation */}
                     <nav
-                        className={`flex-1 overflow-y-auto py-6 space-y-2 custom-scrollbar transition-all duration-300 ${
+                        className={`flex-1 overflow-y-auto py-6 custom-scrollbar transition-all duration-300 ${
                             isMinimized ? "px-2" : "px-4"
                         }`}
                     >
-                        {/* Dashboard */}
-                        <Link
-                            href="/dashboard"
-                            onClick={() => {
-                                // Close mobile sidebar when link is clicked
-                                if (window.innerWidth < 1024) {
-                                    setIsSidebarOpen(false);
-                                }
-                            }}
-                            className={`
-                flex items-center ${
-                    isMinimized ? "justify-center" : "space-x-3"
-                } ${
-                                isMinimized ? "px-2" : "px-4"
-                            } py-3 rounded-xl transition-all duration-300
-                ${
-                    isActive("/dashboard")
-                        ? "bg-[#B00000] text-white"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                }
-              `}
-                            title={isMinimized ? "Dashboard" : ""}
-                        >
-                            <Home className="w-5 h-5 shrink-0" />
-                            <span
-                                className={`font-medium transition-all duration-300 ${
-                                    isMinimized
-                                        ? "opacity-0 w-0 overflow-hidden"
-                                        : "opacity-100"
-                                }`}
-                            >
-                                Dashboard
-                            </span>
-                        </Link>
+                        {sidebarSections.map((section, sectionIndex) => {
+                            // Filter items based on user role and authentication
+                            const visibleItems = section.items.filter((item) =>
+                                isNavigationVisible(
+                                    item,
+                                    !!user,
+                                    user?.role === "admin"
+                                )
+                            );
 
-                        {/* Courses */}
-                        <Link
-                            href="/courses"
-                            onClick={() => {
-                                // Close mobile sidebar when link is clicked
-                                if (window.innerWidth < 1024) {
-                                    setIsSidebarOpen(false);
-                                }
-                            }}
-                            className={`
-                flex items-center ${
-                    isMinimized ? "justify-center" : "space-x-3"
-                } ${
-                                isMinimized ? "px-2" : "px-4"
-                            } py-3 rounded-xl transition-all duration-300
-                ${
-                    isActive("/courses")
-                        ? "bg-[#B00000] text-white"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                }
-              `}
-                            title={isMinimized ? "Courses" : ""}
-                        >
-                            <BookOpen className="w-5 h-5 shrink-0" />
-                            <span
-                                className={`font-medium transition-all duration-300 ${
-                                    isMinimized
-                                        ? "opacity-0 w-0 overflow-hidden"
-                                        : "opacity-100"
-                                }`}
-                            >
-                                Courses
-                            </span>
-                        </Link>
+                            // Skip sections with no visible items
+                            if (visibleItems.length === 0) return null;
 
-                        {/* Blog */}
-                        <Link
-                            href="/blog"
-                            onClick={() => {
-                                // Close mobile sidebar when link is clicked
-                                if (window.innerWidth < 1024) {
-                                    setIsSidebarOpen(false);
-                                }
-                            }}
-                            className={`
-                flex items-center ${
-                    isMinimized ? "justify-center" : "space-x-3"
-                } ${
-                                isMinimized ? "px-2" : "px-4"
-                            } py-3 rounded-xl transition-all duration-300
-                ${
-                    isActive("/blog")
-                        ? "bg-[#B00000] text-white"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                }
-              `}
-                            title={isMinimized ? "Blog" : ""}
-                        >
-                            <FileText className="w-5 h-5 shrink-0" />
-                            <span
-                                className={`font-medium transition-all duration-300 ${
-                                    isMinimized
-                                        ? "opacity-0 w-0 overflow-hidden"
-                                        : "opacity-100"
-                                }`}
-                            >
-                                Blog
-                            </span>
-                        </Link>
-
-                        {/* My Learning */}
-                        <Link
-                            href="/my-learning"
-                            onClick={() => {
-                                // Close mobile sidebar when link is clicked
-                                if (window.innerWidth < 1024) {
-                                    setIsSidebarOpen(false);
-                                }
-                            }}
-                            className={`
-                flex items-center ${
-                    isMinimized ? "justify-center" : "space-x-3"
-                } ${
-                                isMinimized ? "px-2" : "px-4"
-                            } py-3 rounded-xl transition-all duration-300
-                ${
-                    isActive("/my-learning")
-                        ? "bg-[#B00000] text-white"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                }
-              `}
-                            title={isMinimized ? "My Learning" : ""}
-                        >
-                            <Target className="w-5 h-5 shrink-0" />
-                            <span
-                                className={`font-medium transition-all duration-300 ${
-                                    isMinimized
-                                        ? "opacity-0 w-0 overflow-hidden"
-                                        : "opacity-100"
-                                }`}
-                            >
-                                My Learning
-                            </span>
-                        </Link>
-
-                        {/* Settings */}
-                        <Link
-                            href="/settings"
-                            onClick={() => {
-                                // Close mobile sidebar when link is clicked
-                                if (window.innerWidth < 1024) {
-                                    setIsSidebarOpen(false);
-                                }
-                            }}
-                            className={`
-                flex items-center ${
-                    isMinimized ? "justify-center" : "space-x-3"
-                } ${
-                                isMinimized ? "px-2" : "px-4"
-                            } py-3 rounded-xl transition-all duration-300
-                ${
-                    isActive("/settings")
-                        ? "bg-[#B00000] text-white"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                }
-              `}
-                            title={isMinimized ? "Settings" : ""}
-                        >
-                            <Settings className="w-5 h-5 shrink-0" />
-                            <span
-                                className={`font-medium transition-all duration-300 ${
-                                    isMinimized
-                                        ? "opacity-0 w-0 overflow-hidden"
-                                        : "opacity-100"
-                                }`}
-                            >
-                                Settings
-                            </span>
-                        </Link>
-
-                        {/* Admin (Only visible to admins) */}
-                        {user?.role === "admin" && (
-                            <Link
-                                href="/admin"
-                                onClick={() => {
-                                    // Close mobile sidebar when link is clicked
-                                    if (window.innerWidth < 1024) {
-                                        setIsSidebarOpen(false);
+                            return (
+                                <div
+                                    key={sectionIndex}
+                                    className={
+                                        sectionIndex > 0 ? "mt-6" : ""
                                     }
-                                }}
-                                className={`
-                flex items-center ${
-                    isMinimized ? "justify-center" : "space-x-3"
-                } ${
-                                    isMinimized ? "px-2" : "px-4"
-                                } py-3 rounded-xl transition-all duration-300
-                ${
-                    isActive("/admin")
-                        ? "bg-[#B00000] text-white"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                }
-              `}
-                                title={isMinimized ? "Admin" : ""}
-                            >
-                                <Shield className="w-5 h-5 shrink-0" />
-                                <span
-                                    className={`font-medium transition-all duration-300 ${
-                                        isMinimized
-                                            ? "opacity-0 w-0 overflow-hidden"
-                                            : "opacity-100"
-                                    }`}
                                 >
-                                    Admin
-                                </span>
-                            </Link>
-                        )}
-                    </nav>
+                                    {/* Section Title */}
+                                    {section.title && !isMinimized && (
+                                        <div className="px-4 mb-2">
+                                            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                {section.title}
+                                            </h3>
+                                        </div>
+                                    )}
 
-                    {/* User Profile Section */}
-                    <div
-                        className={`${
-                            isMinimized ? "p-2" : "p-4"
-                        } border-t border-gray-200 transition-all duration-300`}
-                    >
-                        <div
-                            className={`flex items-center ${
-                                isMinimized ? "justify-center" : "space-x-3"
-                            } ${
-                                isMinimized ? "px-2" : "px-3"
-                            } py-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition-all duration-300 cursor-pointer group`}
-                        >
-                            <div className="w-10 h-10 rounded-full bg-[#B00000] flex items-center justify-center transition-all duration-300 shrink-0">
-                                <User className="w-5 h-5 text-white" />
-                            </div>
-                            <div
-                                className={`flex-1 transition-all duration-300 ${
-                                    isMinimized
-                                        ? "opacity-0 w-0 overflow-hidden"
-                                        : "opacity-100"
-                                }`}
-                            >
-                                <p className="text-sm font-medium text-black">
-                                    John Doe
-                                </p>
-                                <p className="text-xs text-gray-600">
-                                    john@example.com
-                                </p>
-                            </div>
-                            <ChevronRight
-                                className={`w-5 h-5 text-gray-600 group-hover:text-[#B00000] transition-all duration-300 ${
-                                    isMinimized
-                                        ? "opacity-0 w-0 overflow-hidden"
-                                        : "opacity-100"
-                                }`}
-                            />
-                        </div>
-                    </div>
+                                    {/* Section Items */}
+                                    <div className="space-y-1">
+                                        {visibleItems.map((item) => {
+                                            const Icon = item.icon;
+                                            const active = isActive(item.href);
+
+                                            return (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    onClick={() => {
+                                                        // Close mobile sidebar when link is clicked
+                                                        if (
+                                                            window.innerWidth <
+                                                            1024
+                                                        ) {
+                                                            setIsSidebarOpen(
+                                                                false
+                                                            );
+                                                        }
+                                                    }}
+                                                    className={`
+                                            flex items-center ${
+                                                isMinimized
+                                                    ? "justify-center"
+                                                    : "space-x-3"
+                                            } ${
+                                                        isMinimized
+                                                            ? "px-2"
+                                                            : "px-4"
+                                                    } py-3 rounded-xl transition-all duration-300
+                                            ${
+                                                active
+                                                    ? "bg-[#B00000] text-white"
+                                                    : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                            }
+                                          `}
+                                                    title={
+                                                        isMinimized
+                                                            ? item.label
+                                                            : ""
+                                                    }
+                                                >
+                                                    <Icon className="w-5 h-5 shrink-0" />
+                                                    <span
+                                                        className={`font-medium transition-all duration-300 flex-1 ${
+                                                            isMinimized
+                                                                ? "opacity-0 w-0 overflow-hidden"
+                                                                : "opacity-100"
+                                                        }`}
+                                                    >
+                                                        {item.label}
+                                                    </span>
+                                                    {item.badge &&
+                                                        !isMinimized && (
+                                                            <span className="px-2 py-0.5 text-xs font-semibold bg-[#B00000] text-white rounded-full">
+                                                                {
+                                                                    item.badge
+                                                                }
+                                                            </span>
+                                                        )}
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </nav>
                 </div>
             </aside>
 
             {/* Custom Scrollbar Styles */}
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
+                    display: none;
                 }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(229, 231, 235, 0.5);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #b00000;
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: #8b0000;
+                .custom-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
                 }
             `}</style>
         </>

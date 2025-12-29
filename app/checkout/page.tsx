@@ -81,7 +81,9 @@ export default function CheckoutPage() {
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
     const hasPhysicalItems = items.some((item) => item.type === "physical");
-    const hasDigitalItems = items.some((item) => item.type === "digital");
+    const hasDigitalItems = items.some(
+        (item) => item.type === "digital" || item.type === "course"
+    );
 
     // If cart no longer contains physical items, force a valid payment method
     useEffect(() => {
@@ -98,7 +100,7 @@ export default function CheckoutPage() {
     // Check if cart is empty
     if (items.length === 0) {
         return (
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                     <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h2 className="text-2xl font-bold text-slate-900 mb-2">
@@ -197,7 +199,7 @@ export default function CheckoutPage() {
             const payload = {
                 items: items.map((i) => ({
                     product_id: i.id,
-                    quantity: i.type === "digital" ? 1 : i.quantity,
+                    quantity: i.quantity,
                 })),
                 customer: {
                     first_name: formData.firstName,
@@ -357,8 +359,8 @@ export default function CheckoutPage() {
                         {hasDigitalItems && !hasPhysicalItems && (
                             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                 <p className="text-sm text-blue-700">
-                                    No shipping needed — digital products will
-                                    be available for download after purchase.
+                                    No shipping needed — digital products and
+                                    courses will be available after purchase.
                                 </p>
                             </div>
                         )}

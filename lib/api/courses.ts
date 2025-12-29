@@ -79,4 +79,20 @@ export const coursesApi = {
     ): Promise<ApiResponse<void>> => {
         return apiClient.delete<void>(`/courses/${courseId}/videos/${videoId}`);
     },
+
+    // Purchase course - creates order and returns order_id for payment
+    purchase: async (courseId: string): Promise<ApiResponse<{ order_id: string }>> => {
+        return apiClient.post<{ order_id: string }>(`/courses/${courseId}/purchase`);
+    },
+
+    // Grant course access to user (Admin only)
+    grantAccess: async (
+        courseId: string,
+        data: { user_id: string; access_start: string; access_end: string }
+    ): Promise<ApiResponse<{ id: string; access_start: string; access_end: string }>> => {
+        return apiClient.post<{ id: string; access_start: string; access_end: string }>(
+            `/courses/${courseId}/grant-access`,
+            data
+        );
+    },
 };

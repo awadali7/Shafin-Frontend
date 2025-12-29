@@ -16,16 +16,36 @@ export default function MainContent({
     const pathname = usePathname();
     const { isAuth } = useAuth();
 
-    // Check if sidebar should be shown
+    // Check if sidebar should be shown (must match ConditionalSidebar logic)
+    const publicPages = [
+        "/",
+        "/about",
+        "/login",
+        "/register",
+        "/reset-password",
+        "/terms",
+    ];
+
+    const authenticatedPages = [
+        "/dashboard",
+        "/profile",
+        "/my-learning",
+        "/orders",
+        "/downloads",
+        "/kyc",
+        "/settings",
+        "/admin",
+        "/notifications",
+        "/checkout",
+    ];
+
     const showSidebar =
         isAuth &&
-        (pathname?.startsWith("/dashboard") ||
-            pathname?.startsWith("/courses") ||
-            pathname?.startsWith("/blog") ||
-            pathname?.startsWith("/profile") ||
-            pathname?.startsWith("/my-learning") ||
-            pathname?.startsWith("/settings") ||
-            pathname?.startsWith("/admin"));
+        (authenticatedPages.some((page) => pathname?.startsWith(page)) ||
+            (pathname?.startsWith("/courses") &&
+                !publicPages.includes(pathname)) ||
+            (pathname?.startsWith("/blog") && !publicPages.includes(pathname)) ||
+            (pathname?.startsWith("/shop") && !publicPages.includes(pathname)));
 
     return (
         <main

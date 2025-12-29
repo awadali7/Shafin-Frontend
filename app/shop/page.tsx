@@ -61,7 +61,7 @@ export default function ShopPage() {
     const [error, setError] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState("All");
     const [searchQuery, setSearchQuery] = useState("");
-    const { addToCart } = useCart();
+    const { addToCart, setIsOpen } = useCart();
 
     const normalizedQuery = searchQuery.trim().toLowerCase();
 
@@ -119,6 +119,9 @@ export default function ShopPage() {
             quantity: 1,
             slug: product.slug,
         });
+        
+        // Open the cart drawer
+        setIsOpen(true);
     };
 
     return (
