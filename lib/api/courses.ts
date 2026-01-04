@@ -84,4 +84,16 @@ export const coursesApi = {
     purchase: async (courseId: string): Promise<ApiResponse<{ order_id: string }>> => {
         return apiClient.post<{ order_id: string }>(`/courses/${courseId}/purchase`);
     },
+
+    // Grant course access to a user (Admin only)
+    grantAccess: async (
+        courseId: string,
+        data: {
+            user_id: string;
+            access_start: string;
+            access_end: string;
+        }
+    ): Promise<ApiResponse<any>> => {
+        return apiClient.post<any>(`/courses/${courseId}/grant-access`, data);
+    },
 };
