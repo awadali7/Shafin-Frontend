@@ -44,8 +44,7 @@ export default function MainContent({
         (authenticatedPages.some((page) => pathname?.startsWith(page)) ||
             (pathname?.startsWith("/courses") &&
                 !publicPages.includes(pathname)) ||
-            (pathname?.startsWith("/blog") && !publicPages.includes(pathname)) ||
-            (pathname?.startsWith("/shop") && !publicPages.includes(pathname)));
+            (pathname?.startsWith("/blog") && !publicPages.includes(pathname)));
 
     return (
         <main

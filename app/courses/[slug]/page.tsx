@@ -843,40 +843,40 @@ export default function CourseDetailPage() {
 
         // Handle YouTube videos (existing logic)
         if (platform === "youtube") {
-            const videoId = extractYouTubeId(videoUrl);
-            if (videoId) {
-                // Use youtube-nocookie.com to remove Share and Watch Later buttons
-                return `https://www.youtube-nocookie.com/embed/${videoId}?modestbranding=1&rel=0&controls=1&fs=1&cc_load_policy=0&iv_load_policy=3&playsinline=1`;
-            }
+        const videoId = extractYouTubeId(videoUrl);
+        if (videoId) {
+            // Use youtube-nocookie.com to remove Share and Watch Later buttons
+            return `https://www.youtube-nocookie.com/embed/${videoId}?modestbranding=1&rel=0&controls=1&fs=1&cc_load_policy=0&iv_load_policy=3&playsinline=1`;
+        }
 
-            // If already an embed URL, convert to youtube-nocookie.com
+        // If already an embed URL, convert to youtube-nocookie.com
             if (videoUrl.includes("embed")) {
-                try {
-                    let urlToParse = videoUrl.startsWith("http")
-                        ? videoUrl
-                        : `https://${videoUrl}`;
+            try {
+                let urlToParse = videoUrl.startsWith("http")
+                    ? videoUrl
+                    : `https://${videoUrl}`;
 
-                    urlToParse = urlToParse.replace(
-                        /youtube\.com\/embed\//g,
-                        "youtube-nocookie.com/embed/"
-                    );
+                urlToParse = urlToParse.replace(
+                    /youtube\.com\/embed\//g,
+                    "youtube-nocookie.com/embed/"
+                );
 
-                    const url = new URL(urlToParse);
-                    url.searchParams.set("modestbranding", "1");
-                    url.searchParams.set("rel", "0");
-                    url.searchParams.set("controls", "1");
-                    url.searchParams.set("fs", "1");
-                    url.searchParams.set("cc_load_policy", "0");
-                    url.searchParams.set("iv_load_policy", "3");
-                    url.searchParams.set("playsinline", "1");
-                    return url.toString();
-                } catch (e) {
-                    let processedUrl = videoUrl.replace(
-                        /youtube\.com\/embed\//g,
-                        "youtube-nocookie.com/embed/"
-                    );
-                    const separator = processedUrl.includes("?") ? "&" : "?";
-                    return `${processedUrl}${separator}modestbranding=1&rel=0&controls=1&fs=1&cc_load_policy=0&iv_load_policy=3&playsinline=1`;
+                const url = new URL(urlToParse);
+                url.searchParams.set("modestbranding", "1");
+                url.searchParams.set("rel", "0");
+                url.searchParams.set("controls", "1");
+                url.searchParams.set("fs", "1");
+                url.searchParams.set("cc_load_policy", "0");
+                url.searchParams.set("iv_load_policy", "3");
+                url.searchParams.set("playsinline", "1");
+                return url.toString();
+            } catch (e) {
+                let processedUrl = videoUrl.replace(
+                    /youtube\.com\/embed\//g,
+                    "youtube-nocookie.com/embed/"
+                );
+                const separator = processedUrl.includes("?") ? "&" : "?";
+                return `${processedUrl}${separator}modestbranding=1&rel=0&controls=1&fs=1&cc_load_policy=0&iv_load_policy=3&playsinline=1`;
                 }
             }
         }

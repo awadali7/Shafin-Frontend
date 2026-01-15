@@ -35,6 +35,11 @@ export default function Sidebar() {
         return pathname === path || pathname.startsWith(path + "/");
     };
 
+    // Don't show sidebar when user is logged in
+    if (user) {
+        return null;
+    }
+
     return (
         <>
             {/* Mobile Menu Button */}
