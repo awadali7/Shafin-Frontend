@@ -3,12 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-    Menu,
-    X,
-    ChevronRight,
-    ChevronLeft,
-} from "lucide-react";
+import { Menu, X, ChevronRight, ChevronLeft } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -98,11 +93,12 @@ export default function Sidebar() {
                     >
                         {sidebarSections.map((section, sectionIndex) => {
                             // Filter items based on user role and authentication
+                            // Note: user is always null/undefined here because we return early if logged in
                             const visibleItems = section.items.filter((item) =>
                                 isNavigationVisible(
                                     item,
-                                    !!user,
-                                    user?.role === "admin"
+                                    false, // user is not authenticated (we returned early if they were)
+                                    false // user is not admin (they're not logged in)
                                 )
                             );
 
@@ -112,9 +108,7 @@ export default function Sidebar() {
                             return (
                                 <div
                                     key={sectionIndex}
-                                    className={
-                                        sectionIndex > 0 ? "mt-6" : ""
-                                    }
+                                    className={sectionIndex > 0 ? "mt-6" : ""}
                                 >
                                     {/* Section Title */}
                                     {section.title && !isMinimized && (
@@ -181,9 +175,7 @@ export default function Sidebar() {
                                                     {item.badge &&
                                                         !isMinimized && (
                                                             <span className="px-2 py-0.5 text-xs font-semibold bg-[#B00000] text-white rounded-full">
-                                                                {
-                                                                    item.badge
-                                                                }
+                                                                {item.badge}
                                                             </span>
                                                         )}
                                                 </Link>
