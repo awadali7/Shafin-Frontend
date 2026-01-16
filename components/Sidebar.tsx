@@ -30,10 +30,10 @@ export default function Sidebar() {
         return pathname === path || pathname.startsWith(path + "/");
     };
 
-    // Don't show sidebar when user is logged in
-    if (user) {
-        return null;
-    }
+    // Sidebar now visible for all users (logged in or not)
+    // if (user) {
+    //     return null;
+    // }
 
     return (
         <>
@@ -93,12 +93,11 @@ export default function Sidebar() {
                     >
                         {sidebarSections.map((section, sectionIndex) => {
                             // Filter items based on user role and authentication
-                            // Note: user is always null/undefined here because we return early if logged in
                             const visibleItems = section.items.filter((item) =>
                                 isNavigationVisible(
                                     item,
-                                    false, // user is not authenticated (we returned early if they were)
-                                    false // user is not admin (they're not logged in)
+                                    !!user, // user is authenticated
+                                    user?.role === 'admin' // user is admin
                                 )
                             );
 

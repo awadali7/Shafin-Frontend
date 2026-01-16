@@ -44,6 +44,7 @@ export const productsApi = {
         rating?: number;
         reviews_count?: number;
         is_featured?: boolean;
+        is_coming_soon?: boolean;
         cover_image?: File | null;
         digital_file?: File | null;
         images?: File[];
@@ -69,6 +70,8 @@ export const productsApi = {
             form.append("reviews_count", String(data.reviews_count));
         if (data.is_featured !== undefined)
             form.append("is_featured", String(data.is_featured));
+        if (data.is_coming_soon !== undefined)
+            form.append("is_coming_soon", String(data.is_coming_soon));
         if (data.product_type === "physical") {
             form.append("stock_quantity", String(data.stock_quantity ?? 0));
         }
@@ -126,6 +129,7 @@ export const productsApi = {
             reviews_count: number;
             is_active: boolean;
             is_featured: boolean;
+            is_coming_soon: boolean;
             cover_image: File | null;
             digital_file: File | null;
             images?: File[];

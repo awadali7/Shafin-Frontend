@@ -384,8 +384,8 @@ export interface Product {
     slug: string;
     description?: string;
     price: number;
-    category?: string | null;  // First category for backward compatibility
-    categories?: string[];     // Array of up to 4 categories
+    category?: string | null; // First category for backward compatibility
+    categories?: string[]; // Array of up to 4 categories
     // Backend returns product_type + we also include a friendlier `type`
     product_type?: ProductType;
     type: ProductType;
@@ -407,11 +407,21 @@ export interface Product {
     rating?: number;
     reviews_count?: number;
     is_active?: boolean;
+    is_coming_soon?: boolean;
     created_at?: string;
     updated_at?: string;
-    
-    // Tiered pricing (quantity ranges)
-    quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number }>;
+
+    // Tiered pricing (quantity ranges) - API returns as tiered_pricing
+    tiered_pricing?: Array<{
+        min_qty: number;
+        max_qty: number | null;
+        price_per_item: number;
+    }>;
+    quantity_pricing?: Array<{
+        min_qty: number;
+        max_qty: number | null;
+        price_per_item: number;
+    }>;
 }
 
 export type OrderStatus = "pending" | "paid" | "cancelled" | "refunded";
