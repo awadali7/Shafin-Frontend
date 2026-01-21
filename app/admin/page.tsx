@@ -56,6 +56,7 @@ import { ProductsTab } from "@/components/admin/ProductsTab";
 import { OrdersTab } from "@/components/admin/OrdersTab";
 import { KYCModal } from "@/components/admin/KYCModal";
 import { ProductKYCModal } from "@/components/admin/ProductKYCModal";
+import { DigitalFilesTab } from "@/components/admin/DigitalFilesTab";
 import { GrantAccessModal } from "@/components/admin/GrantAccessModal";
 import { formatDate, generateSlug } from "@/components/admin/utils";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -84,6 +85,7 @@ export default function AdminPage() {
         | "product_kyc"
         | "products"
         | "orders"
+        | "digital_files"
     >("dashboard");
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [users, setUsers] = useState<User[]>([]);
@@ -1790,6 +1792,7 @@ export default function AdminPage() {
                 )}
 
                 {activeTab === "products" && <ProductsTab />}
+                {activeTab === "digital_files" && <DigitalFilesTab />}
 
                 {activeTab === "orders" && <OrdersTab />}
 

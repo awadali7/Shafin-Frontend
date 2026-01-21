@@ -12,7 +12,8 @@ interface AdminTabsProps {
         | "kyc"
         | "product_kyc"
         | "products"
-        | "orders";
+        | "orders"
+        | "digital_files";
     onTabChange: (
         tab:
             | "dashboard"
@@ -24,6 +25,7 @@ interface AdminTabsProps {
             | "product_kyc"
             | "products"
             | "orders"
+            | "digital_files"
     ) => void;
 }
 
@@ -37,6 +39,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
         { id: "requests" as const, label: "Course Requests" },
         { id: "courses" as const, label: "Courses" },
         { id: "products" as const, label: "Products" },
+        { id: "digital_files" as const, label: "Digital Files" },
         { id: "orders" as const, label: "Orders" },
         { id: "blogs" as const, label: "Blogs" },
         { id: "kyc" as const, label: "Course KYC" },

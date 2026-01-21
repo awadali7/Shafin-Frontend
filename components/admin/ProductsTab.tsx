@@ -36,6 +36,7 @@ type ProductFormState = {
     requires_kyc: boolean;
     cover_image: File | null;
     digital_file: File | null;
+    digital_file_name_input?: string; // For linking existing files
     images: ImageFile[];
     videos: VideoFile[];
     quantity_pricing: Array<{ min_qty: number | string; max_qty: number | string | null; price_per_item: number | string }>;
@@ -66,6 +67,7 @@ const defaultForm: ProductFormState = {
     requires_kyc: false,
     cover_image: null,
     digital_file: null,
+    digital_file_name_input: "",
     images: [],
     videos: [],
     quantity_pricing: [{ min_qty: "", max_qty: "", price_per_item: "" }],
@@ -261,9 +263,10 @@ export const ProductsTab: React.FC = () => {
             if (
                 form.product_type === "digital" &&
                 !editing &&
-                !form.digital_file
+                !form.digital_file &&
+                !form.digital_file_name_input
             ) {
-                throw new Error("Digital file (ZIP/RAR) is required");
+                throw new Error("Digital file (ZIP/RAR) or Linked File Name is required");
             }
 
             // Extract files from ImageFile and VideoFile objects
@@ -309,7 +312,8 @@ export const ProductsTab: React.FC = () => {
                     is_coming_soon: form.is_coming_soon,
                     requires_kyc: form.requires_kyc,
                     cover_image: form.cover_image,
-                    digital_file: form.digital_file,
+                    digital_file: form.digital_file_name_input ? undefined : form.digital_file,
+                    digital_file_name: form.digital_file_name_input || undefined,
                     images: imageFiles.length > 0 ? imageFiles : undefined,
                     videos: videoFiles.length > 0 ? videoFiles : undefined,
                     videoTitles: videoTitles.length > 0 ? videoTitles : undefined,
@@ -326,11 +330,12 @@ export const ProductsTab: React.FC = () => {
                     price: form.price,
                     stock_quantity: form.stock_quantity,
                     is_active: form.is_active,
+                    digital_file: form.digital_file_name_input ? undefined : form.digital_file,
+                    digital_file_name: form.digital_file_name_input || undefined,
                     is_featured: form.is_featured,
                     is_coming_soon: form.is_coming_soon,
                     requires_kyc: form.requires_kyc,
                     cover_image: form.cover_image,
-                    digital_file: form.digital_file,
                     images: imageFiles.length > 0 ? imageFiles : undefined,
                     videos: videoFiles.length > 0 ? videoFiles : undefined,
                     videoTitles: videoTitles.length > 0 ? videoTitles : undefined,
@@ -1046,23 +1051,81 @@ export const ProductsTab: React.FC = () => {
 
                                 {/* Digital File */}
                                 {form.product_type === "digital" && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Digital File (ZIP/RAR) *
-                                        </label>
-                                        <input
-                                            type="file"
-                                            accept=".zip,.rar"
-                                            onChange={(e) =>
-                                                setForm((p) => ({
-                                                    ...p,
-                                                    digital_file:
-                                                        e.target.files?.[0] ||
-                                                        null,
-                                                }))
-                                            }
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
-                                        />
+                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                        <h4 className="text-sm font-medium text-blue-900 mb-2">
+                                            Digital File Source
+                                        </h4>
+                                        
+                                        <div className="flex items-center space-x-4 mb-4">
+                                            <label className="flex items-center space-x-2 cursor-pointer">
+                                                <input 
+                                                    type="radio" 
+                                                    name="digital_source" 
+                                                    checked={!form.digital_file_name_input}
+                                                    onChange={() => setForm(p => ({ ...p, digital_file_name_input: "" }))}
+                                                    className="text-[#B00000] focus:ring-[#B00000]"
+                                                />
+                                                <span className="text-sm text-gray-700">Upload New File</span>
+                                            </label>
+                                            <label className="flex items-center space-x-2 cursor-pointer">
+                                                <input 
+                                                    type="radio" 
+                                                    name="digital_source" 
+                                                    checked={!!form.digital_file_name_input}
+                                                    onChange={() => setForm(p => ({ ...p, digital_file_name_input: " " }))} // Set dummy to switch mode
+                                                    className="text-[#B00000] focus:ring-[#B00000]"
+                                                />
+                                                <span className="text-sm text-gray-700">Link from Library</span>
+                                            </label>
+                                        </div>
+
+                                        {!form.digital_file_name_input ? (
+                                            <div>
+                                                <label className="block text-sm font-medium text-blue-900 mb-1">
+                                                    Upload File (ZIP/RAR) *
+                                                </label>
+                                                <input
+                                                    type="file"
+                                                    accept=".zip,.rar,.7z"
+                                                    onChange={(e) =>
+                                                        setForm((prev) => ({
+                                                            ...prev,
+                                                            digital_file:
+                                                                e.target.files?.[0] ||
+                                                                null,
+                                                        }))
+                                                    }
+                                                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+                                                />
+                                                <p className="text-xs text-blue-700 mt-1">
+                                                    Allowed formats: .zip, .rar, .7z
+                                                </p>
+                                            </div>
+                                        ) : (
+                                             <div>
+                                                <label className="block text-sm font-medium text-blue-900 mb-1">
+                                                    Paste Filename from Library *
+                                                </label>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={form.digital_file_name_input === " " ? "" : form.digital_file_name_input}
+                                                        onChange={(e) =>
+                                                            setForm((prev) => ({
+                                                                ...prev,
+                                                                digital_file_name_input: e.target.value,
+                                                                digital_file: null // Clear upload if linking
+                                                            }))
+                                                        }
+                                                        placeholder="e.g. 847d-myfile.zip"
+                                                        className="flex-1 px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-blue-700 mt-1">
+                                                    Copy the filename from the "Digital Files" tab and paste it here.
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 

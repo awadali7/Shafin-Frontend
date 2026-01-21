@@ -135,12 +135,50 @@ export const adminApi = {
         return apiClient.get<any[]>(`/admin/announcements${query}`);
     },
 
-    // Grant digital product to a user for free (Admin only)
-    grantProductEntitlement: async (data: {
+    grantProductEntitlement: (data: {
         user_id: string;
         product_id: string;
         note?: string;
     }): Promise<ApiResponse<any>> => {
         return apiClient.post<any>("/admin/product-entitlements/grant", data);
+    },
+
+    // Digital File Library
+    listDigitalFiles: async (): Promise<ApiResponse<{ name: string; size: number; created_at: string }[]>> => {
+        return apiClient.get<{ name: string; size: number; created_at: string }[]>("/admin/digital-files");
+    },
+
+    uploadDigitalFile: async (data: FormData): Promise<ApiResponse<{ name: string; size: number }>> => {
+        return apiClient.post<{ name: string; size: number }>("/admin/digital-files", data);
+    },
+
+    deleteDigitalFile: async (filename: string): Promise<ApiResponse<any>> => {
+        return apiClient.delete<any>(`/admin/digital-files/${filename}`);
+    },
+    
+    downloadDigitalFile: async (filename: string): Promise<void> => {
+        const token = apiClient.getToken();
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+        
+        const response = await fetch(`${baseUrl}/admin/digital-files/${filename}/download`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || "Download failed");
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
     },
 };
