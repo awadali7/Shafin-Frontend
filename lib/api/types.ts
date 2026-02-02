@@ -442,11 +442,13 @@ export interface Product {
         min_qty: number;
         max_qty: number | null;
         price_per_item: number;
+        courier_charge?: number;
     }>;
     quantity_pricing?: Array<{
         min_qty: number;
         max_qty: number | null;
         price_per_item: number;
+        courier_charge?: number;
     }>;
 }
 

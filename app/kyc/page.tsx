@@ -260,6 +260,10 @@ function KYCContent() {
             if (response.success) {
                 setSuccess(true);
                 setKycData(response.data || null);
+
+                // Refresh user profile to get updated user_type
+                await refreshProfile();
+
                 // Refresh KYC data
                 const kycResponse = await kycApi.getMyKYC();
                 if (kycResponse.success && kycResponse.data) {
@@ -325,19 +329,19 @@ function KYCContent() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-slate-900 flex items-center">
+            <div className="mb-4">
+                <h1 className="text-xl font-bold text-slate-900 flex items-center">
                     Student KYC Verification
                 </h1>
-                <p className="text-sm text-slate-600 mt-2">
+                <p className="text-sm text-slate-600 mt-1">
                     Complete your KYC verification to access course features
                 </p>
             </div>
 
             {/* Step Indicator */}
-            <div className="mb-8">
+            <div className="mb-4">
                 <div className="flex items-center justify-center">
                     {/* Step 1 */}
                     <div className="flex items-center">
@@ -384,7 +388,7 @@ function KYCContent() {
             {/* Status Banner */}
                     {kycData && (
                         <div
-                            className={`mb-8 p-4 rounded-lg ${
+                            className={`mb-4 p-3 rounded-lg ${
                                 kycData.status === "verified"
                                     ? "bg-green-50 border border-green-200"
                                     : kycData.status === "rejected"
@@ -438,10 +442,10 @@ function KYCContent() {
 
                     {/* Success Message */}
                     {success && (
-                        <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                             <div className="flex items-center space-x-3">
-                                <CheckCircle2 className="w-6 h-6 text-green-600" />
-                                <p className="text-green-800">
+                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                <p className="text-sm text-green-800">
                                     KYC information submitted successfully! Your
                                     request is pending admin review.
                                 </p>
@@ -451,27 +455,27 @@ function KYCContent() {
 
                     {/* Error Message */}
                     {error && (
-                        <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                             <div className="flex items-center space-x-3">
-                                <AlertCircle className="w-6 h-6 text-red-600" />
-                                <p className="text-red-800">{error}</p>
+                                <AlertCircle className="w-5 h-5 text-red-600" />
+                                <p className="text-sm text-red-800">{error}</p>
                             </div>
                         </div>
                     )}
 
                     {/* KYC Form */}
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-2xl font-bold text-slate-900 mb-6">
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                            <h2 className="text-lg font-bold text-slate-900 mb-4">
                                 Personal Information
                             </h2>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* First Name */}
                                 <div>
                                     <label
                                         htmlFor="first_name"
-                                        className="block text-sm font-medium text-slate-700 mb-2"
+                                        className="block text-sm font-medium text-slate-700 mb-1"
                                     >
                                         First Name{" "}
                                         <span className="text-red-500">*</span>
@@ -483,7 +487,7 @@ function KYCContent() {
                                         value={formData.first_name}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
                                         disabled={
                                             kycData?.status === "verified"
                                         }
@@ -494,7 +498,7 @@ function KYCContent() {
                                 <div>
                                     <label
                                         htmlFor="last_name"
-                                        className="block text-sm font-medium text-slate-700 mb-2"
+                                        className="block text-sm font-medium text-slate-700 mb-1"
                                     >
                                         Last Name{" "}
                                         <span className="text-red-500">*</span>
@@ -506,7 +510,7 @@ function KYCContent() {
                                         value={formData.last_name}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
                                         disabled={
                                             kycData?.status === "verified"
                                         }
@@ -515,10 +519,10 @@ function KYCContent() {
                             </div>
 
                             {/* Address */}
-                            <div className="mt-6">
+                            <div className="mt-4">
                                 <label
                                     htmlFor="address"
-                                    className="block text-sm font-medium text-slate-700 mb-2"
+                                    className="block text-sm font-medium text-slate-700 mb-1"
                                 >
                                     Address{" "}
                                     <span className="text-red-500">*</span>
@@ -529,221 +533,226 @@ function KYCContent() {
                                     value={formData.address}
                                     onChange={handleInputChange}
                                     required
-                                    rows={3}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
+                                    rows={2}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
                                     disabled={kycData?.status === "verified"}
                                 />
                             </div>
 
-                            {/* Contact Number */}
-                            <div className="mt-6">
-                                <label
-                                    htmlFor="contact_number"
-                                    className="block text-sm font-medium text-slate-700 mb-2"
-                                >
-                                    Contact Number{" "}
-                                    <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="tel"
-                                    id="contact_number"
-                                    name="contact_number"
-                                    value={formData.contact_number}
-                                    onChange={handleInputChange}
-                                    required
-                                    placeholder="+91 1234567890"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
-                                    disabled={kycData?.status === "verified"}
-                                />
-                            </div>
+                            {/* Contact Number and WhatsApp Number */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                {/* Contact Number */}
+                                <div>
+                                    <label
+                                        htmlFor="contact_number"
+                                        className="block text-sm font-medium text-slate-700 mb-1"
+                                    >
+                                        Contact Number{" "}
+                                        <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        id="contact_number"
+                                        name="contact_number"
+                                        value={formData.contact_number}
+                                        onChange={handleInputChange}
+                                        required
+                                        placeholder="+91 1234567890"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
+                                        disabled={kycData?.status === "verified"}
+                                    />
+                                </div>
 
-                            {/* WhatsApp Number */}
-                            <div className="mt-6">
-                                <label
-                                    htmlFor="whatsapp_number"
-                                    className="block text-sm font-medium text-slate-700 mb-2"
-                                >
-                                    WhatsApp Number{" "}
-                                    <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="tel"
-                                    id="whatsapp_number"
-                                    name="whatsapp_number"
-                                    value={formData.whatsapp_number}
-                                    onChange={handleInputChange}
-                                    required
-                                    placeholder="+91 1234567890"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
-                                    disabled={kycData?.status === "verified"}
-                                />
+                                {/* WhatsApp Number */}
+                                <div>
+                                    <label
+                                        htmlFor="whatsapp_number"
+                                        className="block text-sm font-medium text-slate-700 mb-1"
+                                    >
+                                        WhatsApp Number{" "}
+                                        <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        id="whatsapp_number"
+                                        name="whatsapp_number"
+                                        value={formData.whatsapp_number}
+                                        onChange={handleInputChange}
+                                        required
+                                        placeholder="+91 1234567890"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
+                                        disabled={kycData?.status === "verified"}
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        {/* ID Proof Upload */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-2xl font-bold text-slate-900 mb-6">
-                                ID Proof
+                        {/* Document Upload Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                            <h2 className="text-lg font-bold text-slate-900 mb-4">
+                                Document Upload
                             </h2>
-                            <p className="text-sm text-slate-600 mb-4">
-                                Upload ID proof images (Aadhaar, PAN, Passport,
-                                etc.) in JPEG, PNG, WebP, or PDF format (Max
-                                10MB per file). You can upload multiple images.
-                            </p>
 
-                            {idProofPreviews.length > 0 ? (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {idProofPreviews.map((previewItem, index) => (
-                                            <div key={index} className="relative">
-                                                {previewItem.file?.type.startsWith("image/") ||
-                                                (previewItem.preview &&
-                                                    !previewItem.preview.includes(".pdf")) ? (
-                                                    <img
-                                                        src={previewItem.preview}
-                                                        alt={`ID Proof ${index + 1}`}
-                                                        className="w-full h-48 object-cover rounded-lg border border-gray-300"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-48 p-8 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
-                                                        <p className="text-center text-slate-600">
-                                                            PDF File
-                                                        </p>
-                                                        <p className="text-center text-sm text-slate-500 mt-2">
-                                                            {previewItem.file?.name}
-                                                        </p>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* ID Proof Upload */}
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                                        ID Proof Documents <span className="text-red-500">*</span>
+                                    </h3>
+                                    <p className="text-xs text-slate-600 mb-3">
+                                        Upload ID proof (Aadhaar, PAN, Passport, etc.) in JPEG, PNG, WebP, or PDF (Max 10MB per file)
+                                    </p>
+
+                                    {idProofPreviews.length > 0 ? (
+                                        <div className="space-y-3">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {idProofPreviews.map((previewItem, index) => (
+                                                    <div key={index} className="relative">
+                                                        {previewItem.file?.type.startsWith("image/") ||
+                                                        (previewItem.preview &&
+                                                            !previewItem.preview.includes(".pdf")) ? (
+                                                            <img
+                                                                src={previewItem.preview}
+                                                                alt={`ID Proof ${index + 1}`}
+                                                                className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-32 p-4 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                                                                <p className="text-center text-xs text-slate-600">
+                                                                    PDF File
+                                                                </p>
+                                                                <p className="text-center text-xs text-slate-500 mt-1 truncate max-w-full px-2">
+                                                                    {previewItem.file?.name}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        {kycData?.status !== "verified" && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeIdProof(index)}
+                                                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        )}
                                                     </div>
-                                                )}
-                                                {kycData?.status !== "verified" && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeIdProof(index)}
-                                                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                )}
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
-                                    {kycData?.status !== "verified" && (
-                                        <div className="flex justify-center">
-                                            <label
-                                                htmlFor="id_proof_add"
-                                                className="flex items-center justify-center px-6 py-3 bg-white border-2 border-dashed border-[#B00000] rounded-lg cursor-pointer hover:bg-[#B00000] hover:text-white transition-all duration-200 group"
-                                            >
-                                                <Plus className="w-5 h-5 mr-2 text-[#B00000] group-hover:text-white transition-colors" />
-                                                <span className="text-sm font-semibold text-[#B00000] group-hover:text-white transition-colors">
-                                                    Add More ID Proof Images
-                                                </span>
-                                                <input
-                                                    id="id_proof_add"
-                                                    type="file"
-                                                    className="hidden"
-                                                    accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                                                    onChange={handleIdProofChange}
-                                                    multiple
-                                                />
-                                            </label>
+                                            {kycData?.status !== "verified" && (
+                                                <label
+                                                    htmlFor="id_proof_add"
+                                                    className="flex items-center justify-center px-3 py-2 bg-white border-2 border-dashed border-[#B00000] rounded-lg cursor-pointer hover:bg-[#B00000] hover:text-white transition-all duration-200 group text-xs"
+                                                >
+                                                    <Plus className="w-4 h-4 mr-1 text-[#B00000] group-hover:text-white transition-colors" />
+                                                    <span className="font-semibold text-[#B00000] group-hover:text-white transition-colors">
+                                                        Add More
+                                                    </span>
+                                                    <input
+                                                        id="id_proof_add"
+                                                        type="file"
+                                                        className="hidden"
+                                                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                                                        onChange={handleIdProofChange}
+                                                        multiple
+                                                    />
+                                                </label>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <label
-                                    htmlFor="id_proof"
-                                    className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                                        kycData?.status === "verified"
-                                            ? "border-gray-300 bg-gray-50 cursor-not-allowed"
-                                            : "border-gray-300 hover:border-[#B00000] hover:bg-gray-50"
-                                    }`}
-                                >
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                        <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                                        <p className="mb-2 text-sm text-gray-500">
-                                            <span className="font-semibold">
-                                                Click to upload
-                                            </span>{" "}
-                                            or drag and drop
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                            JPEG, PNG, WebP, or PDF (MAX. 10MB per file)
-                                        </p>
-                                    </div>
-                                    <input
-                                        id="id_proof"
-                                        type="file"
-                                        className="hidden"
-                                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                                        onChange={handleIdProofChange}
-                                        multiple
-                                        disabled={
-                                            kycData?.status === "verified"
-                                        }
-                                    />
-                                </label>
-                            )}
-                        </div>
-
-                        {/* Profile Photo Upload */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-2xl font-bold text-slate-900 mb-6">
-                                Profile Photo
-                            </h2>
-                            <p className="text-sm text-slate-600 mb-4">
-                                Upload your profile photo in JPEG, PNG, or WebP
-                                format (Max 10MB)
-                            </p>
-
-                            {profilePhotoPreview ? (
-                                <div className="relative inline-block">
-                                    <img
-                                        src={profilePhotoPreview}
-                                        alt="Profile Photo Preview"
-                                        className="w-48 h-48 object-cover rounded-lg border border-gray-300"
-                                    />
-                                    {kycData?.status !== "verified" && (
-                                        <button
-                                            type="button"
-                                            onClick={removeProfilePhoto}
-                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
+                                    ) : (
+                                        <label
+                                            htmlFor="id_proof"
+                                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                                                kycData?.status === "verified"
+                                                    ? "border-gray-300 bg-gray-50 cursor-not-allowed"
+                                                    : "border-gray-300 hover:border-[#B00000] hover:bg-gray-50"
+                                            }`}
                                         >
-                                            <X className="w-4 h-4" />
-                                        </button>
+                                            <div className="flex flex-col items-center justify-center py-3">
+                                                <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                                <p className="mb-1 text-xs text-gray-500">
+                                                    <span className="font-semibold">
+                                                        Click to upload
+                                                    </span>
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    JPEG, PNG, WebP, or PDF (MAX. 10MB)
+                                                </p>
+                                            </div>
+                                            <input
+                                                id="id_proof"
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                                                onChange={handleIdProofChange}
+                                                multiple
+                                                disabled={
+                                                    kycData?.status === "verified"
+                                                }
+                                            />
+                                        </label>
                                     )}
                                 </div>
-                            ) : (
-                                <label
-                                    htmlFor="profile_photo"
-                                    className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                                        kycData?.status === "verified"
-                                            ? "border-gray-300 bg-gray-50 cursor-not-allowed"
-                                            : "border-gray-300 hover:border-[#B00000] hover:bg-gray-50"
-                                    }`}
-                                >
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                        <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                                        <p className="mb-2 text-sm text-gray-500">
-                                            <span className="font-semibold">
-                                                Click to upload
-                                            </span>{" "}
-                                            or drag and drop
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                            JPEG, PNG, or WebP (MAX. 10MB)
-                                        </p>
-                                    </div>
-                                    <input
-                                        id="profile_photo"
-                                        type="file"
-                                        className="hidden"
-                                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                                        onChange={handleProfilePhotoChange}
-                                        disabled={
-                                            kycData?.status === "verified"
-                                        }
-                                    />
-                                </label>
-                            )}
+
+                                {/* Profile Photo Upload */}
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                                        Profile Photo <span className="text-red-500">*</span>
+                                    </h3>
+                                    <p className="text-xs text-slate-600 mb-3">
+                                        Upload your profile photo in JPEG, PNG, or WebP (Max 10MB)
+                                    </p>
+
+                                    {profilePhotoPreview ? (
+                                        <div className="relative inline-block w-full">
+                                            <img
+                                                src={profilePhotoPreview}
+                                                alt="Profile Photo Preview"
+                                                className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                                            />
+                                            {kycData?.status !== "verified" && (
+                                                <button
+                                                    type="button"
+                                                    onClick={removeProfilePhoto}
+                                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <label
+                                            htmlFor="profile_photo"
+                                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                                                kycData?.status === "verified"
+                                                    ? "border-gray-300 bg-gray-50 cursor-not-allowed"
+                                                    : "border-gray-300 hover:border-[#B00000] hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            <div className="flex flex-col items-center justify-center py-3">
+                                                <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                                <p className="mb-1 text-xs text-gray-500">
+                                                    <span className="font-semibold">
+                                                        Click to upload
+                                                    </span>
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    JPEG, PNG, or WebP (MAX. 10MB)
+                                                </p>
+                                            </div>
+                                            <input
+                                                id="profile_photo"
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                                onChange={handleProfilePhotoChange}
+                                                disabled={
+                                                    kycData?.status === "verified"
+                                                }
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Submit Button */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ChevronRight, ChevronLeft } from "lucide-react";
@@ -11,12 +11,22 @@ import {
     isNavigationVisible,
     type NavigationItem,
 } from "@/lib/navigation";
+import { userStatsApi } from "@/lib/api/user-stats";
 
 export default function Sidebar() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { isMinimized, setIsMinimized } = useSidebar();
     const pathname = usePathname();
     const { user } = useAuth();
+    const [userStats, setUserStats] = useState<{
+        hasCourses: boolean;
+        hasOrders: boolean;
+        hasDownloads: boolean;
+    }>({
+        hasCourses: false,
+        hasOrders: false,
+        hasDownloads: false,
+    });
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
     const toggleMinimize = () => setIsMinimized(!isMinimized);
@@ -26,9 +36,40 @@ export default function Sidebar() {
         if (path === "/") {
             return pathname === "/";
         }
+        // For KYC paths, match exactly (don't match /kyc when on /kyc/product)
+        if (path === "/kyc" || path === "/kyc/product") {
+            return pathname === path;
+        }
         // For other paths, match exact or starts with path
         return pathname === path || pathname.startsWith(path + "/");
     };
+
+    // Fetch user stats for conditional navigation visibility
+    useEffect(() => {
+        const fetchUserStats = async () => {
+            if (user && user.role !== 'admin') {
+                try {
+                    const stats = await userStatsApi.getNavigationStats();
+                    setUserStats({
+                        hasCourses: stats.hasCourses,
+                        hasOrders: stats.hasOrders,
+                        hasDownloads: stats.hasDownloads,
+                    });
+                } catch (error) {
+                    console.error("Failed to fetch user stats:", error);
+                }
+            } else if (user && user.role === 'admin') {
+                // Admins see all navigation items
+                setUserStats({
+                    hasCourses: true,
+                    hasOrders: true,
+                    hasDownloads: true,
+                });
+            }
+        };
+
+        fetchUserStats();
+    }, [user]);
 
     // Sidebar now visible for all users (logged in or not)
     // if (user) {
@@ -92,12 +133,14 @@ export default function Sidebar() {
                         }`}
                     >
                         {sidebarSections.map((section, sectionIndex) => {
-                            // Filter items based on user role and authentication
+                            // Filter items based on user role, authentication, and user stats
                             const visibleItems = section.items.filter((item) =>
                                 isNavigationVisible(
                                     item,
                                     !!user, // user is authenticated
-                                    user?.role === 'admin' // user is admin
+                                    user?.role === 'admin', // user is admin
+                                    userStats, // user stats for conditional visibility
+                                    user?.user_type // user type for KYC visibility
                                 )
                             );
 

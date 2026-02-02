@@ -13,7 +13,7 @@ function calculateItemPrice(item: CartItem): {
     finalPrice: number;
     regularPrice: number;
     savings: number;
-    appliedTier: { min_qty: number; max_qty: number | null; price_per_item: number } | null;
+    appliedTier: { min_qty: number; max_qty: number | null; price_per_item: number; courier_charge?: number } | null;
 } {
     const regularPrice = item.price * item.quantity;
     
@@ -34,7 +34,8 @@ function calculateItemPrice(item: CartItem): {
     });
     
     if (tier) {
-        const finalPrice = tier.price_per_item * item.quantity;
+        const courierCharge = tier.courier_charge || 0;
+        const finalPrice = (tier.price_per_item * item.quantity) + courierCharge;
         return {
             finalPrice,
             regularPrice,

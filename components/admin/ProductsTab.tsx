@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Edit2, Plus, Trash2, X, Image as ImageIcon, Video, Trash } from "lucide-react";
 import { productsApi } from "@/lib/api/products";
 import { adminApi } from "@/lib/api/admin";
@@ -39,7 +40,7 @@ type ProductFormState = {
     digital_file_name_input?: string; // For linking existing files
     images: ImageFile[];
     videos: VideoFile[];
-    quantity_pricing: Array<{ min_qty: number | string; max_qty: number | string | null; price_per_item: number | string }>;
+    quantity_pricing: Array<{ min_qty: number | string; max_qty: number | string | null; price_per_item: number | string; courier_charge: number | string }>;
 };
 
 // Helper function to convert file to data URL for preview only
@@ -70,10 +71,11 @@ const defaultForm: ProductFormState = {
     digital_file_name_input: "",
     images: [],
     videos: [],
-    quantity_pricing: [{ min_qty: "", max_qty: "", price_per_item: "" }],
+    quantity_pricing: [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }],
 };
 
 export const ProductsTab: React.FC = () => {
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
@@ -168,71 +170,12 @@ export const ProductsTab: React.FC = () => {
     }, []);
 
     const openCreate = () => {
-        setEditing(null);
-        setForm(defaultForm);
-        setSlugManuallyEdited(false);
-        setCategoryInputValue("");
-        setIsModalOpen(true);
+        router.push("/admin/products/new");
     };
 
     const openEdit = (p: Product) => {
-        setEditing(p);
-        // Convert existing image URLs to ImageFile objects
-        const existingImages: ImageFile[] = (p.images || []).map(url => ({
-            file: null,
-            preview: url
-        }));
-        
-        // Convert existing videos to VideoFile objects
-        const existingVideos: VideoFile[] = (p.videos || []).map(video => ({
-            title: video.title || "",
-            file: null,
-            thumbnail: null,
-            preview: video.url || "",
-            thumbnailPreview: video.thumbnail || null
-        }));
-        
-        // Prepare categories array (ensure exactly 4 slots)
-        const productCategories = p.categories && p.categories.length > 0 
-            ? p.categories 
-            : (p.category ? [p.category] : []);
-        
-        const categoriesArray = [...productCategories];
-        while (categoriesArray.length < 4) {
-            categoriesArray.push("");
-        }
-        
-        // Prepare quantity pricing array
-        const quantityPricing = (p as any).quantity_pricing && Array.isArray((p as any).quantity_pricing)
-            ? (p as any).quantity_pricing.map((qp: any) => ({
-                min_qty: qp.min_qty || "",
-                max_qty: qp.max_qty || "",
-                price_per_item: qp.price_per_item || ""
-              }))
-            : [{ min_qty: "", max_qty: "", price_per_item: "" }];
-        
-        setForm({
-            name: p.name,
-            slug: p.slug,
-            category: productCategories[0] || "",
-            categories: categoriesArray,
-            description: p.description || "",
-            product_type: p.type,
-            price: Number(p.price),
-            stock_quantity: p.type === "physical" ? Number(p.stock_quantity || 0) : 0,
-            is_active: p.is_active !== false,
-            is_featured: p.is_featured || false,
-            is_coming_soon: (p as any).is_coming_soon || false,
-            requires_kyc: p.requires_kyc || false,
-            cover_image: null,
-            digital_file: null,
-            images: existingImages,
-            videos: existingVideos,
-            quantity_pricing: quantityPricing.length > 0 ? quantityPricing : [{ min_qty: "", max_qty: "", price_per_item: "" }],
-        });
-        setCategoryInputValue(productCategories[0] || "");
-        setSlugManuallyEdited(true);
-        setIsModalOpen(true);
+        // Navigate to dedicated edit page instead of opening modal
+        router.push(`/admin/products/${p.id}/edit`);
     };
 
     const onNameChange = (val: string) => {
@@ -295,7 +238,8 @@ export const ProductsTab: React.FC = () => {
                 .map(tier => ({
                     min_qty: Number(tier.min_qty),
                     max_qty: tier.max_qty && tier.max_qty !== "" ? Number(tier.max_qty) : null,
-                    price_per_item: Number(tier.price_per_item)
+                    price_per_item: Number(tier.price_per_item),
+                    courier_charge: Number(tier.courier_charge) || 0
                 }))
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
             
@@ -780,7 +724,7 @@ export const ProductsTab: React.FC = () => {
                                         💰 Tiered Pricing (Optional)
                                     </h3>
                                     <p className="text-xs text-gray-600 mb-3">
-                                        Set price per item based on quantity ranges. Example: 2-5 items → ₹90 each
+                                        Set price per item and courier charge based on quantity ranges.
                                     </p>
                                     
                                     <div className="space-y-2">
@@ -788,72 +732,95 @@ export const ProductsTab: React.FC = () => {
                                             const minQty = Number(tier.min_qty) || 0;
                                             const maxQty = tier.max_qty && tier.max_qty !== "" ? Number(tier.max_qty) : null;
                                             const pricePerItem = Number(tier.price_per_item) || 0;
+                                            const courierCharge = Number(tier.courier_charge) || 0;
                                             const savingsPerItem = form.price > 0 && pricePerItem > 0 ? form.price - pricePerItem : 0;
                                             const savingsPercent = form.price > 0 ? Math.round((savingsPerItem / form.price) * 100) : 0;
+                                            const exampleQty = minQty > 0 ? Math.max(minQty, 2) : 2;
+                                            const exampleTotal = pricePerItem > 0 ? (pricePerItem * exampleQty) + courierCharge : 0;
                                             
                                             return (
-                                                <div key={index} className="grid grid-cols-[auto,1fr,auto,auto] gap-2 items-center bg-white p-2 rounded">
-                                                    <div className="flex items-center gap-1">
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            placeholder="Min"
-                                                            value={tier.min_qty}
-                                                            onChange={(e) => {
-                                                                const newPricing = [...form.quantity_pricing];
-                                                                newPricing[index] = { ...newPricing[index], min_qty: e.target.value };
-                                                                setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                            }}
-                                                            className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
-                                                        />
-                                                        <span className="text-gray-400 text-xs">to</span>
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            placeholder="Max (or leave empty)"
-                                                            value={tier.max_qty || ""}
-                                                            onChange={(e) => {
-                                                                const newPricing = [...form.quantity_pricing];
-                                                                newPricing[index] = { ...newPricing[index], max_qty: e.target.value || null };
-                                                                setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                            }}
-                                                            className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
-                                                        />
+                                                <div key={index} className="bg-white p-3 rounded border border-gray-200">
+                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
+                                                        <div className="flex items-center gap-1">
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                placeholder="Min"
+                                                                value={tier.min_qty}
+                                                                onChange={(e) => {
+                                                                    const newPricing = [...form.quantity_pricing];
+                                                                    newPricing[index] = { ...newPricing[index], min_qty: e.target.value };
+                                                                    setForm(p => ({ ...p, quantity_pricing: newPricing }));
+                                                                }}
+                                                                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
+                                                            />
+                                                            <span className="text-gray-400 text-xs">to</span>
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                placeholder="Max"
+                                                                value={tier.max_qty || ""}
+                                                                onChange={(e) => {
+                                                                    const newPricing = [...form.quantity_pricing];
+                                                                    newPricing[index] = { ...newPricing[index], max_qty: e.target.value || null };
+                                                                    setForm(p => ({ ...p, quantity_pricing: newPricing }));
+                                                                }}
+                                                                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-gray-500 text-xs">₹</span>
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                min="0"
+                                                                placeholder="Price/item"
+                                                                value={tier.price_per_item}
+                                                                onChange={(e) => {
+                                                                    const newPricing = [...form.quantity_pricing];
+                                                                    newPricing[index] = { ...newPricing[index], price_per_item: e.target.value };
+                                                                    setForm(p => ({ ...p, quantity_pricing: newPricing }));
+                                                                }}
+                                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-gray-500 text-xs">🚚</span>
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                min="0"
+                                                                placeholder="Courier"
+                                                                value={tier.courier_charge}
+                                                                onChange={(e) => {
+                                                                    const newPricing = [...form.quantity_pricing];
+                                                                    newPricing[index] = { ...newPricing[index], courier_charge: e.target.value };
+                                                                    setForm(p => ({ ...p, quantity_pricing: newPricing }));
+                                                                }}
+                                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
+                                                            />
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <span className="text-gray-400 text-xs">→</span>
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            min="0"
-                                                            placeholder="₹/item"
-                                                            value={tier.price_per_item}
-                                                            onChange={(e) => {
-                                                                const newPricing = [...form.quantity_pricing];
-                                                                newPricing[index] = { ...newPricing[index], price_per_item: e.target.value };
-                                                                setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                            }}
-                                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
-                                                        />
-                                                        <span className="text-xs text-gray-500">/each</span>
-                                                    </div>
-                                                    {minQty > 0 && pricePerItem > 0 && (
-                                                        <div className="text-xs text-gray-600 whitespace-nowrap">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="text-xs text-gray-600">
                                                             {savingsPerItem > 0 && (
-                                                                <span className="text-green-600">Save ₹{savingsPerItem.toFixed(0)} ({savingsPercent}%)</span>
+                                                                <span className="text-green-600">💰 Save ₹{savingsPerItem.toFixed(0)} ({savingsPercent}%) per item | </span>
+                                                            )}
+                                                            {exampleTotal > 0 && (
+                                                                <span className="text-blue-600">Ex: {exampleQty} items = ₹{exampleTotal.toFixed(0)}</span>
                                                             )}
                                                         </div>
-                                                    )}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const newPricing = form.quantity_pricing.filter((_, i) => i !== index);
-                                                            setForm(p => ({ ...p, quantity_pricing: newPricing.length > 0 ? newPricing : [{ min_qty: "", max_qty: "", price_per_item: "" }] }));
-                                                        }}
-                                                        className="p-1 text-red-500 hover:bg-red-50 rounded"
-                                                    >
-                                                        <Trash className="w-4 h-4" />
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newPricing = form.quantity_pricing.filter((_, i) => i !== index);
+                                                                setForm(p => ({ ...p, quantity_pricing: newPricing.length > 0 ? newPricing : [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }] }));
+                                                            }}
+                                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                        >
+                                                            <Trash className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
@@ -863,7 +830,7 @@ export const ProductsTab: React.FC = () => {
                                             onClick={() => {
                                                 setForm(p => ({
                                                     ...p,
-                                                    quantity_pricing: [...p.quantity_pricing, { min_qty: "", max_qty: "", price_per_item: "" }]
+                                                    quantity_pricing: [...p.quantity_pricing, { min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }]
                                                 }));
                                             }}
                                             className="w-full px-3 py-2 text-sm border border-dashed border-gray-300 rounded text-gray-600 hover:border-[#B00000] hover:text-[#B00000] transition-colors"

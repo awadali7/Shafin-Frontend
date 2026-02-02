@@ -261,6 +261,15 @@ function ProductKYCContent() {
             return;
         }
 
+        // Check if business proof is provided (REQUIRED)
+        if (
+            businessProofFiles.length < 1 &&
+            (!kycData?.business_proofs || kycData.business_proofs.length < 1)
+        ) {
+            toast.error("At least 1 Business proof document is required");
+            return;
+        }
+
         setSubmitting(true);
 
         try {
@@ -283,6 +292,9 @@ function ProductKYCContent() {
             if (response.success) {
                 setSuccess(true);
                 setKycData(response.data || null);
+
+                // Refresh user profile to get updated user_type
+                await refreshProfile();
 
                 // Refresh KYC data
                 const kycResponse = await productKycApi.getMyProductKYC();
@@ -327,7 +339,7 @@ function ProductKYCContent() {
                 // Refresh user profile to get updated product_terms_accepted_at
                 await refreshProfile();
                 // Redirect after accepting terms
-                router.push(redirectPath || "/dashboard");
+                router.push(redirectPath || "/shop");
             } else {
                 toast.error(
                     response.message ||
@@ -356,19 +368,19 @@ function ProductKYCContent() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-slate-900 flex items-center">
+            <div className="mb-4">
+                <h1 className="text-2xl font-bold text-slate-900 flex items-center">
                     Business KYC Verification
                 </h1>
-                <p className="text-sm text-slate-600 mt-2">
+                <p className="text-sm text-slate-600 mt-1">
                     Complete your Business KYC verification to purchase products
                 </p>
             </div>
 
             {/* Step Indicator */}
-            <div className="mb-8">
+            <div className="mb-6">
                 <div className="flex items-center justify-center">
                     {/* Step 1 */}
                     <div className="flex items-center">
@@ -433,7 +445,7 @@ function ProductKYCContent() {
             {/* Status Banner */}
             {kycData && (
                 <div
-                    className={`mb-8 p-4 rounded-lg ${
+                    className={`mb-6 p-3 rounded-lg ${
                         kycData.status === "verified"
                             ? "bg-green-50 border border-green-200"
                             : kycData.status === "rejected"
@@ -500,7 +512,7 @@ function ProductKYCContent() {
 
             {/* Success Message */}
             {success && (
-                <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                             <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -523,7 +535,7 @@ function ProductKYCContent() {
 
             {/* Error Message */}
             {error && (
-                <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <div className="flex items-center space-x-3">
                         <AlertCircle className="w-6 h-6 text-red-600" />
                         <p className="text-red-800">{error}</p>
@@ -532,13 +544,13 @@ function ProductKYCContent() {
             )}
 
             {/* KYC Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                    <h2 className="text-lg font-bold text-slate-900 mb-4">
                         Personal Information
                     </h2>
 
-                    <div className="grid grid-cols-1 gap-6">
+                    <div className="grid grid-cols-1 gap-4">
                         {/* Full Name */}
                         <div>
                             <label
@@ -580,66 +592,69 @@ function ProductKYCContent() {
                             />
                         </div>
 
-                        {/* Contact Number */}
-                        <div>
-                            <label
-                                htmlFor="contact_number"
-                                className="block text-sm font-medium text-slate-700 mb-2"
-                            >
-                                Contact Number{" "}
-                                <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="tel"
-                                id="contact_number"
-                                name="contact_number"
-                                value={formData.contact_number}
-                                onChange={handleInputChange}
-                                required
-                                placeholder="+91 1234567890"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
-                                disabled={kycData?.status === "verified"}
-                            />
-                        </div>
+                        {/* Contact Numbers - Side by Side */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Contact Number */}
+                            <div>
+                                <label
+                                    htmlFor="contact_number"
+                                    className="block text-sm font-medium text-slate-700 mb-2"
+                                >
+                                    Contact Number{" "}
+                                    <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="tel"
+                                    id="contact_number"
+                                    name="contact_number"
+                                    value={formData.contact_number}
+                                    onChange={handleInputChange}
+                                    required
+                                    placeholder="+91 1234567890"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
+                                    disabled={kycData?.status === "verified"}
+                                />
+                            </div>
 
-                        {/* WhatsApp Number */}
-                        <div>
-                            <label
-                                htmlFor="whatsapp_number"
-                                className="block text-sm font-medium text-slate-700 mb-2"
-                            >
-                                WhatsApp Number{" "}
-                                <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="tel"
-                                id="whatsapp_number"
-                                name="whatsapp_number"
-                                value={formData.whatsapp_number}
-                                onChange={handleInputChange}
-                                required
-                                placeholder="+91 1234567890"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
-                                disabled={kycData?.status === "verified"}
-                            />
+                            {/* WhatsApp Number */}
+                            <div>
+                                <label
+                                    htmlFor="whatsapp_number"
+                                    className="block text-sm font-medium text-slate-700 mb-2"
+                                >
+                                    WhatsApp Number{" "}
+                                    <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="tel"
+                                    id="whatsapp_number"
+                                    name="whatsapp_number"
+                                    value={formData.whatsapp_number}
+                                    onChange={handleInputChange}
+                                    required
+                                    placeholder="+91 1234567890"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent outline-none"
+                                    disabled={kycData?.status === "verified"}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* ID Proof Upload */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-6">
-                        ID Proof Documents
-                    </h2>
-                    <p className="text-sm text-slate-600 mb-4">
-                        Upload at least 2 ID proof documents (Aadhaar, PAN card,
-                        Passport, Voter ID, etc.) in JPEG, PNG, WebP, or PDF
-                        format (Max 10MB per file).
-                    </p>
+                {/* Document Upload - Side by Side */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* ID Proof Upload */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                        <h2 className="text-lg font-bold text-slate-900 mb-2">
+                            ID Proof Documents <span className="text-red-500">*</span>
+                        </h2>
+                        <p className="text-xs text-slate-600 mb-3">
+                            Upload at least 2 ID proof documents (Aadhaar, PAN, Passport, Voter ID, etc.)
+                        </p>
 
                     {idProofPreviews.length > 0 ? (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 {idProofPreviews.map((previewItem, index) => (
                                     <div key={index} className="relative">
                                         {previewItem.file?.type.startsWith(
@@ -648,14 +663,14 @@ function ProductKYCContent() {
                                         (previewItem.preview &&
                                             !previewItem.preview.includes(
                                                 ".pdf"
-                                            )) ? (
+                                            )                                        ) ? (
                                             <img
                                                 src={previewItem.preview}
                                                 alt={`ID Proof ${index + 1}`}
-                                                className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                                                className="w-full h-32 object-cover rounded-lg border border-gray-300"
                                             />
                                         ) : (
-                                            <div className="w-full h-48 p-8 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                                            <div className="w-full h-32 p-4 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
                                                 <p className="text-center text-slate-600">
                                                     PDF File
                                                 </p>
@@ -703,23 +718,22 @@ function ProductKYCContent() {
                     ) : (
                         <label
                             htmlFor="id_proofs"
-                            className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
                                 kycData?.status === "verified"
                                     ? "border-gray-300 bg-gray-50 cursor-not-allowed"
                                     : "border-gray-300 hover:border-[#B00000] hover:bg-gray-50"
                             }`}
                         >
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                                <p className="mb-2 text-sm text-gray-500">
+                            <div className="flex flex-col items-center justify-center py-3">
+                                <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                <p className="mb-1 text-sm text-gray-500">
                                     <span className="font-semibold">
                                         Click to upload
                                     </span>{" "}
                                     or drag and drop
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                    JPEG, PNG, WebP, or PDF (MAX. 10MB per file)
-                                    - Minimum 2 files
+                                    Min 2 files - JPEG, PNG, WebP, PDF (10MB max)
                                 </p>
                             </div>
                             <input
@@ -733,22 +747,20 @@ function ProductKYCContent() {
                             />
                         </label>
                     )}
-                </div>
+                    </div>
 
-                {/* Business Proof Upload (Optional) */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-6">
-                        Business Proof Documents (Optional)
-                    </h2>
-                    <p className="text-sm text-slate-600 mb-4">
-                        Upload business proof documents if applicable (GST
-                        certificate, Shop license, Company registration, etc.)
-                        in JPEG, PNG, WebP, or PDF format (Max 10MB per file).
-                    </p>
+                    {/* Business Proof Upload - REQUIRED */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                        <h2 className="text-lg font-bold text-slate-900 mb-2">
+                            Business Proof Documents <span className="text-red-500">*</span>
+                        </h2>
+                        <p className="text-xs text-slate-600 mb-3">
+                            Upload business proof documents (GST, Shop license, Company registration, etc.)
+                        </p>
 
                     {businessProofPreviews.length > 0 ? (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 {businessProofPreviews.map(
                                     (previewItem, index) => (
                                         <div key={index} className="relative">
@@ -758,16 +770,16 @@ function ProductKYCContent() {
                                             (previewItem.preview &&
                                                 !previewItem.preview.includes(
                                                     ".pdf"
-                                                )) ? (
+                                                )                                            ) ? (
                                                 <img
                                                     src={previewItem.preview}
                                                     alt={`Business Proof ${
                                                         index + 1
                                                     }`}
-                                                    className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                                                    className="w-full h-32 object-cover rounded-lg border border-gray-300"
                                                 />
                                             ) : (
-                                                <div className="w-full h-48 p-8 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                                                <div className="w-full h-32 p-4 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
                                                     <p className="text-center text-slate-600">
                                                         PDF File
                                                     </p>
@@ -818,23 +830,22 @@ function ProductKYCContent() {
                     ) : (
                         <label
                             htmlFor="business_proofs"
-                            className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
                                 kycData?.status === "verified"
                                     ? "border-gray-300 bg-gray-50 cursor-not-allowed"
                                     : "border-gray-300 hover:border-[#B00000] hover:bg-gray-50"
                             }`}
                         >
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                <Upload className="w-10 h-10 mb-3 text-gray-400" />
-                                <p className="mb-2 text-sm text-gray-500">
+                            <div className="flex flex-col items-center justify-center py-3">
+                                <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                <p className="mb-1 text-sm text-gray-500">
                                     <span className="font-semibold">
                                         Click to upload
                                     </span>{" "}
                                     or drag and drop
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                    JPEG, PNG, WebP, or PDF (MAX. 10MB per file)
-                                    - Optional
+                                    Min 1 file - JPEG, PNG, WebP, PDF (10MB max)
                                 </p>
                             </div>
                             <input
@@ -848,6 +859,7 @@ function ProductKYCContent() {
                             />
                         </label>
                     )}
+                    </div>
                 </div>
 
                 {/* Submit Button */}

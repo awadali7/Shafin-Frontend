@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CreditCard, MapPin, Package } from "lucide-react";
@@ -89,6 +89,36 @@ export default function CheckoutPage() {
     const hasDigitalItems = items.some(
         (item) => item.type === "digital" || item.type === "course"
     );
+
+    // Calculate courier charges and items subtotal separately (must be before early return)
+    const { itemsSubtotal, courierCharges } = useMemo(() => {
+        let itemsTotal = 0;
+        let courierTotal = 0;
+
+        items.forEach(item => {
+            if (item.quantity_pricing && item.quantity_pricing.length > 0) {
+                const tier = item.quantity_pricing.find(t => {
+                    const minQty = t.min_qty || 1;
+                    const maxQty = t.max_qty || Infinity;
+                    return item.quantity >= minQty && item.quantity <= maxQty;
+                });
+
+                if (tier) {
+                    itemsTotal += tier.price_per_item * item.quantity;
+                    courierTotal += tier.courier_charge || 0;
+                } else {
+                    itemsTotal += item.price * item.quantity;
+                }
+            } else {
+                itemsTotal += item.price * item.quantity;
+            }
+        });
+
+        return { itemsSubtotal: itemsTotal, courierCharges: courierTotal };
+    }, [items]);
+
+    const subtotal = itemsSubtotal + courierCharges;
+    const total = subtotal; // No additional charges
 
     // If cart no longer contains physical items, force a valid payment method
     useEffect(() => {
@@ -280,7 +310,18 @@ export default function CheckoutPage() {
                         // Payment verified successfully
                         clearCart();
                         setIsProcessingPayment(false);
-                        router.push("/downloads");
+                        
+                        // Redirect based on product type
+                        if (hasPhysicalItems && !hasDigitalItems) {
+                            // Only physical products -> My Orders
+                            router.push("/orders");
+                        } else if (hasDigitalItems && !hasPhysicalItems) {
+                            // Only digital products -> My Downloads
+                            router.push("/downloads");
+                        } else {
+                            // Mixed order -> My Orders (shows all orders)
+                            router.push("/orders");
+                        }
                     } catch (e: any) {
                         setIsProcessingPayment(false);
                         const errorMsg =
@@ -371,9 +412,6 @@ export default function CheckoutPage() {
             alert(err?.message || "Checkout failed");
         }
     };
-
-    const subtotal = getTotalPrice();
-    const total = subtotal; // No shipping charges
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -719,9 +757,10 @@ export default function CheckoutPage() {
                                                         );
 
                                                     if (tier) {
+                                                        const courierCharge = tier.courier_charge || 0;
                                                         return (
-                                                            tier.price_per_item *
-                                                            item.quantity
+                                                            (tier.price_per_item *
+                                                            item.quantity) + courierCharge
                                                         ).toFixed(2);
                                                     }
                                                 }
@@ -738,11 +777,19 @@ export default function CheckoutPage() {
                         </div>
                         <div className="space-y-2 pt-4 border-t border-gray-200">
                             <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600">Subtotal</span>
+                                <span className="text-gray-600">Items Subtotal</span>
                                 <span className="text-slate-900">
-                                    ₹{subtotal.toFixed(2)}
+                                    ₹{itemsSubtotal.toFixed(2)}
                                 </span>
                             </div>
+                            {courierCharges > 0 && (
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600">Courier Charges</span>
+                                    <span className="text-slate-900">
+                                        ₹{courierCharges.toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
                             <div className="flex items-center justify-between text-lg font-bold pt-2 border-t border-gray-200">
                                 <span className="text-slate-900">Total</span>
                                 <span className="text-[#B00000]">

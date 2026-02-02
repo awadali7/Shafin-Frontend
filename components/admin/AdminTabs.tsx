@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 
 interface AdminTabsProps {
     activeTab:
@@ -33,6 +34,8 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
     activeTab,
     onTabChange,
 }) => {
+    const router = useRouter();
+    
     const tabs = [
         { id: "dashboard" as const, label: "Dashboard" },
         { id: "users" as const, label: "Users" },
@@ -40,7 +43,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
         { id: "courses" as const, label: "Courses" },
         { id: "products" as const, label: "Products" },
         { id: "digital_files" as const, label: "Digital Files" },
-        { id: "orders" as const, label: "Orders" },
+        { id: "orders" as const, label: "Orders", isLink: true, href: "/admin/orders" },
         { id: "blogs" as const, label: "Blogs" },
         { id: "kyc" as const, label: "Course KYC" },
         { id: "product_kyc" as const, label: "Product KYC" },
@@ -53,7 +56,13 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
-                            onClick={() => onTabChange(tab.id)}
+                            onClick={() => {
+                                if (tab.isLink && tab.href) {
+                                    router.push(tab.href);
+                                } else {
+                                    onTabChange(tab.id);
+                                }
+                            }}
                             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                                 activeTab === tab.id
                                     ? "border-[#B00000] text-[#B00000]"

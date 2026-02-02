@@ -47,6 +47,7 @@ type ShopProductDetails = {
         min_qty: number;
         max_qty: number | null;
         price_per_item: number;
+        courier_charge?: number;
     }>;
 };
 
@@ -168,7 +169,8 @@ export default function ProductDetailPage() {
         });
 
         if (tier) {
-            setCalculatedPrice(tier.price_per_item * quantity);
+            const courierCharge = tier.courier_charge || 0;
+            setCalculatedPrice((tier.price_per_item * quantity) + courierCharge);
             setAppliedTier(tier);
         } else {
             setCalculatedPrice(product.price * quantity);

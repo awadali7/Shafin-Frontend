@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { GraduationCap, Users, Award, BookOpen } from "lucide-react";
 
 export default function AboutPage() {
@@ -145,6 +146,41 @@ export default function AboutPage() {
                                 <p className="text-slate-600">
                                     {value.description}
                                 </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Brand Partners Section */}
+            <section className="py-12 bg-gray-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-bold text-slate-900 mb-4">
+                            Our Brand Partners
+                        </h2>
+                        <p className="text-lg text-slate-600 max-w-3xl mx-auto">
+                            Trusted by leading automotive brands worldwide
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center justify-items-center">
+                        {[
+                            { src: "/images/1.png", alt: "Partner 1" },
+                            { src: "/images/2.png", alt: "Partner 2" },
+                            { src: "/images/3.png", alt: "Partner 3" },
+                        ].map((partner, index) => (
+                            <div
+                                key={index}
+                                className="relative w-full h-48 flex items-center justify-center hover:scale-105 transition-all duration-300"
+                            >
+                                <Image
+                                    src={partner.src}
+                                    alt={partner.alt}
+                                    fill
+                                    className="object-contain"
+                                    sizes="(max-width: 768px) 100vw, 33vw"
+                                    loading="lazy"
+                                />
                             </div>
                         ))}
                     </div>

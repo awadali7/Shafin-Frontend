@@ -16,7 +16,7 @@ export interface CartItem {
     type: "physical" | "digital" | "course";
     quantity: number;
     slug?: string;
-    quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number }>;
+    quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number; courier_charge?: number }>;
 }
 
 interface CartContextType {

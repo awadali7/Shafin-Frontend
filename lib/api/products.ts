@@ -53,7 +53,7 @@ export const productsApi = {
         videoTitles?: string[];
         videoThumbnails?: File[];
         digital_file_name?: string; // For linking existing files
-        quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number }>;
+        quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number; courier_charge?: number }>;
     }): Promise<ApiResponse<Product>> => {
         const form = new FormData();
         form.append("name", data.name);
@@ -143,7 +143,7 @@ export const productsApi = {
             videoTitles?: string[];
             videoThumbnails?: File[];
             digital_file_name?: string; // For linking existing files
-            quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number }>;
+            quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number; courier_charge?: number }>;
         }>
     ): Promise<ApiResponse<Product>> => {
         const form = new FormData();

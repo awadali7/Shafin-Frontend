@@ -13,19 +13,16 @@ function ChooseUserTypeContent() {
     const [error, setError] = useState<string | null>(null);
 
     const redirectPath = searchParams.get("redirect") || "/dashboard";
+    // @ts-ignore - user_type exists but might not be in type definition
+    const currentUserType = user?.user_type;
 
-    // If user already has a type, redirect
+    // If user not authenticated, redirect to login
     useEffect(() => {
         if (!user) {
             router.push("/login");
             return;
         }
-
-        // @ts-ignore - user_type exists but might not be in type definition
-        if (user.user_type) {
-            router.push(redirectPath);
-        }
-    }, [user, router, redirectPath]);
+    }, [user, router]);
 
     const handleSelectType = async (userType: "student" | "business_owner") => {
         setLoading(true);
@@ -80,12 +77,21 @@ function ChooseUserTypeContent() {
                 {/* Header */}
                 <div className="text-center mb-12">
                     <h1 className="text-4xl font-bold text-slate-900 mb-4">
-                        Welcome to Our Platform! 👋
+                        {currentUserType ? "Update Your Account Type" : "Welcome to Our Platform! 👋"}
                     </h1>
                     <p className="text-lg text-slate-600">
-                        To provide you with the best experience, please tell us which
-                        describes you best:
+                        {currentUserType 
+                            ? `You can change your selection before completing KYC verification.`
+                            : "To provide you with the best experience, please tell us which describes you best:"
+                        }
                     </p>
+                    {currentUserType && (
+                        <div className="mt-4 inline-block px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-sm text-blue-700">
+                                Current type: <strong className="capitalize">{currentUserType.replace('_', ' ')}</strong>
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Error Message */}
@@ -101,7 +107,11 @@ function ChooseUserTypeContent() {
                     <button
                         onClick={() => handleSelectType("student")}
                         disabled={loading}
-                        className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 border-2 border-transparent hover:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 border-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                            currentUserType === "student" 
+                                ? "border-blue-500 bg-blue-50" 
+                                : "border-transparent hover:border-blue-500"
+                        }`}
                     >
                         <div className="flex flex-col items-center text-center space-y-4">
                             <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-500 transition-colors">
@@ -127,7 +137,11 @@ function ChooseUserTypeContent() {
                     <button
                         onClick={() => handleSelectType("business_owner")}
                         disabled={loading}
-                        className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 border-2 border-transparent hover:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 border-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                            currentUserType === "business_owner" 
+                                ? "border-green-500 bg-green-50" 
+                                : "border-transparent hover:border-green-500"
+                        }`}
                     >
                         <div className="flex flex-col items-center text-center space-y-4">
                             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-500 transition-colors">
@@ -157,7 +171,10 @@ function ChooseUserTypeContent() {
                         disabled={loading}
                         className="text-slate-600 hover:text-slate-900 font-medium transition-colors disabled:opacity-50 underline"
                     >
-                        ⏭️ Skip for now (you can choose later)
+                        {currentUserType 
+                            ? "← Go Back" 
+                            : "⏭️ Skip for now (you can choose later)"
+                        }
                     </button>
                 </div>
 

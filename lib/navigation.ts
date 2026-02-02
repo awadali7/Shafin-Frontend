@@ -18,6 +18,7 @@ import {
     UserCheck,
     LayoutDashboard,
     Store,
+    BadgeCheck,
 } from "lucide-react";
 
 export interface NavigationItem {
@@ -27,6 +28,12 @@ export interface NavigationItem {
     requiresAuth?: boolean;
     adminOnly?: boolean;
     badge?: string | number;
+    // Conditional visibility based on user data
+    showIfHasCourses?: boolean;
+    showIfHasOrders?: boolean;
+    showIfHasDownloads?: boolean;
+    // Conditional visibility based on user type
+    showIfUserType?: "student" | "business_owner" | null;
 }
 
 export interface NavigationSection {
@@ -101,24 +108,35 @@ export const sidebarSections: NavigationSection[] = [
                 href: "/my-learning",
                 icon: Target,
                 requiresAuth: true,
+                showIfHasCourses: true,
             },
             {
                 label: "My Orders",
                 href: "/orders",
                 icon: ShoppingBag,
                 requiresAuth: true,
+                showIfHasOrders: true,
             },
             {
                 label: "My Downloads",
                 href: "/downloads",
                 icon: Download,
                 requiresAuth: true,
+                showIfHasDownloads: true,
             },
             {
-                label: "KYC Verification",
+                label: "Student KYC",
                 href: "/kyc",
                 icon: UserCheck,
                 requiresAuth: true,
+                showIfUserType: "student",
+            },
+            {
+                label: "Business KYC",
+                href: "/kyc/product",
+                icon: BadgeCheck,
+                requiresAuth: true,
+                showIfUserType: "business_owner",
             },
         ],
     },
@@ -162,10 +180,37 @@ export const getAllSidebarItems = (): NavigationItem[] => {
 export const isNavigationVisible = (
     item: NavigationItem,
     isAuthenticated: boolean,
-    isAdmin: boolean = false
+    isAdmin: boolean = false,
+    userStats?: {
+        hasCourses?: boolean;
+        hasOrders?: boolean;
+        hasDownloads?: boolean;
+    },
+    userType?: "student" | "business_owner" | null
 ): boolean => {
+    // Basic auth checks
     if (item.requiresAuth && !isAuthenticated) return false;
     if (item.adminOnly && !isAdmin) return false;
+    
+    // Conditional visibility based on user data (admins see everything)
+    if (!isAdmin && userStats) {
+        if (item.showIfHasCourses && !userStats.hasCourses) return false;
+        if (item.showIfHasOrders && !userStats.hasOrders) return false;
+        if (item.showIfHasDownloads && !userStats.hasDownloads) return false;
+    }
+    
+    // Conditional visibility based on user type (admins see all KYC options)
+    if (!isAdmin && item.showIfUserType) {
+        // If user hasn't selected a type yet, show both KYC options
+        if (userType === null || userType === undefined) {
+            return true;
+        }
+        // Otherwise, only show the KYC option matching their user type
+        if (item.showIfUserType !== userType) {
+            return false;
+        }
+    }
+    
     return true;
 };
 

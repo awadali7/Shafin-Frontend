@@ -13,4 +13,5 @@ export { productsApi } from "./products";
 export { ordersApi } from "./orders";
 export { entitlementsApi } from "./entitlements";
 export { paymentsApi } from "./payments";
+export { userStatsApi } from "./user-stats";
 export * from "./types";

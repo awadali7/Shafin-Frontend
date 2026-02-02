@@ -38,6 +38,12 @@ type ShopProduct = {
         format?: DigitalFileFormat;
         filename?: string;
     };
+    quantity_pricing?: Array<{
+        min_qty: number;
+        max_qty: number | null;
+        price_per_item: number;
+        courier_charge?: number;
+    }>;
 };
 
 const FALLBACK_IMAGE =
@@ -67,6 +73,7 @@ function mapApiProductToShopProduct(p: Product): ShopProduct {
                       filename: p.digital_file_name || undefined,
                   }
                 : undefined,
+        quantity_pricing: p.quantity_pricing || p.tiered_pricing || undefined,
     };
 }
 
@@ -181,6 +188,7 @@ export default function ShopPage() {
             type: product.type,
             quantity: 1,
             slug: product.slug,
+            quantity_pricing: product.quantity_pricing,
         });
     };
 
