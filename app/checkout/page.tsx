@@ -317,7 +317,7 @@ export default function CheckoutPage() {
                             router.push("/orders");
                         } else if (hasDigitalItems && !hasPhysicalItems) {
                             // Only digital products -> My Downloads
-                            router.push("/downloads");
+                        router.push("/downloads");
                         } else {
                             // Mixed order -> My Orders (shows all orders)
                             router.push("/orders");
