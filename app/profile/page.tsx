@@ -22,6 +22,15 @@ type KYCStatus = {
     business_kyc_status: "verified" | "pending" | "rejected" | null;
 };
 
+type KYCStatusResponse = {
+    status: "verified" | "pending" | "rejected";
+};
+
+type ProfilePictureResponse = {
+    success: boolean;
+    message?: string;
+};
+
 export default function ProfilePage() {
     const {
         isAuth,
@@ -59,12 +68,12 @@ export default function ProfilePage() {
     const fetchKYCStatus = async () => {
         try {
             // Fetch student KYC status
-            const studentKycResponse = await apiClient.get("/kyc/status");
-            const studentKycData = studentKycResponse.data;
+            const studentKycResponse = await apiClient.get<KYCStatusResponse>("/kyc/status");
+            const studentKycData = studentKycResponse.data as KYCStatusResponse;
 
             // Fetch business KYC status
-            const businessKycResponse = await apiClient.get("/product-kyc/status");
-            const businessKycData = businessKycResponse.data;
+            const businessKycResponse = await apiClient.get<KYCStatusResponse>("/product-kyc/status");
+            const businessKycData = businessKycResponse.data as KYCStatusResponse;
 
             setKycStatus({
                 student_kyc_status: studentKycData?.status || null,
@@ -194,9 +203,9 @@ export default function ProfilePage() {
             formData.append("profile_picture", croppedImageBlob, "profile-picture.jpg");
             formData.append("type", "images");
 
-            const response = await apiClient.post("/users/profile/picture", formData);
+            const response = await apiClient.post<ProfilePictureResponse>("/users/profile/picture", formData);
 
-            if (response.data.success) {
+            if ((response.data as ProfilePictureResponse).success) {
                 await refreshProfile();
                 setSuccess("Profile picture updated successfully");
             }
@@ -223,9 +232,9 @@ export default function ProfilePage() {
             setError(null);
             setSuccess(null);
 
-            const response = await apiClient.delete("/users/profile/picture");
+            const response = await apiClient.delete<ProfilePictureResponse>("/users/profile/picture");
 
-            if (response.data.success) {
+            if ((response.data as ProfilePictureResponse).success) {
                 await refreshProfile();
                 setSuccess("Profile picture deleted successfully");
             }

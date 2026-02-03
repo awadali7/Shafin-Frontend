@@ -17,6 +17,7 @@ export interface User {
     user_type?: "student" | "business_owner" | null;
     course_terms_accepted_at?: string | null;
     product_terms_accepted_at?: string | null;
+    profile_picture?: string | null;
     last_login_at?: string;
     last_login_ip?: string;
     last_login_device?: DeviceInfo;
