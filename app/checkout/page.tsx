@@ -135,7 +135,7 @@ export default function CheckoutPage() {
     // Check if cart is empty
     if (items.length === 0) {
         return (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                     <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h2 className="text-2xl font-bold text-slate-900 mb-2">
@@ -414,7 +414,7 @@ export default function CheckoutPage() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Back Button */}
             <Link
                 href="/shop"

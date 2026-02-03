@@ -120,7 +120,7 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="flex items-center justify-between gap-4 mb-6">
                 <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
             </div>

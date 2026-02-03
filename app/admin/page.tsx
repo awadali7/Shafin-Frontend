@@ -1721,7 +1721,7 @@ export default function AdminPage() {
             <AdminTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
             {/* Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {error && (
                     <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                         <p className="text-sm text-red-600">{error}</p>

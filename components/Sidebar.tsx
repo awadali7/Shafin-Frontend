@@ -183,15 +183,12 @@ export default function Sidebar() {
                                                         }
                                                     }}
                                                     className={`
-                                            flex items-center ${
+                                            flex items-center py-3 rounded-xl transition-all duration-300
+                                            ${
                                                 isMinimized
-                                                    ? "justify-center"
-                                                    : "space-x-3"
-                                            } ${
-                                                        isMinimized
-                                                            ? "px-2"
-                                                            : "px-4"
-                                                    } py-3 rounded-xl transition-all duration-300
+                                                    ? "justify-center w-full"
+                                                    : "gap-3 px-4"
+                                            }
                                             ${
                                                 active
                                                     ? "bg-[#B00000] text-white"
@@ -204,16 +201,12 @@ export default function Sidebar() {
                                                             : ""
                                                     }
                                                 >
-                                                    <Icon className="w-5 h-5 shrink-0" />
-                                                    <span
-                                                        className={`font-medium transition-all duration-300 flex-1 ${
-                                                            isMinimized
-                                                                ? "opacity-0 w-0 overflow-hidden"
-                                                                : "opacity-100"
-                                                        }`}
-                                                    >
-                                                        {item.label}
-                                                    </span>
+                                                    <Icon className="w-5 h-5 shrink-0 flex-shrink-0" />
+                                                    {!isMinimized && (
+                                                        <span className="font-medium transition-opacity duration-300 flex-1">
+                                                            {item.label}
+                                                        </span>
+                                                    )}
                                                     {item.badge &&
                                                         !isMinimized && (
                                                             <span className="px-2 py-0.5 text-xs font-semibold bg-[#B00000] text-white rounded-full">

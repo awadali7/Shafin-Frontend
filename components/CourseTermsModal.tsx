@@ -50,34 +50,34 @@ export default function CourseTermsModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col border border-gray-100">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-blue-600" />
+                <div className="flex items-center justify-between p-8 border-b border-gray-100">
+                    <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <FileText className="w-6 h-6 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold text-slate-900">
+                        <h2 className="text-2xl font-semibold text-slate-900">
                             Course Terms & Conditions
                         </h2>
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all"
                         disabled={accepting}
                     >
-                        <X className="w-6 h-6" />
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Terms Content */}
                 <div
                     onScroll={handleScroll}
-                    className="flex-1 overflow-y-auto p-6 space-y-4 text-sm text-slate-700"
+                    className="flex-1 overflow-y-auto p-8 space-y-6 text-sm text-slate-600"
                 >
                     <div className="prose prose-sm max-w-none">
-                        <h3 className="text-lg font-semibold text-slate-900">
+                        <h3 className="text-base font-semibold text-slate-900 mb-2">
                             1. Course Access and Usage
                         </h3>
                         <p>
@@ -86,7 +86,7 @@ export default function CourseTermsModal({
                             materials for the duration specified in your purchase.
                         </p>
 
-                        <h3 className="text-lg font-semibold text-slate-900 mt-6">
+                        <h3 className="text-base font-semibold text-slate-900 mb-2 mt-6">
                             2. Content Ownership
                         </h3>
                         <p>
@@ -96,7 +96,7 @@ export default function CourseTermsModal({
                             permission.
                         </p>
 
-                        <h3 className="text-lg font-semibold text-slate-900 mt-6">
+                        <h3 className="text-base font-semibold text-slate-900 mb-2 mt-6">
                             3. Payment and Refunds
                         </h3>
                         <p>
@@ -105,7 +105,7 @@ export default function CourseTermsModal({
                             accessed more than 20% of the course content.
                         </p>
 
-                        <h3 className="text-lg font-semibold text-slate-900 mt-6">
+                        <h3 className="text-base font-semibold text-slate-900 mb-2 mt-6">
                             4. User Conduct
                         </h3>
                         <p>
@@ -115,7 +115,7 @@ export default function CourseTermsModal({
                             system, or posting inappropriate content.
                         </p>
 
-                        <h3 className="text-lg font-semibold text-slate-900 mt-6">
+                        <h3 className="text-base font-semibold text-slate-900 mb-2 mt-6">
                             5. Certification and Completion
                         </h3>
                         <p>
@@ -124,7 +124,7 @@ export default function CourseTermsModal({
                             personal use and should not be altered or misrepresented.
                         </p>
 
-                        <h3 className="text-lg font-semibold text-slate-900 mt-6">
+                        <h3 className="text-base font-semibold text-slate-900 mb-2 mt-6">
                             6. Platform Changes
                         </h3>
                         <p>
@@ -133,7 +133,7 @@ export default function CourseTermsModal({
                             notified of significant changes that affect their access.
                         </p>
 
-                        <h3 className="text-lg font-semibold text-slate-900 mt-6">
+                        <h3 className="text-base font-semibold text-slate-900 mb-2 mt-6">
                             7. Privacy and Data
                         </h3>
                         <p>
@@ -142,7 +142,7 @@ export default function CourseTermsModal({
                             only for providing and improving our services.
                         </p>
 
-                        <h3 className="text-lg font-semibold text-slate-900 mt-6">
+                        <h3 className="text-base font-semibold text-slate-900 mb-2 mt-6">
                             8. Support and Communication
                         </h3>
                         <p>
@@ -151,8 +151,8 @@ export default function CourseTermsModal({
                             business days).
                         </p>
 
-                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mt-6">
-                            <p className="font-semibold text-blue-900">
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-r-lg p-5 mt-8 shadow-sm">
+                            <p className="font-medium text-slate-800 leading-relaxed">
                                 By accepting these terms, you confirm that you have read and
                                 understood all conditions and agree to abide by them.
                             </p>
@@ -162,8 +162,8 @@ export default function CourseTermsModal({
 
                 {/* Scroll Indicator */}
                 {!scrolledToBottom && (
-                    <div className="px-6 py-2 bg-yellow-50 border-t border-yellow-200 text-center">
-                        <p className="text-sm text-yellow-800">
+                    <div className="px-8 py-3 bg-gradient-to-r from-amber-50 to-yellow-50 border-t border-yellow-100 text-center">
+                        <p className="text-sm font-medium text-amber-700">
                             ⬇️ Please scroll to the bottom to read all terms
                         </p>
                     </div>
@@ -171,24 +171,24 @@ export default function CourseTermsModal({
 
                 {/* Error Message */}
                 {error && (
-                    <div className="px-6 py-3 bg-red-50 border-t border-red-200">
-                        <p className="text-sm text-red-700">{error}</p>
+                    <div className="px-8 py-4 bg-gradient-to-r from-red-50 to-pink-50 border-t border-red-100">
+                        <p className="text-sm font-medium text-red-700">{error}</p>
                     </div>
                 )}
 
                 {/* Footer */}
-                <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between gap-4 p-8 border-t border-gray-100 bg-gradient-to-b from-white to-gray-50">
                     <button
                         onClick={onClose}
                         disabled={accepting}
-                        className="px-6 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                        className="px-6 py-2.5 border-2 border-gray-200 rounded-xl font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-50"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleAccept}
                         disabled={accepting || !scrolledToBottom}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                         {accepting ? (
                             <>
@@ -205,7 +205,7 @@ export default function CourseTermsModal({
                 </div>
 
                 {!scrolledToBottom && (
-                    <p className="text-xs text-center text-gray-500 pb-2">
+                    <p className="text-xs text-center text-gray-400 pb-3">
                         Button will enable once you've scrolled through all terms
                     </p>
                 )}

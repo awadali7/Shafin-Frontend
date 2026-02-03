@@ -53,7 +53,7 @@ export default function BlogPostPage() {
 
     if (loading) {
         return (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex justify-center items-center py-20">
                     <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#B00000]"></div>
                 </div>
@@ -63,7 +63,7 @@ export default function BlogPostPage() {
 
     if (error || !post) {
         return (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                     <p className="text-sm text-red-600">
                         {error || "Blog post not found"}
@@ -81,7 +81,7 @@ export default function BlogPostPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Back Button */}
             <Link
                 href="/blog"

@@ -482,7 +482,7 @@ export default function AdminOrdersPage() {
             </div>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 border-b border-gray-200">

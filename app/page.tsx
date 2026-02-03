@@ -20,6 +20,8 @@ export default function LandingPage() {
     const [loadingCourses, setLoadingCourses] = useState(true);
     const [loadingProducts, setLoadingProducts] = useState(true);
     const [cardsPerView, setCardsPerView] = useState(3);
+    const [productSlide, setProductSlide] = useState(0);
+    const [isProductTransitioning, setIsProductTransitioning] = useState(true);
 
     // Update cards per view based on screen size
     useEffect(() => {
@@ -76,6 +78,13 @@ export default function LandingPage() {
     const [currentSlide, setCurrentSlide] = useState(courses.length);
     const [isTransitioning, setIsTransitioning] = useState(true);
 
+    // Initialize product slider
+    useEffect(() => {
+        if (products.length > 0) {
+            setProductSlide(products.length);
+        }
+    }, [products]);
+
     // Auto-play slider
     useEffect(() => {
         const timer = setInterval(() => {
@@ -84,6 +93,17 @@ export default function LandingPage() {
 
         return () => clearInterval(timer);
     }, []);
+
+    // Auto-play product slider
+    useEffect(() => {
+        if (products.length === 0) return;
+        
+        const timer = setInterval(() => {
+            setProductSlide((prev) => prev + 1);
+        }, 4000); // Change slide every 4 seconds
+
+        return () => clearInterval(timer);
+    }, [products.length]);
 
     // Handle infinite loop reset
     useEffect(() => {
@@ -102,12 +122,39 @@ export default function LandingPage() {
         }
     }, [currentSlide, courses.length]);
 
+    // Handle infinite loop reset for products
+    useEffect(() => {
+        if (products.length === 0) return;
+        
+        if (productSlide >= products.length * 2) {
+            setTimeout(() => {
+                setIsProductTransitioning(false);
+                setProductSlide(products.length);
+                setTimeout(() => setIsProductTransitioning(true), 50);
+            }, 500);
+        } else if (productSlide < products.length) {
+            setTimeout(() => {
+                setIsProductTransitioning(false);
+                setProductSlide(products.length * 2 - 1);
+                setTimeout(() => setIsProductTransitioning(true), 50);
+            }, 500);
+        }
+    }, [productSlide, products.length]);
+
     const nextSlide = () => {
         setCurrentSlide((prev) => prev + 1);
     };
 
     const prevSlide = () => {
         setCurrentSlide((prev) => prev - 1);
+    };
+
+    const nextProductSlide = () => {
+        setProductSlide((prev) => prev + 1);
+    };
+
+    const prevProductSlide = () => {
+        setProductSlide((prev) => prev - 1);
     };
 
     // Structured Data for SEO
@@ -344,41 +391,6 @@ export default function LandingPage() {
                     </div>
                 </section>
 
-                {/* Brand Partners Section */}
-                <section className="py-12 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl font-bold text-slate-900 mb-4">
-                                Our Brand Partners
-                            </h2>
-                            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-                                Trusted by leading automotive brands worldwide
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center justify-items-center">
-                            {[
-                                { src: "/images/1.png", alt: "Partner 1" },
-                                { src: "/images/2.png", alt: "Partner 2" },
-                                { src: "/images/3.png", alt: "Partner 3" },
-                            ].map((partner, index) => (
-                                <div
-                                    key={index}
-                                    className="relative w-full h-48 flex items-center justify-center hover:scale-105 transition-all duration-300"
-                                >
-                                    <Image
-                                        src={partner.src}
-                                        alt={partner.alt}
-                                        fill
-                                        className="object-contain"
-                                        sizes="(max-width: 768px) 100vw, 33vw"
-                                        loading="lazy"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
                 {/* Courses Preview Section */}
                 <section className="py-12 md:py-16 lg:py-24 bg-white">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -538,19 +550,19 @@ export default function LandingPage() {
                 </section>
 
                 {/* Featured Products Section */}
-                <section className="py-16 lg:py-24 bg-gray-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+                <section className="py-20 lg:py-32 bg-linear-to-b from-white to-gray-50/50">
+                    <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+                        <div className="text-center mb-16 lg:mb-20">
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
                                 Featured Products
                             </h2>
-                            <p className="text-lg text-slate-600 max-w-3xl mx-auto">
+                            <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
                                 Explore our collection of digital and physical
                                 products for automotive professionals
                             </p>
                         </div>
 
-                        {/* Grid Layout */}
+                        {/* Slider Container */}
                         {loadingProducts ? (
                             <div className="text-center py-12">
                                 <p className="text-gray-500">
@@ -565,98 +577,184 @@ export default function LandingPage() {
                                 </p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {products.slice(0, 6).map((product, index) => (
+                            <div className="relative px-8 md:px-12 lg:px-16">
+                                <div className="overflow-hidden rounded-2xl">
                                     <motion.div
-                                        key={product.id || index}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        whileInView={{ opacity: 1, y: 0 }}
-                                        viewport={{
-                                            once: true,
-                                            margin: "-100px",
+                                        className="flex gap-4 md:gap-6"
+                                        animate={{
+                                            x: `calc(${-productSlide} * (${
+                                                100 / cardsPerView
+                                            }% + ${
+                                                cardsPerView === 1
+                                                    ? 16
+                                                    : cardsPerView === 2
+                                                    ? 12
+                                                    : 8
+                                            }px))`,
                                         }}
-                                        transition={{
-                                            duration: 0.5,
-                                            delay: index * 0.1,
-                                        }}
+                                        transition={
+                                            isProductTransitioning
+                                                ? {
+                                                      type: "spring",
+                                                      stiffness: 300,
+                                                      damping: 30,
+                                                  }
+                                                : { duration: 0 }
+                                        }
                                     >
-                                        <Link
-                                            href={`/shop/${product.slug}`}
-                                            className="group block bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 overflow-hidden h-full border border-gray-100 hover:border-[#B00000]/20"
-                                        >
-                                            {/* Image with Badge */}
-                                            <div className="relative h-56 overflow-hidden bg-gray-100">
-                                                <Image
-                                                    src={
-                                                        product.cover_image ||
-                                                        "/images/placeholder-product.png"
-                                                    }
-                                                    alt={`${product.name} - ${
-                                                        product.description ||
-                                                        ""
-                                                    }`}
-                                                    fill
-                                                    className="object-cover group-hover:scale-105 transition-transform duration-700"
-                                                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                                    loading="lazy"
-                                                />
-                                                <div className="absolute top-4 right-4 bg-[#B00000] text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
-                                                    Premium
-                                                </div>
-                                            </div>
-
-                                            {/* Content */}
-                                            <div className="p-6">
-                                                <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-[#B00000] transition-colors line-clamp-2 min-h-14">
-                                                    {product.name}
-                                                </h3>
-                                                <p className="text-sm text-gray-600 mb-4 line-clamp-2 min-h-10">
-                                                    {product.description ||
-                                                        "Professional diagnostic tool for automotive technicians"}
-                                                </p>
-
-                                                {/* Price and CTA */}
-                                                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 mb-1">
-                                                            Starting from
-                                                        </p>
-                                                        <p className="text-2xl font-bold text-[#B00000]">
-                                                            ₹
-                                                            {product.price?.toLocaleString() ||
-                                                                "0"}
-                                                        </p>
+                                        {/* Render cards three times for infinite effect */}
+                                        {[
+                                            ...products,
+                                            ...products,
+                                            ...products,
+                                        ].map((product, index) => (
+                                            <motion.div
+                                                key={`${index}-${product.slug}`}
+                                                className="w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] shrink-0"
+                                                whileHover={{ y: -8 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <Link
+                                                    href={`/shop/${product.slug}`}
+                                                    className="bg-white rounded-2xl border border-gray-100 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 overflow-hidden group block h-full"
+                                                >
+                                                    {/* Image with Badge */}
+                                                    <div className="h-64 w-full overflow-hidden relative bg-gray-50">
+                                                        <Image
+                                                            src={
+                                                                product.cover_image ||
+                                                                "/images/placeholder-product.png"
+                                                            }
+                                                            alt={`${product.name} - ${
+                                                                product.description ||
+                                                                ""
+                                                            }`}
+                                                            fill
+                                                            className="object-cover group-hover:scale-110 transition-transform duration-500"
+                                                            sizes="(max-width: 768px) 100vw, 33vw"
+                                                            loading="lazy"
+                                                        />
+                                                        <div className="absolute top-4 right-4 bg-[#B00000] text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                                                            Premium
+                                                        </div>
                                                     </div>
-                                                    <motion.div
-                                                        className="flex items-center justify-center w-12 h-12 rounded-full bg-[#B00000] text-white group-hover:bg-red-800 transition-colors"
-                                                        whileHover={{
-                                                            scale: 1.1,
-                                                        }}
-                                                        whileTap={{
-                                                            scale: 0.95,
-                                                        }}
-                                                    >
-                                                        <ArrowRight className="w-5 h-5" />
-                                                    </motion.div>
-                                                </div>
-                                            </div>
-                                        </Link>
+
+                                                    {/* Content */}
+                                                    <div className="p-7">
+                                                        <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-4 group-hover:text-[#B00000] transition-colors line-clamp-2 min-h-14">
+                                                            {product.name}
+                                                        </h3>
+                                                        <p className="text-sm text-slate-600 mb-6 line-clamp-2 min-h-10 leading-relaxed">
+                                                            {product.description ||
+                                                                "Professional diagnostic tool for automotive technicians"}
+                                                        </p>
+
+                                                        {/* Price and CTA */}
+                                                        <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+                                                            <div>
+                                                                <p className="text-xs text-gray-500 mb-1.5">
+                                                                    Starting from
+                                                                </p>
+                                                                <p className="text-2xl font-bold text-[#B00000]">
+                                                                    ₹{product.price?.toLocaleString() || "0"}
+                                                                </p>
+                                                            </div>
+                                                            <motion.div
+                                                                className="flex items-center justify-center w-12 h-12 rounded-full bg-[#B00000] text-white group-hover:bg-red-800 transition-colors shadow-lg"
+                                                                whileHover={{ scale: 1.1 }}
+                                                                whileTap={{ scale: 0.95 }}
+                                                            >
+                                                                <ArrowRight className="w-5 h-5" />
+                                                            </motion.div>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            </motion.div>
+                                        ))}
                                     </motion.div>
-                                ))}
+                                </div>
+
+                                {/* Navigation Arrows */}
+                                <button
+                                    onClick={prevProductSlide}
+                                    className="absolute -left-4 lg:left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-3 lg:p-4 shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 z-10 group border border-gray-100"
+                                    aria-label="Previous slide"
+                                >
+                                    <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6 text-slate-700 group-hover:text-[#B00000] transition-colors" />
+                                </button>
+                                <button
+                                    onClick={nextProductSlide}
+                                    className="absolute -right-4 lg:right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-3 lg:p-4 shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 z-10 group border border-gray-100"
+                                    aria-label="Next slide"
+                                >
+                                    <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-slate-700 group-hover:text-[#B00000] transition-colors" />
+                                </button>
+
+                                {/* Dots Indicator */}
+                                <div className="flex justify-center gap-1.5 md:gap-2 mt-6 md:mt-8 px-4">
+                                    {products.map((_, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => setProductSlide(products.length + index)}
+                                            className={`h-1.5 md:h-2 rounded-full transition-all duration-300 ${
+                                                index === productSlide % products.length
+                                                    ? "w-6 md:w-8 bg-[#B00000]"
+                                                    : "w-1.5 md:w-2 bg-gray-300 hover:bg-gray-400"
+                                            }`}
+                                            aria-label={`Go to slide ${index + 1}`}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         )}
 
                         {!loadingProducts && products.length > 0 && (
-                            <div className="text-center mt-12">
+                            <div className="text-center mt-12 lg:mt-16">
                                 <Link
                                     href="/shop"
-                                    className="inline-flex items-center px-8 py-4 bg-[#B00000] text-white rounded-lg font-semibold hover:bg-red-800 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                    className="inline-flex items-center gap-2 px-8 py-4 bg-[#B00000] text-white rounded-xl font-semibold hover:bg-red-800 hover:shadow-2xl hover:scale-105 transition-all duration-300 shadow-lg"
                                 >
                                     Browse All Products
-                                    <ArrowRight className="ml-2 w-5 h-5" />
+                                    <ArrowRight className="w-5 h-5" />
                                 </Link>
                             </div>
                         )}
+                    </div>
+                </section>
+
+                {/* Brand Partners Section */}
+                <section className="py-16 lg:py-24 bg-white">
+                    <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+                        <div className="text-center mb-16">
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
+                                Our Brand Partners
+                            </h2>
+                            <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+                                Trusted by leading automotive brands worldwide
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16 items-center">
+                            {[
+                                { src: "/images/1.png", alt: "Partner 1" },
+                                { src: "/images/2.png", alt: "Partner 2" },
+                                { src: "/images/3.png", alt: "Partner 3" },
+                            ].map((partner, index) => (
+                                <div
+                                    key={index}
+                                    className="relative w-full h-48 md:h-56 lg:h-64 flex items-center justify-center group"
+                                >
+                                    <div className="absolute inset-0 bg-linear-to-br from-gray-50 to-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    <Image
+                                        src={partner.src}
+                                        alt={partner.alt}
+                                        fill
+                                        className="object-contain grayscale hover:grayscale-0 transition-all duration-300 p-6 md:p-8"
+                                        sizes="(max-width: 768px) 100vw, 33vw"
+                                        loading="lazy"
+                                    />
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </section>
 

@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Loader2, User, Mail, Calendar, Monitor, Save, X } from "lucide-react";
+import React, { useEffect, useState, useRef } from "react";
+import { Loader2, User, Mail, Calendar, Monitor, Save, X, FileCheck, ExternalLink, Camera, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { apiClient } from "@/lib/api/client";
 import LoginDrawer from "@/components/LoginDrawer";
 import RegisterDrawer from "@/components/RegisterDrawer";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { ImageCropper } from "@/components/ui/ImageCropper";
 
 function formatDate(dateString?: string) {
     if (!dateString) return "Never";
@@ -12,6 +16,11 @@ function formatDate(dateString?: string) {
     if (Number.isNaN(d.getTime())) return dateString;
     return d.toLocaleString();
 }
+
+type KYCStatus = {
+    student_kyc_status: "verified" | "pending" | "rejected" | null;
+    business_kyc_status: "verified" | "pending" | "rejected" | null;
+};
 
 export default function ProfilePage() {
     const {
@@ -21,6 +30,7 @@ export default function ProfilePage() {
         updateUser,
         refreshProfile,
     } = useAuth();
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -28,12 +38,43 @@ export default function ProfilePage() {
     const [success, setSuccess] = useState<string | null>(null);
     const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
+    const [kycStatus, setKycStatus] = useState<KYCStatus>({
+        student_kyc_status: null,
+        business_kyc_status: null,
+    });
 
     const [formData, setFormData] = useState({
         first_name: "",
         last_name: "",
         email: "",
     });
+
+    const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+    const [isDeletingPicture, setIsDeletingPicture] = useState(false);
+    const [showCropper, setShowCropper] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Fetch KYC status
+    const fetchKYCStatus = async () => {
+        try {
+            // Fetch student KYC status
+            const studentKycResponse = await apiClient.get("/kyc/status");
+            const studentKycData = studentKycResponse.data;
+
+            // Fetch business KYC status
+            const businessKycResponse = await apiClient.get("/product-kyc/status");
+            const businessKycData = businessKycResponse.data;
+
+            setKycStatus({
+                student_kyc_status: studentKycData?.status || null,
+                business_kyc_status: businessKycData?.status || null,
+            });
+        } catch (error) {
+            // Silently fail - user might not have submitted KYC yet
+            console.log("KYC status fetch error (expected if not submitted):", error);
+        }
+    };
 
     useEffect(() => {
         if (!authLoading && !isAuth) {
@@ -46,6 +87,8 @@ export default function ProfilePage() {
                 last_name: user.last_name || "",
                 email: user.email || "",
             });
+            // Fetch KYC status
+            fetchKYCStatus();
         }
     }, [authLoading, isAuth, user]);
 
@@ -106,6 +149,93 @@ export default function ProfilePage() {
         }
     };
 
+    const handleProfilePictureClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith("image/")) {
+            setError("Please upload an image file");
+            return;
+        }
+
+        // Validate file size (max 10MB before cropping)
+        if (file.size > 10 * 1024 * 1024) {
+            setError("Image size should be less than 10MB");
+            return;
+        }
+
+        // Read file and show cropper
+        const reader = new FileReader();
+        reader.onload = () => {
+            setSelectedImage(reader.result as string);
+            setShowCropper(true);
+        };
+        reader.readAsDataURL(file);
+
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+    const handleCropComplete = async (croppedImageBlob: Blob) => {
+        try {
+            setShowCropper(false);
+            setIsUploadingPicture(true);
+            setError(null);
+            setSuccess(null);
+
+            const formData = new FormData();
+            formData.append("profile_picture", croppedImageBlob, "profile-picture.jpg");
+            formData.append("type", "images");
+
+            const response = await apiClient.post("/users/profile/picture", formData);
+
+            if (response.data.success) {
+                await refreshProfile();
+                setSuccess("Profile picture updated successfully");
+            }
+        } catch (err: any) {
+            setError(err?.response?.data?.message || "Failed to upload profile picture");
+        } finally {
+            setIsUploadingPicture(false);
+            setSelectedImage(null);
+        }
+    };
+
+    const handleCropCancel = () => {
+        setShowCropper(false);
+        setSelectedImage(null);
+    };
+
+    const handleDeleteProfilePicture = async () => {
+        if (!confirm("Are you sure you want to delete your profile picture?")) {
+            return;
+        }
+
+        try {
+            setIsDeletingPicture(true);
+            setError(null);
+            setSuccess(null);
+
+            const response = await apiClient.delete("/users/profile/picture");
+
+            if (response.data.success) {
+                await refreshProfile();
+                setSuccess("Profile picture deleted successfully");
+            }
+        } catch (err: any) {
+            setError(err?.response?.data?.message || "Failed to delete profile picture");
+        } finally {
+            setIsDeletingPicture(false);
+        }
+    };
+
     if (authLoading || loading) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
@@ -148,7 +278,7 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="flex items-center justify-between gap-4 mb-6">
                 <h1 className="text-3xl font-bold text-slate-900">Profile</h1>
                 {!isEditing && (
@@ -175,6 +305,76 @@ export default function ProfilePage() {
 
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="p-6 space-y-6">
+                    {/* Profile Picture */}
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900 mb-4">
+                            Profile Picture
+                        </h2>
+                        <div className="flex items-center gap-6">
+                            <div className="relative">
+                                <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200">
+                                    {user?.profile_picture ? (
+                                        <Image
+                                            src={user.profile_picture}
+                                            alt="Profile"
+                                            width={128}
+                                            height={128}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <User className="w-16 h-16 text-gray-400" />
+                                        </div>
+                                    )}
+                                </div>
+                                {isUploadingPicture && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+                                        <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleProfilePictureChange}
+                                    className="hidden"
+                                />
+                                <button
+                                    onClick={handleProfilePictureClick}
+                                    disabled={isUploadingPicture || isDeletingPicture}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg text-sm font-semibold hover:bg-red-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                >
+                                    <Camera className="w-4 h-4" />
+                                    {user?.profile_picture ? "Change Picture" : "Upload Picture"}
+                                </button>
+                                {user?.profile_picture && (
+                                    <button
+                                        onClick={handleDeleteProfilePicture}
+                                        disabled={isUploadingPicture || isDeletingPicture}
+                                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    >
+                                        {isDeletingPicture ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Deleting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Trash2 className="w-4 h-4" />
+                                                Remove Picture
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+                                <p className="text-xs text-gray-500">
+                                    Upload any image and crop it to a perfect square (max 10MB)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Profile Information */}
                     <div>
                         <h2 className="text-lg font-semibold text-slate-900 mb-4">
@@ -309,15 +509,64 @@ export default function ProfilePage() {
 
                             <div className="flex items-center justify-between py-2">
                                 <div className="flex items-center gap-2">
-                                    <Calendar className="w-5 h-5 text-gray-400" />
+                                    <User className="w-5 h-5 text-gray-400" />
                                     <span className="text-sm font-medium text-gray-700">
-                                        Account Created
+                                        User Type
                                     </span>
                                 </div>
-                                <span className="text-sm text-gray-900">
-                                    {formatDate(user?.created_at)}
-                                </span>
+                                {user?.user_type ? (
+                                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-700 border border-purple-200 capitalize">
+                                        {user.user_type.replace('_', ' ')}
+                                    </span>
+                                ) : (
+                                    <span className="text-sm text-gray-500 italic">
+                                        Not set
+                                    </span>
+                                )}
                             </div>
+
+                            {/* KYC Details Button - Show only if verified */}
+                            {user?.user_type === "student" && kycStatus.student_kyc_status === "verified" && (
+                                <div className="flex items-center justify-between py-2">
+                                    <div className="flex items-center gap-2">
+                                        <FileCheck className="w-5 h-5 text-gray-400" />
+                                        <span className="text-sm font-medium text-gray-700">
+                                            Student KYC
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => router.push("/kyc")}
+                                        className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Verified
+                                        </span>
+                                        <ExternalLink className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            )}
+
+                            {user?.user_type === "business_owner" && kycStatus.business_kyc_status === "verified" && (
+                                <div className="flex items-center justify-between py-2">
+                                    <div className="flex items-center gap-2">
+                                        <FileCheck className="w-5 h-5 text-gray-400" />
+                                        <span className="text-sm font-medium text-gray-700">
+                                            Business KYC
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => router.push("/kyc/product")}
+                                        className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                                    >
+                                        <span className="inline-flex items-center gap-1">
+                                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                            Verified
+                                        </span>
+                                        <ExternalLink className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            )}
 
                             {user?.last_login_at && (
                                 <div className="flex items-center justify-between py-2">
@@ -352,6 +601,16 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
+
+            {/* Image Cropper Modal */}
+            {showCropper && selectedImage && (
+                <ImageCropper
+                    imageSrc={selectedImage}
+                    onCropComplete={handleCropComplete}
+                    onCancel={handleCropCancel}
+                    aspectRatio={1} // Square aspect ratio for profile pictures
+                />
+            )}
         </div>
     );
 }

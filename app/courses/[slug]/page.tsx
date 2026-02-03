@@ -647,7 +647,7 @@ export default function CourseDetailPage() {
             }
 
             // Check for course terms requirement
-            if (errorResponse.requires_course_terms_acceptance === true) {
+            if (errorResponse.requires_course_terms_acceptance === true || errorResponse.requires_course_terms === true) {
                 setShowCourseTermsModal(true);
                 return;
             }
