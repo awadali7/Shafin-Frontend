@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { X, CheckCircle, XCircle, Loader2, Download } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import { formatDate } from "./utils";
 import type { KYCVerification } from "@/lib/api/types";
@@ -50,6 +50,218 @@ export const KYCModal: React.FC<KYCModalProps> = ({
 
     const BACKEND_BASE_URL = getBackendBaseUrl();
 
+    // Download KYC details as PDF
+    const handleDownloadKYC = async () => {
+        try {
+            const { jsPDF } = await import("jspdf");
+            const pdf = new jsPDF();
+            
+            let yPosition = 20;
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const margin = 20;
+            const contentWidth = pageWidth - 2 * margin;
+            
+            // Helper function to add text with word wrap
+            const addText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
+                pdf.setFontSize(fontSize);
+                pdf.setFont("helvetica", isBold ? "bold" : "normal");
+                const lines = pdf.splitTextToSize(text, contentWidth);
+                lines.forEach((line: string) => {
+                    if (yPosition > 270) {
+                        pdf.addPage();
+                        yPosition = 20;
+                    }
+                    pdf.text(line, margin, yPosition);
+                    yPosition += fontSize * 0.5;
+                });
+                yPosition += 3;
+            };
+            
+            // Helper function to add image
+            const addImage = async (imageUrl: string, label: string) => {
+                try {
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    const reader = new FileReader();
+                    
+                    return new Promise<void>((resolve) => {
+                        reader.onloadend = () => {
+                            const base64data = reader.result as string;
+                            
+                            if (yPosition > 200) {
+                                pdf.addPage();
+                                yPosition = 20;
+                            }
+                            
+                            addText(label, 10, true);
+                            
+                            try {
+                                const imgWidth = 80;
+                                const imgHeight = 60;
+                                pdf.addImage(base64data, "JPEG", margin, yPosition, imgWidth, imgHeight);
+                                yPosition += imgHeight + 10;
+                            } catch (err) {
+                                console.error("Error adding image:", err);
+                                addText(`[Image: ${label}]`, 9);
+                            }
+                            
+                            resolve();
+                        };
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (err) {
+                    console.error("Error fetching image:", err);
+                    addText(`[${label} - Unable to load image]`, 9);
+                }
+            };
+            
+            // Title
+            addText("STUDENT KYC VERIFICATION DETAILS", 16, true);
+            yPosition += 5;
+            
+            // User Information Section
+            addText("User Information", 12, true);
+            addText(`User Email: ${kyc.user_email || "N/A"}`);
+            addText(`Status: ${kyc.status}`);
+            addText(`Submitted: ${formatDate(kyc.created_at || "")}`);
+            yPosition += 5;
+            
+            // Personal Information Section
+            addText("Personal Information", 12, true);
+            addText(`First Name: ${kyc.first_name}`);
+            addText(`Last Name: ${kyc.last_name}`);
+            addText(`Address: ${kyc.address}`);
+            addText(`Contact Number: ${kyc.contact_number}`);
+            addText(`WhatsApp Number: ${kyc.whatsapp_number}`);
+            yPosition += 5;
+            
+            // Documents Section
+            addText("Documents", 12, true);
+            
+            // Add ID Proof Image
+            if (kyc.id_proof_url) {
+                await addImage(`${BACKEND_BASE_URL}${kyc.id_proof_url}`, "ID Proof");
+            }
+            
+            // Add Profile Photo
+            if (kyc.profile_photo_url) {
+                await addImage(`${BACKEND_BASE_URL}${kyc.profile_photo_url}`, "Profile Photo");
+            }
+            
+            // Business Information (if applicable)
+            if ((kyc as any).business_id) {
+                yPosition += 5;
+                addText("Business Upgrade Information", 12, true);
+                addText(`Business ID: ${(kyc as any).business_id}`);
+                if ((kyc as any).business_location_link) {
+                    addText(`Business Location: ${(kyc as any).business_location_link}`);
+                }
+                addText(`Upgraded To Business: ${(kyc as any).upgraded_to_business ? "Yes" : "No"}`);
+                
+                if ((kyc as any).business_proof_url) {
+                    await addImage(`${BACKEND_BASE_URL}${(kyc as any).business_proof_url}`, "Business Proof");
+                }
+                
+                if ((kyc as any).business_upgraded_at) {
+                    addText(`Upgraded On: ${formatDate((kyc as any).business_upgraded_at)}`);
+                }
+            }
+            
+            // Rejection Information (if rejected)
+            if (kyc.status === "rejected" && kyc.rejection_reason) {
+                yPosition += 5;
+                addText("Rejection Information", 12, true);
+                addText(`Rejection Reason: ${kyc.rejection_reason}`);
+            }
+            
+            // Verification Information (if verified)
+            if (kyc.status === "verified") {
+                yPosition += 5;
+                addText("Verification Information", 12, true);
+                addText(`Verified By: ${kyc.verifier_email || "N/A"}`);
+                addText(`Verified At: ${formatDate(kyc.verified_at || "")}`);
+            }
+            
+            // Footer
+            if (yPosition > 250) {
+                pdf.addPage();
+                yPosition = 20;
+            }
+            yPosition += 10;
+            pdf.setFontSize(8);
+            pdf.setTextColor(128);
+            pdf.text(`Generated on: ${new Date().toLocaleString()}`, margin, yPosition);
+            
+            // Save PDF
+            pdf.save(`KYC_${kyc.user_email || kyc.id}_${Date.now()}.pdf`);
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+        }
+    };
+
+    // Old text file download function (kept for reference but not used)
+    const handleDownloadKYCOld = () => {
+        const kycData = `
+========================================
+STUDENT KYC VERIFICATION DETAILS
+========================================
+
+User Information:
+-----------------
+User Email: ${kyc.user_email || "N/A"}
+Status: ${kyc.status}
+Submitted: ${formatDate(kyc.created_at || "")}
+
+Personal Information:
+--------------------
+First Name: ${kyc.first_name}
+Last Name: ${kyc.last_name}
+Address: ${kyc.address}
+Contact Number: ${kyc.contact_number}
+WhatsApp Number: ${kyc.whatsapp_number}
+
+Documents:
+----------
+ID Proof URL: ${BACKEND_BASE_URL}${kyc.id_proof_url || "N/A"}
+Profile Photo URL: ${BACKEND_BASE_URL}${kyc.profile_photo_url || "N/A"}
+${(kyc as any).business_id ? `
+Business Information:
+--------------------
+Business ID: ${(kyc as any).business_id}
+Business Location: ${(kyc as any).business_location_link || "N/A"}
+Business Proof URL: ${BACKEND_BASE_URL}${(kyc as any).business_proof_url || "N/A"}
+Upgraded To Business: ${(kyc as any).upgraded_to_business ? "Yes" : "No"}
+Upgraded On: ${formatDate((kyc as any).business_upgraded_at || "")}
+` : ""}
+${kyc.status === "rejected" && kyc.rejection_reason ? `
+Rejection Information:
+---------------------
+Rejection Reason: ${kyc.rejection_reason}
+` : ""}
+${kyc.status === "verified" ? `
+Verification Information:
+------------------------
+Verified By: ${kyc.verifier_email || "N/A"}
+Verified At: ${formatDate(kyc.verified_at || "")}
+` : ""}
+
+========================================
+Generated on: ${new Date().toLocaleString()}
+========================================
+        `.trim();
+
+        // Create blob and download
+        const blob = new Blob([kycData], { type: "text/plain" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `KYC_${kyc.user_email || kyc.id}_${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -57,13 +269,23 @@ export const KYCModal: React.FC<KYCModalProps> = ({
                     <h2 className="text-xl font-bold text-slate-900">
                         KYC Verification Details
                     </h2>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        aria-label="Close modal"
-                    >
-                        <X className="w-5 h-5 text-gray-600" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleDownloadKYC}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Download KYC Details"
+                            aria-label="Download KYC details"
+                        >
+                            <Download className="w-5 h-5 text-gray-600" />
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            aria-label="Close modal"
+                        >
+                            <X className="w-5 h-5 text-gray-600" />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="p-6">

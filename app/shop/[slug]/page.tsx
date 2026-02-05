@@ -11,6 +11,10 @@ import {
     Star,
     Play,
     X,
+    ShieldCheck,
+    Link2,
+    Share2,
+    Check,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { productsApi } from "@/lib/api/products";
@@ -38,6 +42,7 @@ type ShopProductDetails = {
     reviews: number;
     inStock?: boolean; // physical only
     isComingSoon?: boolean;
+    requiresKyc?: boolean;
     description: string;
     digitalFile?: {
         format?: DigitalFileFormat;
@@ -80,6 +85,7 @@ function mapApiProductToDetails(p: Product): ShopProductDetails {
                 ? true
                 : p.in_stock ?? (p.stock_quantity ?? 0) > 0,
         isComingSoon: p.is_coming_soon || false,
+        requiresKyc: p.requires_kyc || false,
         description:
             p.description ||
             (p.type === "digital"
@@ -119,6 +125,7 @@ export default function ProductDetailPage() {
     const [showMagnifier, setShowMagnifier] = useState(false);
     const [magnifierPosition, setMagnifierPosition] = useState({ x: 0, y: 0 });
     const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -248,6 +255,60 @@ export default function ProductDetailPage() {
 
     const handleMouseLeave = () => {
         setShowMagnifier(false);
+    };
+
+    const handleCopyLink = async () => {
+        const url = window.location.href;
+        try {
+            await navigator.clipboard.writeText(url);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error("Failed to copy:", err);
+        }
+    };
+
+    const handleShare = async () => {
+        const url = window.location.href;
+        const text = `Check out ${product?.name} on our shop!`;
+        
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: product?.name,
+                    text: text,
+                    url: url,
+                });
+            } catch (err) {
+                console.error("Error sharing:", err);
+            }
+        } else {
+            // Fallback to copy link
+            handleCopyLink();
+        }
+    };
+
+    // Get video thumbnail from URL if not provided
+    const getVideoThumbnail = (videoUrl: string): string | null => {
+        if (!videoUrl) return null;
+
+        // YouTube thumbnail
+        const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+        const youtubeMatch = videoUrl.match(youtubeRegex);
+        if (youtubeMatch && youtubeMatch[1]) {
+            return `https://img.youtube.com/vi/${youtubeMatch[1]}/maxresdefault.jpg`;
+        }
+
+        // Vimeo thumbnail (use a default pattern)
+        const vimeoRegex = /vimeo\.com\/(?:video\/)?(\d+)/;
+        const vimeoMatch = videoUrl.match(vimeoRegex);
+        if (vimeoMatch && vimeoMatch[1]) {
+            // Vimeo thumbnails require API call, so we'll use a placeholder
+            // You could implement a backend endpoint to fetch Vimeo thumbnails if needed
+            return null; // Will fall back to Play icon
+        }
+
+        return null;
     };
 
     if (loading) {
@@ -400,51 +461,72 @@ export default function ProductDetailPage() {
                 {/* Product Info */}
                 <div className="space-y-4">
                     <div>
-                        {/* Product Title & Category */}
-                        <h1 className="text-2xl font-bold text-slate-900 mb-2">
-                            {product.name}
-                        </h1>
+                        {/* Product Title */}
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                            <h1 className="text-2xl font-bold text-slate-900">
+                                {product.name}
+                            </h1>
+                            
+                            {/* Share & Copy Link Buttons */}
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    onClick={handleCopyLink}
+                                    className="p-2 rounded-lg border border-gray-300 hover:border-[#B00000] hover:bg-red-50 transition-colors"
+                                    title="Copy link"
+                                >
+                                    {copied ? (
+                                        <Check className="w-4 h-4 text-green-600" />
+                                    ) : (
+                                        <Link2 className="w-4 h-4 text-gray-600" />
+                                    )}
+                                </button>
+                                <button
+                                    onClick={handleShare}
+                                    className="p-2 rounded-lg border border-gray-300 hover:border-[#B00000] hover:bg-red-50 transition-colors"
+                                    title="Share"
+                                >
+                                    <Share2 className="w-4 h-4 text-gray-600" />
+                                </button>
+                            </div>
+                        </div>
 
-                        {/* Category Breadcrumb & Coming Soon Badge Row */}
-                        <div className="flex items-center gap-3 mb-3">
-                            {/* Category Breadcrumb */}
-                            {(product.categories &&
-                            product.categories.length > 0
-                                ? product.categories
-                                : product.category
-                                ? [product.category]
-                                : []
-                            ).filter((cat) => cat && cat.trim()).length > 0 && (
-                                <div className="flex items-center gap-1.5 text-xs">
-                                    {(product.categories &&
-                                    product.categories.length > 0
-                                        ? product.categories
-                                        : product.category
-                                        ? [product.category]
-                                        : []
-                                    )
-                                        .filter((cat) => cat && cat.trim())
-                                        .map((cat, idx, arr) => (
-                                            <React.Fragment key={idx}>
-                                                <span className="text-[#B00000] font-medium">
-                                                    {cat}
-                                                </span>
-                                                {idx < arr.length - 1 && (
-                                                    <span className="text-gray-400">
-                                                        ›
-                                                    </span>
-                                                )}
-                                            </React.Fragment>
-                                        ))}
-                                </div>
-                            )}
-
+                        {/* Badges Row */}
+                        <div className="flex items-center gap-2 flex-wrap mb-3">
                             {/* Coming Soon Badge */}
                             {product.isComingSoon && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-orange-50 text-orange-700 border-orange-200">
                                     🚀 Coming Soon
                                 </span>
                             )}
+
+                            {/* KYC Required Badge */}
+                            {product.requiresKyc && (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-amber-50 text-amber-700 border-amber-200">
+                                    <ShieldCheck className="w-3 h-3" />
+                                    KYC Required
+                                </span>
+                            )}
+
+                            {/* Product Type Badge */}
+                            <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                                    product.type === "digital"
+                                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                }`}
+                            >
+                                {product.type === "digital" ? (
+                                    <Download className="w-3 h-3" />
+                                ) : (
+                                    <Package className="w-3 h-3" />
+                                )}
+                                {product.type === "digital"
+                                    ? `${
+                                          product.digitalFile?.format?.toUpperCase() ||
+                                          "DIGITAL"
+                                      }`
+                                    : "PHYSICAL"}
+                            </span>
                         </div>
 
                         {/* Price */}
@@ -675,64 +757,82 @@ export default function ProductDetailPage() {
                         Product Videos
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {product.videos.map((video, index) => (
-                            <button
-                                key={index}
-                                onClick={() => setSelectedVideo(video)}
-                                className="group relative bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[#B00000] transition-colors"
-                            >
-                                <div className="relative aspect-video bg-gray-100">
-                                    {video.thumbnail ? (
-                                        <img
-                                            src={video.thumbnail}
-                                            alt={video.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                                            <Play className="w-12 h-12 text-gray-400" />
+                        {product.videos.map((video, index) => {
+                            const thumbnailUrl = video.thumbnail || getVideoThumbnail(video.url);
+                            
+                            return (
+                                <button
+                                    key={index}
+                                    onClick={() => setSelectedVideo(video)}
+                                    className="group relative bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[#B00000] transition-colors"
+                                >
+                                    <div className="relative aspect-video bg-gray-100">
+                                        {thumbnailUrl ? (
+                                            <img
+                                                src={thumbnailUrl}
+                                                alt={video.title}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    // If thumbnail fails to load, hide image and show play icon
+                                                    e.currentTarget.style.display = 'none';
+                                                }}
+                                            />
+                                        ) : null}
+                                        {!thumbnailUrl && (
+                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                                                <Play className="w-12 h-12 text-white opacity-80" />
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-opacity">
+                                            <Play className="w-16 h-16 text-white" />
                                         </div>
-                                    )}
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-opacity">
-                                        <Play className="w-16 h-16 text-white" />
                                     </div>
-                                </div>
-                                <div className="p-4">
-                                    <h3 className="text-sm font-medium text-slate-900 text-left line-clamp-2">
-                                        {video.title}
-                                    </h3>
-                                </div>
-                            </button>
-                        ))}
+                                    <div className="p-4">
+                                        <h3 className="text-sm font-medium text-slate-900 text-left line-clamp-2">
+                                            {video.title}
+                                        </h3>
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             )}
 
             {/* Video Modal */}
             {selectedVideo && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4">
-                    <div className="relative w-full max-w-4xl bg-white rounded-lg overflow-hidden">
-                        <button
-                            onClick={() => setSelectedVideo(null)}
-                            className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
-                        >
-                            <X className="w-5 h-5 text-gray-700" />
-                        </button>
-                        <div className="aspect-video">
-                            <iframe
-                                src={selectedVideo.url}
-                                className="w-full h-full"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                            />
-                        </div>
-                        <div className="p-6">
-                            <h3 className="text-xl font-semibold text-slate-900">
-                                {selectedVideo.title}
-                            </h3>
+                <>
+                    {/* Backdrop Overlay */}
+                    <div 
+                        className="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm"
+                        onClick={() => setSelectedVideo(null)}
+                    />
+                    
+                    {/* Modal Content */}
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+                        <div className="relative w-full max-w-4xl bg-white rounded-lg overflow-hidden shadow-2xl pointer-events-auto">
+                            <button
+                                onClick={() => setSelectedVideo(null)}
+                                className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-700" />
+                            </button>
+                            <div className="aspect-video">
+                                <iframe
+                                    src={selectedVideo.url}
+                                    className="w-full h-full"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                />
+                            </div>
+                            <div className="p-6">
+                                <h3 className="text-xl font-semibold text-slate-900">
+                                    {selectedVideo.title}
+                                </h3>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </>
             )}
 
             {/* Specifications and Features */}

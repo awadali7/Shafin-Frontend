@@ -484,6 +484,7 @@ export interface Order {
     payment_reference?: string | null;
     created_at: string;
     updated_at?: string;
+    items?: OrderItem[];
 }
 
 export interface AdminOrderSummary extends Order {
@@ -493,6 +494,7 @@ export interface AdminOrderSummary extends Order {
     last_name: string;
     digital_items: number;
     physical_items: number;
+    item_names?: string;
 }
 
 export interface OrderItem {
@@ -503,6 +505,7 @@ export interface OrderItem {
     product_type: ProductType;
     product_name: string;
     product_slug: string;
+    cover_image?: string;
 }
 
 export interface AdminOrderDetailsResponse {

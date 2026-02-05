@@ -9,6 +9,7 @@ import {
     AlertCircle,
     Loader2,
     Plus,
+    Download,
 } from "lucide-react";
 import { productKycApi } from "@/lib/api/product-kyc";
 import { termsApi } from "@/lib/api/terms";
@@ -237,6 +238,168 @@ function ProductKYCContent() {
         setBusinessProofPreviews((prev) => prev.filter((_, i) => i !== index));
     };
 
+    // Download Product KYC details as PDF
+    const handleDownloadKYC = async () => {
+        if (!kycData) {
+            toast.error("No KYC data available to download");
+            return;
+        }
+
+        try {
+            toast.loading("Generating PDF...");
+            
+            const { jsPDF } = await import("jspdf");
+            const pdf = new jsPDF();
+            
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+            const cleanBaseUrl = baseUrl.replace(/\/api$/, "");
+            
+            let yPosition = 20;
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const margin = 20;
+            const contentWidth = pageWidth - 2 * margin;
+            
+            // Helper function to add text with word wrap
+            const addText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
+                pdf.setFontSize(fontSize);
+                pdf.setFont("helvetica", isBold ? "bold" : "normal");
+                const lines = pdf.splitTextToSize(text, contentWidth);
+                lines.forEach((line: string) => {
+                    if (yPosition > 270) {
+                        pdf.addPage();
+                        yPosition = 20;
+                    }
+                    pdf.text(line, margin, yPosition);
+                    yPosition += fontSize * 0.5;
+                });
+                yPosition += 3;
+            };
+            
+            // Helper function to add image
+            const addImage = async (imageUrl: string, label: string) => {
+                try {
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    const reader = new FileReader();
+                    
+                    return new Promise<void>((resolve) => {
+                        reader.onloadend = () => {
+                            const base64data = reader.result as string;
+                            
+                            if (yPosition > 200) {
+                                pdf.addPage();
+                                yPosition = 20;
+                            }
+                            
+                            addText(label, 10, true);
+                            
+                            try {
+                                const imgWidth = 80;
+                                const imgHeight = 60;
+                                pdf.addImage(base64data, "JPEG", margin, yPosition, imgWidth, imgHeight);
+                                yPosition += imgHeight + 10;
+                            } catch (err) {
+                                console.error("Error adding image:", err);
+                                addText(`[Image: ${label}]`, 9);
+                            }
+                            
+                            resolve();
+                        };
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (err) {
+                    console.error("Error fetching image:", err);
+                    addText(`[${label} - Unable to load image]`, 9);
+                }
+            };
+            
+            // Title
+            addText("BUSINESS/PRODUCT KYC VERIFICATION DETAILS", 16, true);
+            yPosition += 5;
+            
+            // User Information Section
+            addText("User Information", 12, true);
+            addText(`User Email: ${user?.email || "N/A"}`);
+            addText(`Status: ${kycData.status.toUpperCase()}`);
+            addText(`Submitted: ${new Date(kycData.created_at || "").toLocaleString()}`);
+            yPosition += 5;
+            
+            // Personal Information Section
+            addText("Personal Information", 12, true);
+            addText(`Full Name: ${kycData.full_name}`);
+            addText(`Address: ${kycData.address}`);
+            addText(`Contact Number: ${kycData.contact_number}`);
+            addText(`WhatsApp Number: ${kycData.whatsapp_number}`);
+            yPosition += 5;
+            
+            // ID Proof Documents Section
+            addText(`ID Proof Documents (${kycData.id_proofs?.length || 0})`, 12, true);
+            if (kycData.id_proofs && kycData.id_proofs.length > 0) {
+                for (let i = 0; i < kycData.id_proofs.length; i++) {
+                    const url = kycData.id_proofs[i];
+                    if (!url.endsWith('.pdf')) {
+                        await addImage(`${cleanBaseUrl}${url}`, `ID Proof Document ${i + 1}`);
+                    } else {
+                        addText(`ID Proof Document ${i + 1}: ${cleanBaseUrl}${url}`);
+                    }
+                }
+            } else {
+                addText("No ID proof documents uploaded");
+            }
+            yPosition += 5;
+            
+            // Business Proof Documents Section
+            addText(`Business Proof Documents (${kycData.business_proofs?.length || 0})`, 12, true);
+            if (kycData.business_proofs && kycData.business_proofs.length > 0) {
+                for (let i = 0; i < kycData.business_proofs.length; i++) {
+                    const url = kycData.business_proofs[i];
+                    if (!url.endsWith('.pdf')) {
+                        await addImage(`${cleanBaseUrl}${url}`, `Business Proof Document ${i + 1}`);
+                    } else {
+                        addText(`Business Proof Document ${i + 1}: ${cleanBaseUrl}${url}`);
+                    }
+                }
+            } else {
+                addText("No business proof documents uploaded");
+            }
+            yPosition += 5;
+            
+            // Rejection Information (if rejected)
+            if (kycData.status === "rejected" && kycData.rejection_reason) {
+                addText("Rejection Information", 12, true);
+                addText(`Rejection Reason: ${kycData.rejection_reason}`);
+                yPosition += 5;
+            }
+            
+            // Verification Information (if verified)
+            if (kycData.status === "verified" && kycData.verified_at) {
+                addText("Verification Information", 12, true);
+                addText(`Verified At: ${new Date(kycData.verified_at).toLocaleString()}`);
+                yPosition += 5;
+            }
+            
+            // Footer
+            if (yPosition > 250) {
+                pdf.addPage();
+                yPosition = 20;
+            }
+            yPosition += 10;
+            pdf.setFontSize(8);
+            pdf.setTextColor(128);
+            pdf.text(`Generated on: ${new Date().toLocaleString()}`, margin, yPosition);
+            
+            // Save PDF
+            pdf.save(`Business_KYC_${kycData.full_name.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
+            
+            toast.dismiss();
+            toast.success("KYC details downloaded as PDF successfully!");
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            toast.dismiss();
+            toast.error("Failed to generate PDF. Please try again.");
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSuccess(false);
@@ -370,13 +533,25 @@ function ProductKYCContent() {
     return (
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Header */}
-            <div className="mb-4">
-                <h1 className="text-2xl font-bold text-slate-900 flex items-center">
-                    Business KYC Verification
-                </h1>
-                <p className="text-sm text-slate-600 mt-1">
-                    Complete your Business KYC verification to purchase products
-                </p>
+            <div className="mb-4 flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900 flex items-center">
+                        Business KYC Verification
+                    </h1>
+                    <p className="text-sm text-slate-600 mt-1">
+                        Complete your Business KYC verification to purchase products
+                    </p>
+                </div>
+                {kycData && (
+                    <button
+                        onClick={handleDownloadKYC}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-700 transition-colors"
+                        title="Download KYC Details"
+                    >
+                        <Download className="w-4 h-4" />
+                        <span className="text-sm font-medium">Download KYC</span>
+                    </button>
+                )}
             </div>
 
             {/* Step Indicator */}

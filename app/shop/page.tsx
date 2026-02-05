@@ -5,13 +5,13 @@ import Link from "next/link";
 import {
     Download,
     Package,
-    Star,
     Search,
     Truck,
     X,
     Grid3x3,
     List,
     ArrowUpDown,
+    ShieldCheck,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { productsApi } from "@/lib/api/products";
@@ -30,10 +30,9 @@ type ShopProduct = {
     category: string;
     categories?: string[];
     type: ProductType;
-    rating: number;
-    reviews: number;
     inStock?: boolean; // physical only
     isComingSoon?: boolean;
+    requiresKyc?: boolean;
     digitalFile?: {
         format?: DigitalFileFormat;
         filename?: string;
@@ -59,13 +58,12 @@ function mapApiProductToShopProduct(p: Product): ShopProduct {
         category: p.category || "Other",
         categories: p.categories || [],
         type: p.type,
-        rating: Number(p.rating ?? 0),
-        reviews: Number(p.reviews_count ?? 0),
         inStock:
             p.type === "digital"
                 ? true
                 : p.in_stock ?? (p.stock_quantity ?? 0) > 0,
         isComingSoon: p.is_coming_soon || false,
+        requiresKyc: p.requires_kyc || false,
         digitalFile:
             p.type === "digital"
                 ? {
@@ -88,7 +86,7 @@ export default function ShopPage() {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [sortBy, setSortBy] = useState<
-        "name" | "price-asc" | "price-desc" | "rating"
+        "name" | "price-asc" | "price-desc"
     >("name");
     const { addToCart } = useCart();
 
@@ -164,8 +162,6 @@ export default function ShopPage() {
                     return a.price - b.price;
                 case "price-desc":
                     return b.price - a.price;
-                case "rating":
-                    return b.rating - a.rating;
                 case "name":
                 default:
                     return a.name.localeCompare(b.name);
@@ -293,7 +289,6 @@ export default function ShopPage() {
                         <option value="name">Name (A-Z)</option>
                         <option value="price-asc">Price: Low to High</option>
                         <option value="price-desc">Price: High to Low</option>
-                        <option value="rating">Highest Rated</option>
                     </select>
                 </div>
             </div>
@@ -380,74 +375,26 @@ export default function ShopPage() {
                             >
                                 {/* Product Title */}
                                 <Link href={`/shop/${product.slug}`}>
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-2 line-clamp-2 group-hover:text-[#B00000] transition-colors">
+                                    <h3 className="text-lg font-semibold text-slate-900 mb-3 line-clamp-2 group-hover:text-[#B00000] transition-colors">
                                         {product.name}
                                     </h3>
                                 </Link>
 
-                                {/* Rating & Reviews */}
-                                {product.rating > 0 && (
-                                    <div className="flex items-center gap-1.5 mb-2">
-                                        <div className="flex items-center gap-0.5">
-                                            {[...Array(5)].map((_, i) => (
-                                                <Star
-                                                    key={i}
-                                                    className={`w-3.5 h-3.5 ${
-                                                        i <
-                                                        Math.floor(
-                                                            product.rating
-                                                        )
-                                                            ? "fill-yellow-400 text-yellow-400"
-                                                            : "text-gray-300"
-                                                    }`}
-                                                />
-                                            ))}
-                                        </div>
-                                        <span className="text-xs text-gray-600 font-medium">
-                                            {product.rating.toFixed(1)}
-                                        </span>
-                                        {product.reviews > 0 && (
-                                            <span className="text-xs text-gray-500">
-                                                ({product.reviews})
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Category Breadcrumb & Type Badge Row */}
-                                <div className="mb-2 flex items-center justify-between gap-2">
-                                    {/* Category Breadcrumb Path */}
-                                    <div className="flex items-center gap-1.5 flex-1 min-w-0 text-xs">
-                                        {(product.categories &&
-                                        product.categories.length > 0
-                                            ? product.categories 
-                                            : product.category
-                                            ? [product.category]
-                                            : ["Uncategorized"]
-                                        )
-                                            .filter((cat) => cat && cat.trim())
-                                            .map((cat, idx, arr) => (
-                                            <React.Fragment key={idx}>
-                                                <span 
-                                                        className="text-[#B00000] font-medium truncate"
-                                                    title={cat}
-                                                >
-                                                    {cat}
-                                    </span>
-                                                {idx < arr.length - 1 && (
-                                                        <span className="text-gray-400 font-light">
-                                                            ›
-                                                        </span>
-                                                )}
-                                            </React.Fragment>
-                                        ))}
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-1.5 shrink-0">
+                                {/* Badges Row */}
+                                <div className="mb-3">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
                                         {/* Coming Soon Badge */}
                                         {product.isComingSoon && (
                                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-orange-50 text-orange-700 border-orange-200">
                                                 🚀 Coming Soon
+                                            </span>
+                                        )}
+                                        
+                                        {/* KYC Required Badge */}
+                                        {product.requiresKyc && (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-amber-50 text-amber-700 border-amber-200">
+                                                <ShieldCheck className="w-3 h-3" />
+                                                KYC
                                             </span>
                                         )}
                                         

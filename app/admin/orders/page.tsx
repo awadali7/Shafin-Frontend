@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Loader2, Eye, ArrowLeft, Package, Download, MapPin, Phone, Mail, ChevronDown, ChevronUp, Printer } from "lucide-react";
+import { CheckCircle, Loader2, Eye, ArrowLeft, Package, Download, MapPin, Phone, Mail, ChevronDown, ChevronUp, Printer, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersApi } from "@/lib/api/orders";
 import type { AdminOrderSummary } from "@/lib/api/types";
+import { toast } from "sonner";
 
 function formatDate(dateString: string) {
     const d = new Date(dateString);
@@ -113,10 +114,176 @@ export default function AdminOrdersPage() {
         }
     };
 
+    const downloadInvoice = async (order: AdminOrderSummary) => {
+        try {
+            toast.loading("Generating invoice...");
+            
+            const { jsPDF } = await import("jspdf");
+            const pdf = new jsPDF();
+            
+            const details = orderDetails?.order;
+            const items = orderDetails?.items || [];
+            
+            let yPosition = 20;
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const margin = 20;
+            const contentWidth = pageWidth - 2 * margin;
+            
+            // Helper to add text
+            const addText = (text: string, x: number, y: number, fontSize: number = 10, isBold: boolean = false, align: 'left' | 'center' | 'right' = 'left') => {
+                pdf.setFontSize(fontSize);
+                pdf.setFont("helvetica", isBold ? "bold" : "normal");
+                pdf.text(text, x, y, { align });
+            };
+            
+            // Header with logo and company info
+            addText("DIASTOOLS", margin, yPosition, 24, true);
+            yPosition += 8;
+            addText("Pezhakkppilly P.O, Muvattupezha, Kerala - 686673", margin, yPosition, 9);
+            yPosition += 5;
+            addText("Phone: +91-8714388741 | Email: contact@diagtools.in", margin, yPosition, 9);
+            yPosition += 3;
+            pdf.setDrawColor(180, 0, 0);
+            pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+            yPosition += 10;
+            
+            // Invoice title and details
+            addText("TAX INVOICE", pageWidth / 2, yPosition, 18, true, 'center');
+            yPosition += 10;
+            
+            // Invoice details (left) and Order details (right)
+            const leftCol = margin;
+            const rightCol = pageWidth / 2 + 10;
+            
+            addText(`Invoice No: INV-${order.id.slice(0, 8)}`, leftCol, yPosition, 10, true);
+            addText(`Order ID: #${order.id.slice(0, 8)}`, rightCol, yPosition, 10, true);
+            yPosition += 6;
+            
+            addText(`Date: ${new Date(order.created_at).toLocaleDateString('en-IN')}`, leftCol, yPosition, 9);
+            addText(`Status: ${order.status.toUpperCase()}`, rightCol, yPosition, 9);
+            yPosition += 10;
+            
+            // Bill To section
+            pdf.setDrawColor(200, 200, 200);
+            pdf.rect(margin, yPosition, contentWidth, 35);
+            yPosition += 6;
+            addText("BILL TO:", margin + 5, yPosition, 10, true);
+            yPosition += 6;
+            addText(`${details?.first_name || order.first_name} ${details?.last_name || order.last_name}`, margin + 5, yPosition, 10);
+            yPosition += 5;
+            if (details?.address) {
+                addText(details.address, margin + 5, yPosition, 9);
+                yPosition += 5;
+            }
+            if (details?.city) {
+                addText(`${details.city}, ${details.state || ''} - ${details.pincode || ''}`, margin + 5, yPosition, 9);
+                yPosition += 5;
+            }
+            if (details?.phone) {
+                addText(`Phone: ${details.phone}`, margin + 5, yPosition, 9);
+                yPosition += 5;
+            }
+            if (details?.email || order.user_email) {
+                addText(`Email: ${details?.email || order.user_email}`, margin + 5, yPosition, 9);
+            }
+            yPosition += 15;
+            
+            // Items table header
+            pdf.setFillColor(240, 240, 240);
+            pdf.rect(margin, yPosition, contentWidth, 8, 'F');
+            pdf.setDrawColor(0, 0, 0);
+            pdf.rect(margin, yPosition, contentWidth, 8);
+            yPosition += 6;
+            
+            addText("Item", margin + 2, yPosition, 9, true);
+            addText("Type", margin + 90, yPosition, 9, true);
+            addText("Qty", margin + 120, yPosition, 9, true);
+            addText("Price", margin + 140, yPosition, 9, true);
+            addText("Total", pageWidth - margin - 2, yPosition, 9, true, 'right');
+            yPosition += 4;
+            
+            // Items
+            items.forEach((item: any) => {
+                if (yPosition > 250) {
+                    pdf.addPage();
+                    yPosition = 20;
+                }
+                
+                pdf.setDrawColor(200, 200, 200);
+                pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+                yPosition += 5;
+                
+                addText(item.product_name, margin + 2, yPosition, 9);
+                addText(item.product_type, margin + 90, yPosition, 9);
+                addText(String(item.quantity), margin + 120, yPosition, 9);
+                addText(`₹${Number(item.unit_price).toFixed(2)}`, margin + 140, yPosition, 9);
+                addText(`₹${(Number(item.unit_price) * Number(item.quantity)).toFixed(2)}`, pageWidth - margin - 2, yPosition, 9, false, 'right');
+                yPosition += 2;
+            });
+            
+            yPosition += 5;
+            pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+            yPosition += 10;
+            
+            // Totals
+            const totalsX = pageWidth - margin - 50;
+            addText("Subtotal:", totalsX, yPosition, 10);
+            addText(`₹${Number(order.subtotal).toFixed(2)}`, pageWidth - margin - 2, yPosition, 10, false, 'right');
+            yPosition += 6;
+            
+            if (Number(order.shipping_cost) > 0) {
+                addText("Shipping:", totalsX, yPosition, 10);
+                addText(`₹${Number(order.shipping_cost).toFixed(2)}`, pageWidth - margin - 2, yPosition, 10, false, 'right');
+                yPosition += 6;
+            }
+            
+            pdf.setDrawColor(0, 0, 0);
+            pdf.line(totalsX, yPosition, pageWidth - margin, yPosition);
+            yPosition += 6;
+            
+            addText("Total:", totalsX, yPosition, 12, true);
+            addText(`₹${Number(order.total).toFixed(2)}`, pageWidth - margin - 2, yPosition, 12, true, 'right');
+            yPosition += 15;
+            
+            // Payment info
+            if (details?.payment_provider) {
+                addText("Payment Information:", margin, yPosition, 10, true);
+                yPosition += 6;
+                addText(`Method: ${details.payment_provider}`, margin, yPosition, 9);
+                yPosition += 5;
+                if (details.payment_reference) {
+                    addText(`Reference: ${details.payment_reference}`, margin, yPosition, 9);
+                }
+                yPosition += 10;
+            }
+            
+            // Footer
+            if (yPosition > 250) {
+                pdf.addPage();
+                yPosition = 20;
+            }
+            yPosition = 280;
+            pdf.setFontSize(8);
+            pdf.setTextColor(128);
+            pdf.text("Thank you for your business!", pageWidth / 2, yPosition, { align: 'center' });
+            yPosition += 4;
+            pdf.text("This is a computer-generated invoice.", pageWidth / 2, yPosition, { align: 'center' });
+            
+            // Save PDF
+            pdf.save(`Invoice_${order.id.slice(0, 8)}_${Date.now()}.pdf`);
+            
+            toast.dismiss();
+            toast.success("Invoice downloaded successfully!");
+        } catch (error) {
+            console.error("Error generating invoice:", error);
+            toast.dismiss();
+            toast.error("Failed to generate invoice");
+        }
+    };
+
     const printShippingLabel = (order: AdminOrderSummary) => {
         // Find the order details
         const details = orderDetails?.order;
-        const items = orderDetails?.items || [];
         
         // Create a new window for printing
         const printWindow = window.open('', '_blank');
@@ -124,8 +291,6 @@ export default function AdminOrdersPage() {
             alert('Please allow popups to print shipping labels');
             return;
         }
-
-        const physicalItems = items.filter((item: any) => item.product_type === 'physical');
         
         const printContent = `
             <!DOCTYPE html>
@@ -136,8 +301,8 @@ export default function AdminOrdersPage() {
                 <style>
                     @media print {
                         @page {
-                            size: A4;
-                            margin: 10mm;
+                            size: A5 landscape;
+                            margin: 5mm;
                         }
                         body {
                             margin: 0;
@@ -164,7 +329,7 @@ export default function AdminOrdersPage() {
                         max-width: 100%;
                         margin: 0 auto;
                         border: 2px solid #000;
-                        padding: 15px;
+                        padding: 10px;
                         page-break-inside: avoid;
                     }
                     
@@ -173,8 +338,8 @@ export default function AdminOrdersPage() {
                         justify-content: space-between;
                         align-items: center;
                         border-bottom: 2px solid #000;
-                        padding-bottom: 10px;
-                        margin-bottom: 15px;
+                        padding-bottom: 6px;
+                        margin-bottom: 8px;
                     }
                     
                     .logo-section {
@@ -182,23 +347,23 @@ export default function AdminOrdersPage() {
                     }
                     
                     .logo {
-                        font-size: 32px;
+                        font-size: 20px;
                         font-weight: bold;
                         color: #B00000;
-                        margin-bottom: 5px;
+                        margin-bottom: 3px;
                     }
                     
                     .logo-section img {
-                        max-width: 150px;
+                        max-width: 100px;
                         height: auto;
                         display: block;
                         filter: grayscale(100%);
                     }
                     
                     .company-info {
-                        font-size: 10px;
+                        font-size: 7px;
                         color: #000;
-                        line-height: 1.4;
+                        line-height: 1.3;
                     }
                     
                     .order-info {
@@ -206,91 +371,57 @@ export default function AdminOrdersPage() {
                     }
                     
                     .order-number {
-                        font-size: 18px;
+                        font-size: 14px;
                         font-weight: bold;
                         color: #000;
-                        margin-bottom: 3px;
+                        margin-bottom: 2px;
                     }
                     
                     .order-date {
-                        font-size: 10px;
+                        font-size: 8px;
                         color: #000;
                     }
                     
                     .addresses {
                         display: grid;
                         grid-template-columns: 1fr 1fr;
-                        gap: 15px;
-                        margin-bottom: 15px;
+                        gap: 8px;
+                        margin-bottom: 8px;
                     }
                     
                     .address-box {
                         border: 2px solid #000;
-                        padding: 12px;
-                        min-height: 120px;
+                        padding: 6px;
+                        min-height: 70px;
                     }
                     
                     .address-title {
-                        font-size: 11px;
+                        font-size: 8px;
                         font-weight: bold;
                         text-transform: uppercase;
                         color: #000;
-                        margin-bottom: 8px;
-                        padding-bottom: 6px;
+                        margin-bottom: 4px;
+                        padding-bottom: 3px;
                         border-bottom: 1px solid #000;
                     }
                     
                     .address-content {
-                        font-size: 11px;
-                        line-height: 1.5;
+                        font-size: 8px;
+                        line-height: 1.3;
                     }
                     
                     .address-name {
-                        font-size: 13px;
+                        font-size: 9px;
                         font-weight: bold;
-                        margin-bottom: 6px;
+                        margin-bottom: 3px;
                     }
                     
-                    .items-section {
-                        margin-bottom: 15px;
-                    }
-                    
-                    .section-title {
-                        font-size: 11px;
-                        font-weight: bold;
-                        text-transform: uppercase;
-                        color: #000;
-                        margin-bottom: 8px;
-                        padding-bottom: 6px;
-                        border-bottom: 2px solid #000;
-                    }
-                    
-                    .items-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                        margin-bottom: 10px;
-                    }
-                    
-                    .items-table th {
-                        background: #e5e5e5;
-                        padding: 8px;
-                        text-align: left;
-                        font-size: 10px;
-                        font-weight: bold;
-                        border: 1px solid #000;
-                    }
-                    
-                    .items-table td {
-                        padding: 8px;
-                        font-size: 11px;
-                        border: 1px solid #000;
-                    }
                     
                     .footer {
-                        margin-top: 15px;
-                        padding-top: 10px;
+                        margin-top: 8px;
+                        padding-top: 6px;
                         border-top: 1px solid #000;
-                        font-size: 9px;
+                        font-size: 6px;
                         color: #000;
                         text-align: center;
                     }
@@ -301,9 +432,9 @@ export default function AdminOrdersPage() {
                     
                     .barcode-text {
                         font-family: 'Courier New', monospace;
-                        font-size: 14px;
+                        font-size: 10px;
                         font-weight: bold;
-                        letter-spacing: 2px;
+                        letter-spacing: 1px;
                         color: #000;
                     }
                     
@@ -334,7 +465,7 @@ export default function AdminOrdersPage() {
                     <!-- Header -->
                     <div class="header">
                         <div class="logo-section">
-                            <img src="/images/logo/header-logo.png" alt="DIAGTOOLS" style="height: 30px; width: auto; margin-bottom: 5px; filter: grayscale(100%);">
+                            <img src="/images/logo/header-logo.png" alt="DIAGTOOLS" style="height: 18px; width: auto; margin-bottom: 3px; filter: grayscale(100%);">
                             <div class="company-info">
                                 Pezhakkppilly P.O, Muvattupezha, Kerala - 686673<br>
                                 Phone: +91-8714388741 | Email: contact@diagtools.in
@@ -344,20 +475,20 @@ export default function AdminOrdersPage() {
                             <div class="order-number">Order #${order.id.slice(0, 8)}</div>
                             <div class="order-date">${new Date(order.created_at).toLocaleDateString('en-IN', { 
                                 year: 'numeric', 
-                                month: 'long', 
+                                month: 'short', 
                                 day: 'numeric' 
                             })}</div>
                         </div>
                     </div>
                     
                     <!-- Barcode & QR Code -->
-                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; margin: 10px 0; padding: 10px; background: #f0f0f0; border: 1px dashed #000;">
+                    <div style="display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; margin: 6px 0; padding: 6px; background: #f0f0f0; border: 1px dashed #000;">
                         <div class="barcode">
                             <div class="barcode-text">${order.id.toUpperCase()}</div>
                         </div>
                         <div style="text-align: center;">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(order.id)}" alt="QR Code" style="width: 80px; height: 80px; border: 1px solid #000; padding: 3px; background: white;">
-                            <div style="font-size: 8px; margin-top: 3px; color: #000;">Scan to Track</div>
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(order.id)}" alt="QR Code" style="width: 50px; height: 50px; border: 1px solid #000; padding: 2px; background: white;">
+                            <div style="font-size: 6px; margin-top: 2px; color: #000;">Scan to Track</div>
                         </div>
                     </div>
                     
@@ -390,42 +521,12 @@ export default function AdminOrdersPage() {
                         </div>
                     </div>
                     
-                    <!-- Items -->
-                    <div class="items-section">
-                        <div class="section-title">📋 Package Contents (Physical Items Only)</div>
-                        <table class="items-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 50%">Product Name</th>
-                                    <th style="width: 15%; text-align: center">Quantity</th>
-                                    <th style="width: 20%; text-align: right">Unit Price</th>
-                                    <th style="width: 15%; text-align: right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${physicalItems.map((item: any) => `
-                                    <tr>
-                                        <td><strong>${item.product_name}</strong></td>
-                                        <td style="text-align: center">${item.quantity}</td>
-                                        <td style="text-align: right">₹${Number(item.unit_price).toFixed(2)}</td>
-                                        <td style="text-align: right">₹${(Number(item.unit_price) * Number(item.quantity)).toFixed(2)}</td>
-                                    </tr>
-                                `).join('')}
-                                ${physicalItems.length === 0 ? '<tr><td colspan="4" style="text-align: center; color: #000;">No physical items in this order</td></tr>' : ''}
-                            </tbody>
-                        </table>
-                        
-                        <div style="text-align: right; font-size: 12px; font-weight: bold; margin-top: 8px; color: #000;">
-                            Total Items: ${physicalItems.reduce((sum: number, item: any) => sum + Number(item.quantity), 0)} | 
-                            Order Total: ₹${Number(order.total).toFixed(2)}
-                        </div>
-                    </div>
                     
                     <!-- Footer -->
                     <div class="footer">
-                        <p><strong>Handling Instructions:</strong> Handle with care. This package contains automotive diagnostic equipment and training materials.</p>
-                        <p style="margin-top: 10px;">For any queries, contact: +91-8714388741 | contact@diagtools.in</p>
-                        <p style="margin-top: 10px; font-size: 10px;">This is a computer-generated shipping label. Printed on ${new Date().toLocaleString('en-IN')}</p>
+                        <p><strong>Handling Instructions:</strong> Handle with care. Automotive diagnostic equipment.</p>
+                        <p style="margin-top: 4px;">Contact: +91-8714388741 | contact@diagtools.in</p>
+                        <p style="margin-top: 4px;">Printed: ${new Date().toLocaleDateString('en-IN')}</p>
                     </div>
                 </div>
                 
@@ -536,7 +637,7 @@ export default function AdminOrdersPage() {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Order ID
+                                        Order & Items
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Customer
@@ -548,7 +649,7 @@ export default function AdminOrdersPage() {
                                         Amount
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Items
+                                        Type
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Date
@@ -587,9 +688,18 @@ export default function AdminOrdersPage() {
                                                     <div className="text-sm font-mono font-medium text-slate-900">
                                                         #{order.id.slice(0, 8)}
                                                     </div>
-                                                    <div className="text-xs text-gray-500 font-mono">
-                                                        {order.id}
-                                                    </div>
+                                                    {order.item_names ? (
+                                                        <div className="text-xs text-gray-700 mt-1 max-w-xs">
+                                                            <span className="font-medium">Items: </span>
+                                                            {order.item_names.length > 60 
+                                                                ? `${order.item_names.substring(0, 60)}...` 
+                                                                : order.item_names}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-xs text-gray-400 mt-1">
+                                                            No items
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="text-sm font-medium text-slate-900">
@@ -673,18 +783,25 @@ export default function AdminOrdersPage() {
                                             {expandedOrderId === order.id && orderDetails && (
                                                 <tr>
                                                     <td colSpan={7} className="px-6 py-4 bg-gray-50">
-                                                        {/* Print Button for Physical Items */}
-                                                        {Number(order.physical_items) > 0 && (
-                                                            <div className="mb-4 flex justify-end">
+                                                        {/* Action Buttons */}
+                                                        <div className="mb-4 flex justify-end gap-3">
+                                                            <button
+                                                                onClick={() => downloadInvoice(order)}
+                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                                            >
+                                                                <FileText className="w-4 h-4" />
+                                                                Download Invoice (A4)
+                                                            </button>
+                                                            {Number(order.physical_items) > 0 && (
                                                                 <button
                                                                     onClick={() => printShippingLabel(order)}
                                                                     className="inline-flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors font-medium"
                                                                 >
                                                                     <Printer className="w-4 h-4" />
-                                                                    Print Shipping Label
+                                                                    Print Shipping Label (A5)
                                                                 </button>
-                                                            </div>
-                                                        )}
+                                                            )}
+                                                        </div>
                                                         
                                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                             {/* Left Column - Order Items */}

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Trash, ImageIcon, Video, Save } from "lucide-react";
+import { ArrowLeft, Trash, ImageIcon, Video, Save, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { productsApi } from "@/lib/api/products";
 import type { ProductType } from "@/lib/api/types";
@@ -16,10 +16,8 @@ type ImageFile = {
 
 type VideoFile = {
     title: string;
-    file: File | null;
-    thumbnail: File | null;
-    preview: string | null;
-    thumbnailPreview: string | null;
+    url: string;
+    thumbnail: string;
 };
 
 type ProductFormState = {
@@ -125,10 +123,8 @@ export default function EditProductPage() {
                 // Prepare existing videos
                 const existingVideos = (product.videos || []).map((v: any) => ({
                     title: v.title || "",
-                    file: null,
-                    thumbnail: null,
-                    preview: v.url || "",
-                    thumbnailPreview: v.thumbnail || null,
+                    url: v.url || "",
+                    thumbnail: v.thumbnail || "",
                 }));
                 
                 // Prepare categories
@@ -313,9 +309,11 @@ export default function EditProductPage() {
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
 
             const images = form.images.map(img => img.file).filter((f): f is File => f !== null);
-            const videos = form.videos.map(vid => vid.file).filter((f): f is File => f !== null);
-            const videoTitles = form.videos.map(vid => vid.title);
-            const videoThumbnails = form.videos.map(vid => vid.thumbnail).filter((f): f is File => f !== null);
+            
+            // Filter valid videos (must have title and url)
+            const validVideos = form.videos.filter(vid => 
+                vid.title.trim() && vid.url.trim()
+            );
 
             await productsApi.adminUpdate(productId, {
                 name: form.name,
@@ -333,9 +331,7 @@ export default function EditProductPage() {
                 digital_file: form.product_type === "digital" ? form.digital_file : undefined,
                 digital_file_name: form.digital_file_name_input?.trim() || undefined,
                 images: images.length > 0 ? images : undefined,
-                videos: videos.length > 0 ? videos : undefined,
-                videoTitles: videoTitles.length > 0 ? videoTitles : undefined,
-                videoThumbnails: videoThumbnails.length > 0 ? videoThumbnails : undefined,
+                videos: validVideos.length > 0 ? validVideos : undefined,
                 quantity_pricing: validPricing.length > 0 ? validPricing : undefined,
             });
 
@@ -760,6 +756,23 @@ export default function EditProductPage() {
                                     Recommended: 1280x720px (16:9)
                                 </span>
                             </label>
+                            {form.cover_image && (
+                                <div className="mb-3 relative inline-block">
+                                    <img 
+                                        src={URL.createObjectURL(form.cover_image)} 
+                                        alt="Cover preview"
+                                        className="w-40 h-24 object-cover rounded border border-gray-200"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setForm(p => ({ ...p, cover_image: null }))}
+                                        className="absolute -top-2 -right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                                        title="Remove cover image"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            )}
                             <input
                                 type="file"
                                 accept="image/*"
@@ -848,45 +861,36 @@ export default function EditProductPage() {
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000]"
                                         />
                                         <div>
-                                            <label className="block text-xs text-gray-600 mb-1">Video File</label>
+                                            <label className="block text-xs text-gray-600 mb-1">
+                                                Video URL (YouTube or Vimeo Embed/Watch URL) *
+                                            </label>
                                             <input
-                                                type="file"
-                                                accept="video/*"
-                                                onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) {
-                                                        try {
-                                                            const preview = await fileToDataURL(file);
-                                                            const newVideos = [...form.videos];
-                                                            newVideos[index] = { ...newVideos[index], file, preview };
-                                                            setForm((p) => ({ ...p, videos: newVideos }));
-                                                        } catch (error) {
-                                                            alert("Failed to load video");
-                                                        }
-                                                    }
+                                                type="text"
+                                                value={video.url}
+                                                onChange={(e) => {
+                                                    const newVideos = [...form.videos];
+                                                    newVideos[index] = { ...newVideos[index], url: e.target.value };
+                                                    setForm((p) => ({ ...p, videos: newVideos }));
                                                 }}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                                                placeholder="e.g., https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000]"
                                             />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Paste YouTube watch/embed URL or Vimeo URL. It will be auto-converted to embed format.
+                                            </p>
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-600 mb-1">Thumbnail (optional)</label>
+                                            <label className="block text-xs text-gray-600 mb-1">Thumbnail URL (optional)</label>
                                             <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) {
-                                                        try {
-                                                            const thumbnailPreview = await fileToDataURL(file);
-                                                            const newVideos = [...form.videos];
-                                                            newVideos[index] = { ...newVideos[index], thumbnail: file, thumbnailPreview };
-                                                            setForm((p) => ({ ...p, videos: newVideos }));
-                                                        } catch (error) {
-                                                            alert("Failed to load thumbnail");
-                                                        }
-                                                    }
+                                                type="text"
+                                                value={video.thumbnail}
+                                                onChange={(e) => {
+                                                    const newVideos = [...form.videos];
+                                                    newVideos[index] = { ...newVideos[index], thumbnail: e.target.value };
+                                                    setForm((p) => ({ ...p, videos: newVideos }));
                                                 }}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                                                placeholder="e.g., https://example.com/thumbnail.jpg"
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000]"
                                             />
                                         </div>
                                     </div>
@@ -894,7 +898,7 @@ export default function EditProductPage() {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        setForm((p) => ({ ...p, videos: [...p.videos, { title: "", file: null, thumbnail: null, preview: null, thumbnailPreview: null }] }));
+                                        setForm((p) => ({ ...p, videos: [...p.videos, { title: "", url: "", thumbnail: "" }] }));
                                     }}
                                     className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#B00000] hover:text-[#B00000]"
                                 >

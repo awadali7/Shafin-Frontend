@@ -16,10 +16,8 @@ type ImageFile = {
 
 type VideoFile = {
     title: string;
-    file: File | null;
-    thumbnail: File | null;
-    preview: string | null; // For preview purposes only
-    thumbnailPreview: string | null; // For preview purposes only
+    url: string;
+    thumbnail: string;
 };
 
 type ProductFormState = {
@@ -217,17 +215,13 @@ export const ProductsTab: React.FC = () => {
                 .map(img => img.file)
                 .filter((file): file is File => file !== null);
             
-            const videoFiles = form.videos
-                .map(video => video.file)
-                .filter((file): file is File => file !== null);
-            
-            const videoTitles = form.videos
-                .map(video => video.title)
-                .filter(title => title.trim() !== "");
-            
-            const videoThumbnailFiles = form.videos
-                .map(video => video.thumbnail)
-                .filter((file): file is File => file !== null);
+            const videos = form.videos
+                .filter(video => video.url && video.url.trim() !== "")
+                .map(video => ({
+                    title: video.title,
+                    url: video.url,
+                    thumbnail: video.thumbnail || undefined
+                }));
 
             // Filter out empty categories
             const filteredCategories = form.categories.filter(cat => cat && cat.trim());
@@ -259,9 +253,7 @@ export const ProductsTab: React.FC = () => {
                     digital_file: form.digital_file_name_input ? undefined : form.digital_file,
                     digital_file_name: form.digital_file_name_input || undefined,
                     images: imageFiles.length > 0 ? imageFiles : undefined,
-                    videos: videoFiles.length > 0 ? videoFiles : undefined,
-                    videoTitles: videoTitles.length > 0 ? videoTitles : undefined,
-                    videoThumbnails: videoThumbnailFiles.length > 0 ? videoThumbnailFiles : undefined,
+                    videos: videos.length > 0 ? videos : undefined,
                     quantity_pricing: quantityPricing.length > 0 ? quantityPricing : undefined,
                 });
             } else {
@@ -281,9 +273,7 @@ export const ProductsTab: React.FC = () => {
                     requires_kyc: form.requires_kyc,
                     cover_image: form.cover_image,
                     images: imageFiles.length > 0 ? imageFiles : undefined,
-                    videos: videoFiles.length > 0 ? videoFiles : undefined,
-                    videoTitles: videoTitles.length > 0 ? videoTitles : undefined,
-                    videoThumbnails: videoThumbnailFiles.length > 0 ? videoThumbnailFiles : undefined,
+                    videos: videos.length > 0 ? videos : undefined,
                     quantity_pricing: quantityPricing.length > 0 ? quantityPricing : undefined,
                 });
             }
@@ -852,6 +842,23 @@ export const ProductsTab: React.FC = () => {
                                             Recommended size: 1280x720 px (16:9 aspect ratio)
                                         </span>
                                     </label>
+                                    {form.cover_image && (
+                                        <div className="mb-3 relative inline-block">
+                                            <img 
+                                                src={URL.createObjectURL(form.cover_image)} 
+                                                alt="Cover preview"
+                                                className="w-40 h-24 object-cover rounded border border-gray-200"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setForm(p => ({ ...p, cover_image: null }))}
+                                                className="absolute -top-2 -right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                                                title="Remove cover image"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    )}
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -943,71 +950,39 @@ export const ProductsTab: React.FC = () => {
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                                 />
                                                 <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">Video File</label>
+                                                    <label className="block text-xs text-gray-600 mb-1">Video URL (YouTube/Vimeo)</label>
                                                     <input
-                                                        type="file"
-                                                        accept="video/*"
-                                                        onChange={async (e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                try {
-                                                                    const preview = await fileToDataURL(file);
-                                                                    const newVideos = [...form.videos];
-                                                                    newVideos[index] = { ...newVideos[index], file, preview };
-                                                                    setForm((p) => ({ ...p, videos: newVideos }));
-                                                                } catch (error) {
-                                                                    alert("Failed to load video");
-                                                                }
-                                                            }
+                                                        type="text"
+                                                        value={video.url}
+                                                        onChange={(e) => {
+                                                            const newVideos = [...form.videos];
+                                                            newVideos[index] = { ...newVideos[index], url: e.target.value };
+                                                            setForm((p) => ({ ...p, videos: newVideos }));
                                                         }}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                                                        placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">Thumbnail (optional)</label>
+                                                    <label className="block text-xs text-gray-600 mb-1">Thumbnail URL (optional)</label>
                                                     <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={async (e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                                try {
-                                                                    const thumbnailPreview = await fileToDataURL(file);
-                                                                    const newVideos = [...form.videos];
-                                                                    newVideos[index] = { ...newVideos[index], thumbnail: file, thumbnailPreview };
-                                                                    setForm((p) => ({ ...p, videos: newVideos }));
-                                                                } catch (error) {
-                                                                    alert("Failed to load thumbnail");
-                                                                }
-                                                            }
+                                                        type="text"
+                                                        value={video.thumbnail}
+                                                        onChange={(e) => {
+                                                            const newVideos = [...form.videos];
+                                                            newVideos[index] = { ...newVideos[index], thumbnail: e.target.value };
+                                                            setForm((p) => ({ ...p, videos: newVideos }));
                                                         }}
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                                                        placeholder="https://example.com/thumbnail.jpg"
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                                     />
                                                 </div>
-                                                {(video.preview || video.thumbnailPreview) && (
-                                                    <div className="mt-2 flex gap-2">
-                                                        {video.thumbnailPreview && (
-                                                            <img 
-                                                                src={video.thumbnailPreview} 
-                                                                alt="Thumbnail"
-                                                                className="w-24 h-24 object-cover rounded border border-gray-200"
-                                                            />
-                                                        )}
-                                                        {video.preview && (
-                                                            <video 
-                                                                src={video.preview} 
-                                                                controls 
-                                                                className="flex-1 max-h-48 rounded border border-gray-200"
-                                                            />
-                                                        )}
-                                                    </div>
-                                                )}
                                             </div>
                                         ))}
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                setForm((p) => ({ ...p, videos: [...p.videos, { title: "", file: null, thumbnail: null, preview: null, thumbnailPreview: null }] }));
+                                                setForm((p) => ({ ...p, videos: [...p.videos, { title: "", url: "", thumbnail: "" }] }));
                                             }}
                                             className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#B00000] hover:text-[#B00000] transition-colors"
                                         >
@@ -1288,3 +1263,4 @@ export const ProductsTab: React.FC = () => {
         </div>
     );
 };
+

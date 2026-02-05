@@ -49,9 +49,7 @@ export const productsApi = {
         cover_image?: File | null;
         digital_file?: File | null;
         images?: File[];
-        videos?: File[];
-        videoTitles?: string[];
-        videoThumbnails?: File[];
+        videos?: Array<{ title: string; url: string; thumbnail?: string }>;
         digital_file_name?: string; // For linking existing files
         quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number; courier_charge?: number }>;
     }): Promise<ApiResponse<Product>> => {
@@ -90,25 +88,9 @@ export const productsApi = {
             });
         }
         
-        // Append video files directly
+        // Append videos as JSON
         if (data.videos && data.videos.length > 0) {
-            data.videos.forEach((file) => {
-                if (file) form.append("videos", file);
-            });
-        }
-        
-        // Append video titles
-        if (data.videoTitles && data.videoTitles.length > 0) {
-            data.videoTitles.forEach((title, index) => {
-                form.append(`video_titles[${index}]`, title);
-            });
-        }
-        
-        // Append video thumbnails
-        if (data.videoThumbnails && data.videoThumbnails.length > 0) {
-            data.videoThumbnails.forEach((file) => {
-                if (file) form.append("video_thumbnails", file);
-            });
+            form.append("videos", JSON.stringify(data.videos));
         }
         
         // Append quantity pricing as JSON string
@@ -139,9 +121,7 @@ export const productsApi = {
             cover_image: File | null;
             digital_file: File | null;
             images?: File[];
-            videos?: File[];
-            videoTitles?: string[];
-            videoThumbnails?: File[];
+            videos?: Array<{ title: string; url: string; thumbnail?: string }>;
             digital_file_name?: string; // For linking existing files
             quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number; courier_charge?: number }>;
         }>
@@ -150,7 +130,7 @@ export const productsApi = {
         Object.entries(data).forEach(([k, v]) => {
             if (v === undefined || v === null) return;
             if (v instanceof File) return;
-            if (k === "images" || k === "videos" || k === "videoTitles" || k === "videoThumbnails" || k === "categories" || k === "quantity_pricing") {
+            if (k === "images" || k === "videos" || k === "categories" || k === "quantity_pricing") {
                 // Skip these, handle separately
                 return;
             }
@@ -177,25 +157,9 @@ export const productsApi = {
             });
         }
         
-        // Append video files directly
+        // Append videos as JSON
         if (data.videos && data.videos.length > 0) {
-            data.videos.forEach((file) => {
-                if (file) form.append("videos", file);
-            });
-        }
-        
-        // Append video titles
-        if (data.videoTitles && data.videoTitles.length > 0) {
-            data.videoTitles.forEach((title, index) => {
-                form.append(`video_titles[${index}]`, title);
-            });
-        }
-        
-        // Append video thumbnails
-        if (data.videoThumbnails && data.videoThumbnails.length > 0) {
-            data.videoThumbnails.forEach((file) => {
-                if (file) form.append("video_thumbnails", file);
-            });
+            form.append("videos", JSON.stringify(data.videos));
         }
         
         // Append quantity pricing as JSON string

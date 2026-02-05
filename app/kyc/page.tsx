@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Upload, X, CheckCircle2, AlertCircle, Loader2, Plus } from "lucide-react";
+import { Upload, X, CheckCircle2, AlertCircle, Loader2, Plus, Download } from "lucide-react";
 import { kycApi } from "@/lib/api/kyc";
 import { termsApi } from "@/lib/api/terms";
 import { useAuth } from "@/contexts/AuthContext";
@@ -209,6 +209,176 @@ function KYCContent() {
         setProfilePhotoPreview(null);
     };
 
+    // Download KYC details as PDF
+    const handleDownloadKYC = async () => {
+        if (!kycData) {
+            toast.error("No KYC data available to download");
+            return;
+        }
+
+        try {
+            toast.loading("Generating PDF...");
+            
+            const { jsPDF } = await import("jspdf");
+            const pdf = new jsPDF();
+            
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+            const cleanBaseUrl = baseUrl.replace(/\/api$/, "");
+            
+            let yPosition = 20;
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const margin = 20;
+            const contentWidth = pageWidth - 2 * margin;
+            
+            // Helper function to add text with word wrap
+            const addText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
+                pdf.setFontSize(fontSize);
+                pdf.setFont("helvetica", isBold ? "bold" : "normal");
+                const lines = pdf.splitTextToSize(text, contentWidth);
+                lines.forEach((line: string) => {
+                    if (yPosition > 270) {
+                        pdf.addPage();
+                        yPosition = 20;
+                    }
+                    pdf.text(line, margin, yPosition);
+                    yPosition += fontSize * 0.5;
+                });
+                yPosition += 3;
+            };
+            
+            // Helper function to add image
+            const addImage = async (imageUrl: string, label: string) => {
+                try {
+                    const response = await fetch(imageUrl);
+                    const blob = await response.blob();
+                    const reader = new FileReader();
+                    
+                    return new Promise<void>((resolve) => {
+                        reader.onloadend = () => {
+                            const base64data = reader.result as string;
+                            
+                            if (yPosition > 200) {
+                                pdf.addPage();
+                                yPosition = 20;
+                            }
+                            
+                            addText(label, 10, true);
+                            
+                            try {
+                                const imgWidth = 80;
+                                const imgHeight = 60;
+                                pdf.addImage(base64data, "JPEG", margin, yPosition, imgWidth, imgHeight);
+                                yPosition += imgHeight + 10;
+                            } catch (err) {
+                                console.error("Error adding image:", err);
+                                addText(`[Image: ${label}]`, 9);
+                            }
+                            
+                            resolve();
+                        };
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (err) {
+                    console.error("Error fetching image:", err);
+                    addText(`[${label} - Unable to load image]`, 9);
+                }
+            };
+            
+            // Title
+            addText("STUDENT KYC VERIFICATION DETAILS", 16, true);
+            yPosition += 5;
+            
+            // User Information Section
+            addText("User Information", 12, true);
+            addText(`User Email: ${user?.email || "N/A"}`);
+            addText(`Status: ${kycData.status.toUpperCase()}`);
+            addText(`Submitted: ${new Date(kycData.created_at || "").toLocaleString()}`);
+            yPosition += 5;
+            
+            // Personal Information Section
+            addText("Personal Information", 12, true);
+            addText(`First Name: ${kycData.first_name}`);
+            addText(`Last Name: ${kycData.last_name}`);
+            addText(`Address: ${kycData.address}`);
+            addText(`Contact Number: ${kycData.contact_number}`);
+            addText(`WhatsApp Number: ${kycData.whatsapp_number}`);
+            yPosition += 5;
+            
+            // Documents Section
+            addText("Documents", 12, true);
+            
+            // Add ID Proof Image
+            if (kycData.id_proof_url) {
+                const idProofUrls = Array.isArray(kycData.id_proof_url) 
+                    ? kycData.id_proof_url 
+                    : [kycData.id_proof_url];
+                    
+                for (let i = 0; i < idProofUrls.length; i++) {
+                    const url = idProofUrls[i];
+                    if (!url.endsWith('.pdf')) {
+                        await addImage(`${cleanBaseUrl}${url}`, `ID Proof ${i + 1}`);
+                    } else {
+                        addText(`ID Proof ${i + 1}: ${cleanBaseUrl}${url}`);
+                    }
+                }
+            }
+            
+            // Add Profile Photo
+            if (kycData.profile_photo_url) {
+                await addImage(`${cleanBaseUrl}${kycData.profile_photo_url}`, "Profile Photo");
+            }
+            
+            // Business Information (if applicable)
+            if ((kycData as any).business_id) {
+                yPosition += 5;
+                addText("Business Information", 12, true);
+                addText(`Business ID: ${(kycData as any).business_id}`);
+                if ((kycData as any).business_location_link) {
+                    addText(`Business Location: ${(kycData as any).business_location_link}`);
+                }
+                addText(`Upgraded To Business: ${(kycData as any).upgraded_to_business ? "Yes" : "No"}`);
+                
+                if ((kycData as any).business_proof_url) {
+                    await addImage(`${cleanBaseUrl}${(kycData as any).business_proof_url}`, "Business Proof");
+                }
+            }
+            
+            // Rejection Information (if rejected)
+            if (kycData.status === "rejected" && kycData.rejection_reason) {
+                yPosition += 5;
+                addText("Rejection Information", 12, true);
+                addText(`Rejection Reason: ${kycData.rejection_reason}`);
+            }
+            
+            // Verification Information (if verified)
+            if (kycData.status === "verified" && kycData.verified_at) {
+                yPosition += 5;
+                addText("Verification Information", 12, true);
+                addText(`Verified At: ${new Date(kycData.verified_at).toLocaleString()}`);
+            }
+            
+            // Footer
+            if (yPosition > 250) {
+                pdf.addPage();
+                yPosition = 20;
+            }
+            yPosition += 10;
+            pdf.setFontSize(8);
+            pdf.setTextColor(128);
+            pdf.text(`Generated on: ${new Date().toLocaleString()}`, margin, yPosition);
+            
+            // Save PDF
+            pdf.save(`Student_KYC_${kycData.first_name}_${kycData.last_name}_${Date.now()}.pdf`);
+            
+            toast.dismiss();
+            toast.success("KYC details downloaded as PDF successfully!");
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            toast.dismiss();
+            toast.error("Failed to generate PDF. Please try again.");
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSuccess(false);
@@ -331,13 +501,25 @@ function KYCContent() {
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Header */}
-            <div className="mb-4">
-                <h1 className="text-xl font-bold text-slate-900 flex items-center">
-                    Student KYC Verification
-                </h1>
-                <p className="text-sm text-slate-600 mt-1">
-                    Complete your KYC verification to access course features
-                </p>
+            <div className="mb-4 flex items-center justify-between">
+                <div>
+                    <h1 className="text-xl font-bold text-slate-900 flex items-center">
+                        Student KYC Verification
+                    </h1>
+                    <p className="text-sm text-slate-600 mt-1">
+                        Complete your KYC verification to access course features
+                    </p>
+                </div>
+                {kycData && (
+                    <button
+                        onClick={handleDownloadKYC}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-700 transition-colors"
+                        title="Download KYC Details"
+                    >
+                        <Download className="w-4 h-4" />
+                        <span className="text-sm font-medium">Download KYC</span>
+                    </button>
+                )}
             </div>
 
             {/* Step Indicator */}
