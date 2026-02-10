@@ -34,8 +34,8 @@ function KYCContent() {
     // File states
     const [idProofFiles, setIdProofFiles] = useState<File[]>([]);
     const [idProofPreviews, setIdProofPreviews] = useState<Array<{ file: File | null; preview: string }>>([]);
-    const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
-    const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
+    const [idProof2File, setIdProof2File] = useState<File | null>(null);
+    const [idProof2Preview, setIdProof2Preview] = useState<string | null>(null);
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -80,14 +80,14 @@ function KYCContent() {
                             }))
                         );
                     }
-                    if (response.data.profile_photo_url) {
+                    if (response.data.id_proof_2_url) {
                         const baseUrl =
                             process.env.NEXT_PUBLIC_API_URL ||
                             "http://localhost:5001";
                         // Remove /api from baseUrl if present, as file URLs are relative to root
                         const cleanBaseUrl = baseUrl.replace(/\/api$/, "");
-                        setProfilePhotoPreview(
-                            `${cleanBaseUrl}${response.data.profile_photo_url}`
+                        setIdProof2Preview(
+                            `${cleanBaseUrl}${response.data.id_proof_2_url}`
                         );
                     }
                 }
@@ -165,12 +165,12 @@ function KYCContent() {
         e.target.value = "";
     };
 
-    const handleProfilePhotoChange = (
+    const handleIdProof2Change = (
         e: React.ChangeEvent<HTMLInputElement>
     ) => {
         const file = e.target.files?.[0];
         if (file) {
-            // Validate file type (only images for profile photo)
+            // Validate file type (only images for ID proof 2)
             const allowedTypes = [
                 "image/jpeg",
                 "image/jpg",
@@ -178,7 +178,7 @@ function KYCContent() {
                 "image/webp",
             ];
             if (!allowedTypes.includes(file.type)) {
-                toast.error("Profile photo must be an image (JPEG, PNG, or WebP)");
+                toast.error("ID Proof 2 must be an image (JPEG, PNG, or WebP)");
                 return;
             }
 
@@ -188,12 +188,12 @@ function KYCContent() {
                 return;
             }
 
-            setProfilePhotoFile(file);
+            setIdProof2File(file);
 
             // Create preview
             const reader = new FileReader();
             reader.onloadend = () => {
-                setProfilePhotoPreview(reader.result as string);
+                setIdProof2Preview(reader.result as string);
             };
             reader.readAsDataURL(file);
         }
@@ -204,9 +204,9 @@ function KYCContent() {
         setIdProofPreviews((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const removeProfilePhoto = () => {
-        setProfilePhotoFile(null);
-        setProfilePhotoPreview(null);
+    const removeIdProof2 = () => {
+        setIdProof2File(null);
+        setIdProof2Preview(null);
     };
 
     // Download KYC details as PDF
@@ -323,9 +323,9 @@ function KYCContent() {
                 }
             }
             
-            // Add Profile Photo
-            if (kycData.profile_photo_url) {
-                await addImage(`${cleanBaseUrl}${kycData.profile_photo_url}`, "Profile Photo");
+            // Add ID Proof 2
+            if (kycData.id_proof_2_url) {
+                await addImage(`${cleanBaseUrl}${kycData.id_proof_2_url}`, "ID Proof 2");
             }
             
             // Business Information (if applicable)
@@ -401,8 +401,8 @@ function KYCContent() {
             return;
         }
 
-        if (!profilePhotoFile && !kycData?.profile_photo_url) {
-            toast.error("Profile photo is required");
+        if (!idProof2File && !kycData?.id_proof_2_url) {
+            toast.error("ID Proof 2 is required");
             return;
         }
 
@@ -421,8 +421,8 @@ function KYCContent() {
             idProofFiles.forEach((file) => {
                 formDataToSend.append("id_proof", file);
             });
-            if (profilePhotoFile) {
-                formDataToSend.append("profile_photo", profilePhotoFile);
+            if (idProof2File) {
+                formDataToSend.append("id_proof_2", idProof2File);
             }
 
             const response = await kycApi.submit(formDataToSend);
@@ -875,26 +875,26 @@ function KYCContent() {
                                     )}
                                 </div>
 
-                                {/* Profile Photo Upload */}
+                                {/* ID Proof 2 Upload */}
                                 <div>
                                     <h3 className="text-sm font-semibold text-slate-700 mb-2">
-                                        Profile Photo <span className="text-red-500">*</span>
+                                        ID Proof 2 <span className="text-red-500">*</span>
                                     </h3>
                                     <p className="text-xs text-slate-600 mb-3">
-                                        Upload your profile photo in JPEG, PNG, or WebP (Max 10MB)
+                                        Upload your second ID proof in JPEG, PNG, or WebP (Max 10MB)
                                     </p>
 
-                                    {profilePhotoPreview ? (
+                                    {idProof2Preview ? (
                                         <div className="relative inline-block w-full">
                                             <img
-                                                src={profilePhotoPreview}
-                                                alt="Profile Photo Preview"
+                                                src={idProof2Preview}
+                                                alt="ID Proof 2 Preview"
                                                 className="w-full h-32 object-cover rounded-lg border border-gray-300"
                                             />
                                             {kycData?.status !== "verified" && (
                                                 <button
                                                     type="button"
-                                                    onClick={removeProfilePhoto}
+                                                    onClick={removeIdProof2}
                                                     className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                                                 >
                                                     <X className="w-3 h-3" />
@@ -903,7 +903,7 @@ function KYCContent() {
                                         </div>
                                     ) : (
                                         <label
-                                            htmlFor="profile_photo"
+                                            htmlFor="id_proof_2"
                                             className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
                                                 kycData?.status === "verified"
                                                     ? "border-gray-300 bg-gray-50 cursor-not-allowed"
@@ -922,11 +922,11 @@ function KYCContent() {
                                                 </p>
                                             </div>
                                             <input
-                                                id="profile_photo"
+                                                id="id_proof_2"
                                                 type="file"
                                                 className="hidden"
                                                 accept="image/jpeg,image/jpg,image/png,image/webp"
-                                                onChange={handleProfilePhotoChange}
+                                                onChange={handleIdProof2Change}
                                                 disabled={
                                                     kycData?.status === "verified"
                                                 }

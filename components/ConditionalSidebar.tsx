@@ -1,52 +1,12 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation";
-import Sidebar from "./Sidebar";
-import { useAuth } from "@/contexts/AuthContext";
 
+/**
+ * ConditionalSidebar - Sidebar has been removed from desktop
+ * All navigation is now in the Header dropdown menus
+ */
 export default function ConditionalSidebar() {
-    const pathname = usePathname();
-    const { isAuth } = useAuth();
-
-    // Pages where sidebar should NOT be shown (public pages)
-    const publicPages = [
-        "/",
-        "/about",
-        "/login",
-        "/register",
-        "/reset-password",
-        "/terms",
-        "/choose-user-type",
-    ];
-
-    // Pages where sidebar should be shown (authenticated pages)
-    const authenticatedPages = [
-        "/dashboard",
-        "/profile",
-        "/my-learning",
-        "/orders",
-        "/downloads",
-        "/kyc",
-        "/settings",
-        "/admin",
-        "/notifications",
-        "/checkout",
-    ];
-
-    // Show sidebar if user is authenticated AND on an authenticated page
-    // OR on courses/blog pages (but only if authenticated)
-    const showSidebar =
-        isAuth &&
-        (authenticatedPages.some((page) => pathname?.startsWith(page)) ||
-            (pathname?.startsWith("/courses") &&
-                !publicPages.includes(pathname)) ||
-            (pathname?.startsWith("/blog") && !publicPages.includes(pathname)) ||
-            (pathname?.startsWith("/shop") && !publicPages.includes(pathname)));
-
-    if (!showSidebar) {
+    // Sidebar has been completely removed - all navigation moved to Header
         return null;
-    }
-
-    return <Sidebar />;
 }

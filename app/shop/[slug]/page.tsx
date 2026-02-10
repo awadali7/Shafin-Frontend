@@ -3,6 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import {
     ArrowLeft,
     Download,
@@ -42,8 +45,12 @@ type ShopProductDetails = {
     reviews: number;
     inStock?: boolean; // physical only
     isComingSoon?: boolean;
+    isContactOnly?: boolean;
     requiresKyc?: boolean;
     description: string;
+    english_description?: string;
+    malayalam_description?: string;
+    hindi_description?: string;
     digitalFile?: {
         format?: DigitalFileFormat;
         filename?: string;
@@ -85,12 +92,16 @@ function mapApiProductToDetails(p: Product): ShopProductDetails {
                 ? true
                 : p.in_stock ?? (p.stock_quantity ?? 0) > 0,
         isComingSoon: p.is_coming_soon || false,
+        isContactOnly: p.is_contact_only || false,
         requiresKyc: p.requires_kyc || false,
         description:
             p.description ||
             (p.type === "digital"
                 ? "Digital product. Download available after payment."
                 : "Physical product. Shipping available."),
+        english_description: p.english_description,
+        malayalam_description: p.malayalam_description,
+        hindi_description: p.hindi_description,
         digitalFile:
             p.type === "digital"
                 ? {
@@ -122,10 +133,9 @@ export default function ProductDetailPage() {
         max_qty: number | null;
         price_per_item: number;
     } | null>(null);
-    const [showMagnifier, setShowMagnifier] = useState(false);
-    const [magnifierPosition, setMagnifierPosition] = useState({ x: 0, y: 0 });
-    const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
     const [copied, setCopied] = useState(false);
+    const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'ml' | 'hi'>('en');
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -240,23 +250,6 @@ export default function ProductDetailPage() {
         setIsOpen(true);
     };
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        const elem = e.currentTarget;
-        const { left, top, width, height } = elem.getBoundingClientRect();
-        const x = ((e.clientX - left) / width) * 100;
-        const y = ((e.clientY - top) / height) * 100;
-        setMagnifierPosition({ x, y });
-        setImageSize({ width, height });
-    };
-
-    const handleMouseEnter = () => {
-        setShowMagnifier(true);
-    };
-
-    const handleMouseLeave = () => {
-        setShowMagnifier(false);
-    };
-
     const handleCopyLink = async () => {
         const url = window.location.href;
         try {
@@ -288,15 +281,40 @@ export default function ProductDetailPage() {
         }
     };
 
+    // Convert YouTube URL to embed format
+    const convertToEmbedUrl = (videoUrl: string): string => {
+        if (!videoUrl) return videoUrl;
+
+        // Extract YouTube video ID from various URL formats
+        const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+        const youtubeMatch = videoUrl.match(youtubeRegex);
+        if (youtubeMatch && youtubeMatch[1]) {
+            const videoId = youtubeMatch[1];
+            return `https://www.youtube.com/embed/${videoId}`;
+        }
+
+        // Extract Vimeo video ID
+        const vimeoRegex = /vimeo\.com\/(?:video\/)?(\d+)/;
+        const vimeoMatch = videoUrl.match(vimeoRegex);
+        if (vimeoMatch && vimeoMatch[1]) {
+            const videoId = vimeoMatch[1];
+            return `https://player.vimeo.com/video/${videoId}`;
+        }
+
+        // If already an embed URL or unrecognized format, return as-is
+        return videoUrl;
+    };
+
     // Get video thumbnail from URL if not provided
     const getVideoThumbnail = (videoUrl: string): string | null => {
         if (!videoUrl) return null;
 
-        // YouTube thumbnail
+        // YouTube thumbnail - use hqdefault which is more reliable than maxresdefault
         const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
         const youtubeMatch = videoUrl.match(youtubeRegex);
         if (youtubeMatch && youtubeMatch[1]) {
-            return `https://img.youtube.com/vi/${youtubeMatch[1]}/maxresdefault.jpg`;
+            // Use hqdefault.jpg - it's available for all YouTube videos
+            return `https://img.youtube.com/vi/${youtubeMatch[1]}/hqdefault.jpg`;
         }
 
         // Vimeo thumbnail (use a default pattern)
@@ -363,58 +381,21 @@ export default function ProductDetailPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Product Images */}
-                <div className="space-y-3 lg:relative">
-                    {/* Main Image with Magnifier */}
-                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden relative">
-                        <div
-                            className="relative cursor-crosshair"
-                            onMouseMove={handleMouseMove}
-                            onMouseEnter={handleMouseEnter}
-                            onMouseLeave={handleMouseLeave}
-                        >
-                            <img
-                                src={
-                                    product.images?.[selectedImageIndex] ||
-                                    product.image
-                                }
-                                alt={product.name}
-                                className="w-full h-96 object-cover"
-                            />
-
-                            {/* Magnifier Lens Indicator */}
-                            {showMagnifier && (
-                                <div
-                                    className="absolute pointer-events-none border-2 border-[#B00000] bg-white/30 backdrop-blur-[1px]"
-                                    style={{
-                                        width: "120px",
-                                        height: "120px",
-                                        left: `calc(${magnifierPosition.x}% - 60px)`,
-                                        top: `calc(${magnifierPosition.y}% - 60px)`,
-                                    }}
-                                />
-                            )}
-                        </div>
+                <div className="space-y-3">
+                    {/* Main Image - Click to open gallery */}
+                    <div 
+                        className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:border-[#B00000] transition-colors"
+                        onClick={() => setIsGalleryOpen(true)}
+                    >
+                        <img
+                            src={
+                                product.images?.[selectedImageIndex] ||
+                                product.image
+                            }
+                            alt={product.name}
+                            className="w-full h-96 object-cover"
+                        />
                     </div>
-
-                    {/* Magnified View - Positioned outside main image container */}
-                    {showMagnifier && (
-                        <div className="hidden lg:block absolute left-full top-0 ml-4 w-96 h-96 border-2 border-[#B00000] rounded-lg shadow-2xl bg-white overflow-hidden z-50">
-                            <div
-                                className="w-full h-full"
-                                style={{
-                                    backgroundImage: `url(${
-                                        product.images?.[selectedImageIndex] ||
-                                        product.image
-                                    })`,
-                                    backgroundSize: `${imageSize.width * 2}px ${
-                                        imageSize.height * 2
-                                    }px`,
-                                    backgroundPosition: `${magnifierPosition.x}% ${magnifierPosition.y}%`,
-                                    backgroundRepeat: "no-repeat",
-                                }}
-                            />
-                        </div>
-                    )}
 
                     {/* Image Thumbnails */}
                     {product.images && product.images.length > 1 && (
@@ -439,8 +420,8 @@ export default function ProductDetailPage() {
                         </div>
                     )}
 
-                    {/* Magnifier Hint */}
-                    <div className="hidden lg:flex items-center justify-center gap-1.5 text-xs text-gray-500 py-1.5">
+                    {/* Click to view hint */}
+                    <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500 py-1.5">
                         <svg
                             className="w-3.5 h-3.5"
                             fill="none"
@@ -451,10 +432,16 @@ export default function ProductDetailPage() {
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeWidth={2}
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                             />
                         </svg>
-                        <span>Hover to zoom</span>
+                        <span>Click image to view gallery</span>
                     </div>
                 </div>
 
@@ -531,26 +518,43 @@ export default function ProductDetailPage() {
 
                         {/* Price */}
                         <div className="mb-3 pb-3 border-b border-gray-200">
-                            <div className="flex items-baseline gap-2">
-                                <p className="text-3xl font-bold text-[#B00000]">
-                                    ₹{product.price.toLocaleString("en-IN")}
-                                </p>
-                                {product.type !== "digital" && quantity > 1 && (
-                                    <span className="text-xs text-gray-500">
-                                        per item
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1">
-                                {product.type === "digital"
-                                    ? `Instant download (${
-                                          product.digitalFile?.format?.toUpperCase() ||
-                                          "DIGITAL"
-                                      })`
-                                    : product.inStock
-                                    ? "In Stock"
-                                    : "Out of Stock"}
-                            </p>
+                            {product.isContactOnly ? (
+                                // Contact Only Product
+                                <>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-2xl font-bold text-gray-700">
+                                            Contact for Price
+                                        </p>
+                                    </div>
+                                    <p className="text-xs text-gray-600 mt-1">
+                                        {product.type === "digital" ? "Digital Product" : "Physical Product"} • Please contact us via WhatsApp
+                                    </p>
+                                </>
+                            ) : (
+                                // Normal Product
+                                <>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-3xl font-bold text-[#B00000]">
+                                            ₹{product.price.toLocaleString("en-IN")}
+                                        </p>
+                                        {product.type !== "digital" && quantity > 1 && (
+                                            <span className="text-xs text-gray-500">
+                                                per item
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-gray-600 mt-1">
+                                        {product.type === "digital"
+                                            ? `Instant download (${
+                                                  product.digitalFile?.format?.toUpperCase() ||
+                                                  "DIGITAL"
+                                              })`
+                                            : product.inStock
+                                            ? "In Stock"
+                                            : "Out of Stock"}
+                                    </p>
+                                </>
+                            )}
                         </div>
 
                         {/* Tiered Pricing - Minimal */}
@@ -619,133 +623,235 @@ export default function ProductDetailPage() {
                                 </div>
                             )}
 
-                        {/* Description */}
-                        <p className="text-sm text-gray-600 leading-relaxed mb-4">
-                            {product.description}
-                        </p>
+                        {/* Description with Language Selector */}
+                        <div className="mb-4">
+                            {/* Language Selector - Only show if multi-language descriptions exist */}
+                            {(product.english_description || product.malayalam_description || product.hindi_description) && (
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-xs font-medium text-gray-500">Language:</span>
+                                    <div className="flex gap-1">
+                                        {product.english_description && (
+                                            <button
+                                                onClick={() => setSelectedLanguage('en')}
+                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                                    selectedLanguage === 'en'
+                                                        ? 'bg-[#B00000] text-white'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                English
+                                            </button>
+                                        )}
+                                        {product.malayalam_description && (
+                                            <button
+                                                onClick={() => setSelectedLanguage('ml')}
+                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                                    selectedLanguage === 'ml'
+                                                        ? 'bg-[#B00000] text-white'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                മലയാളം
+                                            </button>
+                                        )}
+                                        {product.hindi_description && (
+                                            <button
+                                                onClick={() => setSelectedLanguage('hi')}
+                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                                    selectedLanguage === 'hi'
+                                                        ? 'bg-[#B00000] text-white'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                हिन्दी
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Description Text */}
+                            <div className="prose prose-sm max-w-none text-gray-600">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    rehypePlugins={[rehypeRaw]}
+                                    components={{
+                                        h1: ({node, ...props}) => <h1 className="text-xl font-bold mb-2 text-gray-900" {...props} />,
+                                        h2: ({node, ...props}) => <h2 className="text-lg font-bold mb-2 text-gray-900" {...props} />,
+                                        h3: ({node, ...props}) => <h3 className="text-base font-bold mb-1 text-gray-900" {...props} />,
+                                        p: ({node, ...props}) => <p className="mb-2 leading-relaxed" {...props} />,
+                                        ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 space-y-1" {...props} />,
+                                        ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 space-y-1" {...props} />,
+                                        li: ({node, ...props}) => <li className="ml-4" {...props} />,
+                                        strong: ({node, ...props}) => <strong className="font-bold text-gray-900" {...props} />,
+                                        em: ({node, ...props}) => <em className="italic" {...props} />,
+                                        a: ({node, ...props}) => <a className="text-[#B00000] hover:underline" {...props} />,
+                                    }}
+                                >
+                                    {selectedLanguage === 'en' && product.english_description 
+                                        ? product.english_description
+                                        : selectedLanguage === 'ml' && product.malayalam_description
+                                        ? product.malayalam_description
+                                        : selectedLanguage === 'hi' && product.hindi_description
+                                        ? product.hindi_description
+                                        : product.description}
+                                </ReactMarkdown>
+                            </div>
+                        </div>
 
-                        {/* Quantity / Delivery */}
-                        {product.type === "digital" ? (
-                            <div className="mb-4 flex items-center gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
-                                <Download className="w-4 h-4 text-[#B00000] shrink-0" />
-                                <p className="text-sm text-gray-700">
-                                    Digital download after payment
-                                </p>
+                        {/* Contact Only or Normal Purchase Options */}
+                        {product.isContactOnly ? (
+                            // Contact Only Product - WhatsApp Button
+                            <div className="space-y-3">
+                                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                    <p className="text-sm text-green-900 font-medium mb-2">
+                                        📱 Contact via WhatsApp
+                                    </p>
+                                    <p className="text-xs text-green-700 mb-3">
+                                        This product requires direct contact. Our team will assist you with pricing, availability, and customization options.
+                                    </p>
+                                    <a
+                                        href="https://wa.me/919037313107"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                                    >
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                                        </svg>
+                                        Chat on WhatsApp
+                                    </a>
+                                </div>
                             </div>
                         ) : (
-                            <div className="mb-4">
-                                <label className="block text-xs font-medium text-gray-700 mb-2">
-                                    Quantity
-                                </label>
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <button
-                                        onClick={() =>
-                                            setQuantity(
-                                                Math.max(1, quantity - 1)
-                                            )
-                                        }
-                                        className="w-9 h-9 border border-gray-300 rounded hover:bg-gray-50 text-sm"
-                                    >
-                                        -
-                                    </button>
-                                    <span className="w-10 text-center font-medium text-sm">
-                                        {quantity}
-                                    </span>
-                                    <button
-                                        onClick={() =>
-                                            setQuantity(quantity + 1)
-                                        }
-                                        className="w-9 h-9 border border-gray-300 rounded hover:bg-gray-50 text-sm"
-                                    >
-                                        +
-                                    </button>
-                                </div>
-
-                                {/* Total Price with Discount Display */}
-                                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-xs text-gray-600">
-                                            Total:
-                                        </span>
-                                        <span className="text-xl font-bold text-[#B00000]">
-                                            ₹
-                                            {calculatedPrice.toLocaleString(
-                                                "en-IN"
-                                            )}
-                                        </span>
+                            // Normal Product - Quantity and Cart
+                            <>
+                                {/* Quantity / Delivery */}
+                                {product.type === "digital" ? (
+                                    <div className="mb-4 flex items-center gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                                        <Download className="w-4 h-4 text-[#B00000] shrink-0" />
+                                        <p className="text-sm text-gray-700">
+                                            Digital download after payment
+                                        </p>
                                     </div>
-                                    {appliedTier && (
-                                        <div className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
-                                            <span className="font-semibold">
-                                                Discount applied
+                                ) : (
+                                    <div className="mb-4">
+                                        <label className="block text-xs font-medium text-gray-700 mb-2">
+                                            Quantity
+                                        </label>
+                                        <div className="flex items-center space-x-2 mb-2">
+                                            <button
+                                                onClick={() =>
+                                                    setQuantity(
+                                                        Math.max(1, quantity - 1)
+                                                    )
+                                                }
+                                                className="w-9 h-9 border border-gray-300 rounded hover:bg-gray-50 text-sm"
+                                            >
+                                                -
+                                            </button>
+                                            <span className="w-10 text-center font-medium text-sm">
+                                                {quantity}
                                             </span>
-                                            <span>
-                                                • Save ₹
-                                                {(
-                                                    product.price * quantity -
-                                                    calculatedPrice
-                                                ).toLocaleString("en-IN")}
-                                            </span>
+                                            <button
+                                                onClick={() =>
+                                                    setQuantity(quantity + 1)
+                                                }
+                                                className="w-9 h-9 border border-gray-300 rounded hover:bg-gray-50 text-sm"
+                                            >
+                                                +
+                                            </button>
                                         </div>
-                                    )}
-                                </div>
-                            </div>
+
+                                        {/* Total Price with Discount Display */}
+                                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs text-gray-600">
+                                                    Total:
+                                                </span>
+                                                <span className="text-xl font-bold text-[#B00000]">
+                                                    ₹
+                                                    {calculatedPrice.toLocaleString(
+                                                        "en-IN"
+                                                    )}
+                                                </span>
+                                            </div>
+                                            {appliedTier && (
+                                                <div className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+                                                    <span className="font-semibold">
+                                                        Discount applied
+                                                    </span>
+                                                    <span>
+                                                        • Save ₹
+                                                        {(
+                                                            product.price * quantity -
+                                                            calculatedPrice
+                                                        ).toLocaleString("en-IN")}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Add to Cart Button */}
+                                <button
+                                    onClick={handleAddToCart}
+                                    disabled={
+                                        product.isComingSoon ||
+                                        (product.type === "physical" &&
+                                            !product.inStock)
+                                    }
+                                    className="w-full px-4 py-2.5 bg-[#B00000] text-white rounded-lg text-sm font-medium hover:bg-red-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <ShoppingCart className="w-4 h-4" />
+                                    <span>
+                                        {product.isComingSoon
+                                            ? "Coming Soon"
+                                            : product.type === "digital"
+                                            ? "Add to Cart"
+                                            : product.inStock
+                                            ? "Add to Cart"
+                                            : "Out of Stock"}
+                                    </span>
+                                </button>
+                            </>
                         )}
 
-                        {/* Add to Cart Button */}
-                        <button
-                            onClick={handleAddToCart}
-                            disabled={
-                                product.isComingSoon ||
-                                (product.type === "physical" &&
-                                    !product.inStock)
-                            }
-                            className="w-full px-4 py-2.5 bg-[#B00000] text-white rounded-lg text-sm font-medium hover:bg-red-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <ShoppingCart className="w-4 h-4" />
-                            <span>
-                                {product.isComingSoon
-                                    ? "Coming Soon"
-                                    : product.type === "digital"
-                                    ? "Add to Cart"
-                                    : product.inStock
-                                    ? "Add to Cart"
-                                    : "Out of Stock"}
-                            </span>
-                        </button>
-
-                        {/* Stock Status */}
-                        <div className="flex items-center gap-1.5 mt-3">
-                            {product.isComingSoon ? (
-                                <>
-                                    <div className="w-2 h-2 bg-orange-500 rounded-full" />
-                                    <span className="text-xs text-gray-600">
-                                        Coming Soon
-                                    </span>
-                                </>
-                            ) : product.type === "digital" ? (
-                                <>
-                                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                    <span className="text-xs text-gray-600">
-                                        Digital product
-                                    </span>
-                                </>
-                            ) : product.inStock ? (
-                                <>
-                                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                                    <span className="text-xs text-gray-600">
-                                        In Stock
-                                    </span>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="w-2 h-2 bg-red-500 rounded-full" />
-                                    <span className="text-xs text-gray-600">
-                                        Out of Stock
-                                    </span>
-                                </>
-                            )}
-                        </div>
+                        {/* Stock Status - Hide for contact-only products */}
+                        {!product.isContactOnly && (
+                            <div className="flex items-center gap-1.5 mt-3">
+                                {product.isComingSoon ? (
+                                    <>
+                                        <div className="w-2 h-2 bg-orange-500 rounded-full" />
+                                        <span className="text-xs text-gray-600">
+                                            Coming Soon
+                                        </span>
+                                    </>
+                                ) : product.type === "digital" ? (
+                                    <>
+                                        <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                        <span className="text-xs text-gray-600">
+                                            Digital product
+                                        </span>
+                                    </>
+                                ) : product.inStock ? (
+                                    <>
+                                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                                        <span className="text-xs text-gray-600">
+                                            In Stock
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="w-2 h-2 bg-red-500 rounded-full" />
+                                        <span className="text-xs text-gray-600">
+                                            Out of Stock
+                                        </span>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -758,7 +864,8 @@ export default function ProductDetailPage() {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {product.videos.map((video, index) => {
-                            const thumbnailUrl = video.thumbnail || getVideoThumbnail(video.url);
+                            // Auto-generate YouTube thumbnail from URL
+                            const thumbnailUrl = getVideoThumbnail(video.url);
                             
                             return (
                                 <button
@@ -766,24 +873,36 @@ export default function ProductDetailPage() {
                                     onClick={() => setSelectedVideo(video)}
                                     className="group relative bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[#B00000] transition-colors"
                                 >
-                                    <div className="relative aspect-video bg-gray-100">
+                                    <div className="relative aspect-video bg-gray-900">
                                         {thumbnailUrl ? (
-                                            <img
-                                                src={thumbnailUrl}
-                                                alt={video.title}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    // If thumbnail fails to load, hide image and show play icon
-                                                    e.currentTarget.style.display = 'none';
-                                                }}
-                                            />
-                                        ) : null}
-                                        {!thumbnailUrl && (
-                                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                                            <>
+                                                <img
+                                                    src={thumbnailUrl}
+                                                    alt={video.title}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        // If thumbnail fails to load, hide it
+                                                        e.currentTarget.style.display = 'none';
+                                                        // Show the fallback play icon instead
+                                                        const parent = e.currentTarget.parentElement;
+                                                        if (parent) {
+                                                            const fallback = parent.querySelector('.fallback-icon');
+                                                            if (fallback) {
+                                                                (fallback as HTMLElement).style.display = 'flex';
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <div className="fallback-icon absolute inset-0 hidden items-center justify-center">
+                                                    <Play className="w-12 h-12 text-white opacity-80" />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
                                                 <Play className="w-12 h-12 text-white opacity-80" />
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 group-hover:bg-opacity-50 transition-opacity">
+                                        <div className="absolute inset-0 flex items-center justify-center ">
                                             <Play className="w-16 h-16 text-white" />
                                         </div>
                                     </div>
@@ -819,7 +938,7 @@ export default function ProductDetailPage() {
                             </button>
                             <div className="aspect-video">
                                 <iframe
-                                    src={selectedVideo.url}
+                                    src={convertToEmbedUrl(selectedVideo.url)}
                                     className="w-full h-full"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen
@@ -879,6 +998,122 @@ export default function ProductDetailPage() {
                     </ul>
                 </div>
             </div>
+
+            {/* Image Gallery Modal */}
+            {isGalleryOpen && product.images && (
+                <>
+                    {/* Backdrop */}
+                    <div 
+                        className="fixed inset-0 z-50 bg-black/90"
+                        onClick={() => setIsGalleryOpen(false)}
+                    />
+                    
+                    {/* Gallery Content */}
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setIsGalleryOpen(false)}
+                            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                        >
+                            <X className="w-6 h-6 text-white" />
+                        </button>
+
+                        {/* Main Image */}
+                        <div className="relative max-w-6xl w-full">
+                            <img
+                                src={product.images[selectedImageIndex]}
+                                alt={`${product.name} ${selectedImageIndex + 1}`}
+                                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                            />
+
+                            {/* Navigation Arrows */}
+                            {product.images.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedImageIndex((prev) =>
+                                                prev === 0 ? product.images!.length - 1 : prev - 1
+                                            );
+                                        }}
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                                    >
+                                        <svg
+                                            className="w-6 h-6 text-white"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M15 19l-7-7 7-7"
+                                            />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedImageIndex((prev) =>
+                                                prev === product.images!.length - 1 ? 0 : prev + 1
+                                            );
+                                        }}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                                    >
+                                        <svg
+                                            className="w-6 h-6 text-white"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M9 5l7 7-7 7"
+                                            />
+                                        </svg>
+                                    </button>
+                                </>
+                            )}
+
+                            {/* Image Counter */}
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/50 text-white text-sm rounded-full">
+                                {selectedImageIndex + 1} / {product.images.length}
+                            </div>
+                        </div>
+
+                        {/* Thumbnail Strip */}
+                        {product.images.length > 1 && (
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 max-w-4xl w-full px-4">
+                                <div className="flex items-center justify-center gap-2 overflow-x-auto py-2">
+                                    {product.images.map((img, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedImageIndex(index);
+                                            }}
+                                            className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                                                selectedImageIndex === index
+                                                    ? "border-[#B00000] scale-110"
+                                                    : "border-white/30 hover:border-white/60"
+                                            }`}
+                                        >
+                                            <img
+                                                src={img}
+                                                alt={`Thumbnail ${index + 1}`}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </>
+            )}
         </div>
     );
 }

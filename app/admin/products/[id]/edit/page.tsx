@@ -8,6 +8,8 @@ import { productsApi } from "@/lib/api/products";
 import type { ProductType } from "@/lib/api/types";
 import { generateSlug } from "@/components/admin/utils";
 import { ImageCropper } from "@/components/ui/ImageCropper";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
+import { toast } from "sonner";
 
 type ImageFile = {
     file: File | null;
@@ -26,12 +28,16 @@ type ProductFormState = {
     category: string;
     categories: string[];
     description: string;
+    english_description: string;
+    malayalam_description: string;
+    hindi_description: string;
     product_type: ProductType;
     price: number;
     stock_quantity: number;
     is_active: boolean;
     is_featured: boolean;
     is_coming_soon: boolean;
+    is_contact_only: boolean;
     requires_kyc: boolean;
     cover_image: File | null;
     digital_file: File | null;
@@ -56,12 +62,16 @@ const defaultForm: ProductFormState = {
     category: "",
     categories: ["", "", "", ""],
     description: "",
+    english_description: "",
+    malayalam_description: "",
+    hindi_description: "",
     product_type: "physical",
     price: 0,
     stock_quantity: 0,
     is_active: true,
     is_featured: false,
     is_coming_soon: false,
+    is_contact_only: false,
     requires_kyc: false,
     cover_image: null,
     digital_file: null,
@@ -154,12 +164,16 @@ export default function EditProductPage() {
                     category: productCategories[0] || "",
                     categories: categoriesArray,
                     description: product.description || "",
+                    english_description: product.english_description || "",
+                    malayalam_description: product.malayalam_description || "",
+                    hindi_description: product.hindi_description || "",
                     product_type: product.type,
                     price: Number(product.price),
                     stock_quantity: product.type === "physical" ? Number(product.stock_quantity || 0) : 0,
                     is_active: product.is_active !== false,
                     is_featured: product.is_featured || false,
                     is_coming_soon: product.is_coming_soon || false,
+                    is_contact_only: product.is_contact_only || false,
                     requires_kyc: product.requires_kyc || false,
                     cover_image: null,
                     digital_file: null,
@@ -285,16 +299,22 @@ export default function EditProductPage() {
         e.preventDefault();
         
         if (!form.name.trim() || !form.slug.trim() || !form.categories[0]?.trim()) {
-            alert("Please fill in Name, Slug, and at least Main Category");
+            toast.error("Validation Error", {
+                description: "Please fill in Name, Slug, and at least Main Category"
+            });
             return;
         }
 
         if (form.product_type === "digital" && !form.digital_file && !form.digital_file_name_input?.trim()) {
-            alert("Digital products require a file (upload or link from library)");
+            toast.error("Validation Error", {
+                description: "Digital products require a file (upload or link from library)"
+            });
             return;
         }
 
         setIsSubmitting(true);
+        const toastId = toast.loading("Updating product...");
+        
         try {
             const filteredCategories = form.categories.filter(c => c && c.trim());
             
@@ -319,6 +339,9 @@ export default function EditProductPage() {
                 name: form.name,
                 slug: form.slug,
                 description: form.description || undefined,
+                english_description: form.english_description || undefined,
+                malayalam_description: form.malayalam_description || undefined,
+                hindi_description: form.hindi_description || undefined,
                 category: filteredCategories[0] || undefined,
                 categories: filteredCategories.length > 0 ? filteredCategories : undefined,
                 product_type: form.product_type,
@@ -326,6 +349,7 @@ export default function EditProductPage() {
                 stock_quantity: form.product_type === "physical" ? form.stock_quantity : 0,
                 is_featured: form.is_featured,
                 is_coming_soon: form.is_coming_soon,
+                is_contact_only: form.is_contact_only,
                 requires_kyc: form.requires_kyc,
                 cover_image: form.cover_image || undefined,
                 digital_file: form.product_type === "digital" ? form.digital_file : undefined,
@@ -335,9 +359,17 @@ export default function EditProductPage() {
                 quantity_pricing: validPricing.length > 0 ? validPricing : undefined,
             });
 
+            toast.success("Product Updated!", {
+                description: `${form.name} has been successfully updated.`,
+                id: toastId
+            });
+            
             router.push("/admin?tab=products");
         } catch (error: any) {
-            alert(error?.message || "Failed to update product");
+            toast.error("Failed to Update Product", {
+                description: error?.message || "An unexpected error occurred. Please try again.",
+                id: toastId
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -525,7 +557,7 @@ export default function EditProductPage() {
                     {/* Description */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Description
+                            Description (Legacy - Optional)
                         </label>
                         <textarea
                             value={form.description}
@@ -535,10 +567,70 @@ export default function EditProductPage() {
                                     description: e.target.value,
                                 }))
                             }
-                            rows={4}
+                            rows={3}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                            placeholder="Product description..."
+                            placeholder="Legacy description field (backward compatibility)"
                         />
+                    </div>
+
+                    {/* Multi-language Descriptions */}
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-gray-200">
+                            Multi-language Descriptions
+                        </h2>
+                        
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    English Description
+                                </label>
+                                <RichTextEditor
+                                    value={form.english_description}
+                                    onChange={(value) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            english_description: value,
+                                        }))
+                                    }
+                                    placeholder="Enter product description in English..."
+                                    height={250}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Malayalam Description (മലയാളം)
+                                </label>
+                                <RichTextEditor
+                                    value={form.malayalam_description}
+                                    onChange={(value) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            malayalam_description: value,
+                                        }))
+                                    }
+                                    placeholder="ഉൽപ്പന്ന വിവരണം മലയാളത്തിൽ നൽകുക..."
+                                    height={250}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Hindi Description (हिन्दी)
+                                </label>
+                                <RichTextEditor
+                                    value={form.hindi_description}
+                                    onChange={(value) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            hindi_description: value,
+                                        }))
+                                    }
+                                    placeholder="उत्पाद विवरण हिंदी में दर्ज करें..."
+                                    height={250}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Pricing Section */}
@@ -862,7 +954,7 @@ export default function EditProductPage() {
                                         />
                                         <div>
                                             <label className="block text-xs text-gray-600 mb-1">
-                                                Video URL (YouTube or Vimeo Embed/Watch URL) *
+                                                Video URL (YouTube or Vimeo) *
                                             </label>
                                             <input
                                                 type="text"
@@ -876,22 +968,8 @@ export default function EditProductPage() {
                                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000]"
                                             />
                                             <p className="text-xs text-gray-500 mt-1">
-                                                Paste YouTube watch/embed URL or Vimeo URL. It will be auto-converted to embed format.
+                                                Paste YouTube watch URL or Vimeo URL. Thumbnail will be auto-generated.
                                             </p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-600 mb-1">Thumbnail URL (optional)</label>
-                                            <input
-                                                type="text"
-                                                value={video.thumbnail}
-                                                onChange={(e) => {
-                                                    const newVideos = [...form.videos];
-                                                    newVideos[index] = { ...newVideos[index], thumbnail: e.target.value };
-                                                    setForm((p) => ({ ...p, videos: newVideos }));
-                                                }}
-                                                placeholder="e.g., https://example.com/thumbnail.jpg"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000]"
-                                            />
                                         </div>
                                     </div>
                                 ))}
@@ -1033,6 +1111,21 @@ export default function EditProductPage() {
                                     className="w-4 h-4 text-[#B00000] border-gray-300 rounded focus:ring-[#B00000]"
                                 />
                                 Coming Soon 🚀
+                            </label>
+
+                            <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                                <input
+                                    type="checkbox"
+                                    checked={form.is_contact_only}
+                                    onChange={(e) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            is_contact_only: e.target.checked,
+                                        }))
+                                    }
+                                    className="w-4 h-4 text-[#B00000] border-gray-300 rounded focus:ring-[#B00000]"
+                                />
+                                Contact Only 📱
                             </label>
 
                             <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">

@@ -183,10 +183,9 @@ export default function LandingPage() {
             addressCountry: "IN",
         },
         sameAs: [
-            // Add your social media URLs here
-            // "https://www.facebook.com/diagtools",
-            // "https://www.instagram.com/diagtools",
-            // "https://www.youtube.com/@diagtools",
+            "https://www.facebook.com/share/182iG6zhSp/",
+            "https://www.instagram.com/diagtools.in?igsh=dWx3MmpkOGs4aHQ=",
+            "https://youtube.com/@diagwheels?si=Ji913duMc8Bg63VX",
         ],
     };
 

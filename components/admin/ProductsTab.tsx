@@ -26,12 +26,16 @@ type ProductFormState = {
     category: string;  // Kept for backward compatibility
     categories: string[];  // Array of up to 4 categories
     description: string;
+    english_description: string;
+    malayalam_description: string;
+    hindi_description: string;
     product_type: ProductType;
     price: number;
     stock_quantity: number;
     is_active: boolean;
     is_featured: boolean;
     is_coming_soon: boolean;
+    is_contact_only: boolean;
     requires_kyc: boolean;
     cover_image: File | null;
     digital_file: File | null;
@@ -57,12 +61,16 @@ const defaultForm: ProductFormState = {
     category: "",
     categories: ["", "", "", ""],  // 4 category slots
     description: "",
+    english_description: "",
+    malayalam_description: "",
+    hindi_description: "",
     product_type: "physical",
     price: 0,
     stock_quantity: 0,
     is_active: true,
     is_featured: false,
     is_coming_soon: false,
+    is_contact_only: false,
     requires_kyc: false,
     cover_image: null,
     digital_file: null,
@@ -242,6 +250,9 @@ export const ProductsTab: React.FC = () => {
                     name: form.name,
                     slug: form.slug,
                     description: form.description || undefined,
+                    english_description: form.english_description || undefined,
+                    malayalam_description: form.malayalam_description || undefined,
+                    hindi_description: form.hindi_description || undefined,
                     categories: filteredCategories.length > 0 ? filteredCategories : undefined,
                     product_type: form.product_type,
                     price: form.price,
@@ -261,6 +272,9 @@ export const ProductsTab: React.FC = () => {
                     name: form.name,
                     slug: form.slug,
                     description: form.description,
+                    english_description: form.english_description || undefined,
+                    malayalam_description: form.malayalam_description || undefined,
+                    hindi_description: form.hindi_description || undefined,
                     categories: filteredCategories.length > 0 ? filteredCategories : undefined,
                     product_type: form.product_type,
                     price: form.price,
@@ -651,7 +665,7 @@ export const ProductsTab: React.FC = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Description
+                                        Description (Legacy - Optional)
                                     </label>
                                     <textarea
                                         value={form.description}
@@ -661,9 +675,71 @@ export const ProductsTab: React.FC = () => {
                                                 description: e.target.value,
                                             }))
                                         }
+                                        rows={3}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="Legacy description field (backward compatibility)"
+                                    />
+                                </div>
+
+                                {/* Multi-language Descriptions */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">
+                                        Multi-language Descriptions
+                                    </h3>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            English Description
+                                        </label>
+                                        <textarea
+                                            value={form.english_description}
+                                            onChange={(e) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    english_description: e.target.value,
+                                            }))
+                                        }
                                         rows={4}
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                    />
+                                            placeholder="Enter product description in English..."
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Malayalam Description (മലയാളം)
+                                        </label>
+                                        <textarea
+                                            value={form.malayalam_description}
+                                            onChange={(e) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    malayalam_description: e.target.value,
+                                                }))
+                                            }
+                                            rows={4}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                            placeholder="ഉൽപ്പന്ന വിവരണം മലയാളത്തിൽ നൽകുക..."
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Hindi Description (हिन्दी)
+                                        </label>
+                                        <textarea
+                                            value={form.hindi_description}
+                                            onChange={(e) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    hindi_description: e.target.value,
+                                                }))
+                                            }
+                                            rows={4}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                            placeholder="उत्पाद विवरण हिंदी में दर्ज करें..."
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -962,20 +1038,9 @@ export const ProductsTab: React.FC = () => {
                                                         placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
                                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                                     />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs text-gray-600 mb-1">Thumbnail URL (optional)</label>
-                                                    <input
-                                                        type="text"
-                                                        value={video.thumbnail}
-                                                        onChange={(e) => {
-                                                            const newVideos = [...form.videos];
-                                                            newVideos[index] = { ...newVideos[index], thumbnail: e.target.value };
-                                                            setForm((p) => ({ ...p, videos: newVideos }));
-                                                        }}
-                                                        placeholder="https://example.com/thumbnail.jpg"
-                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                                    />
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Thumbnail will be auto-generated from YouTube
+                                                    </p>
                                                 </div>
                                             </div>
                                         ))}
@@ -1116,6 +1181,21 @@ export const ProductsTab: React.FC = () => {
                                                 className="w-4 h-4 text-[#B00000] border-gray-300 rounded focus:ring-[#B00000]"
                                             />
                                             Coming Soon 🚀
+                                        </label>
+
+                                        <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                                            <input
+                                                type="checkbox"
+                                                checked={form.is_contact_only}
+                                                onChange={(e) =>
+                                                    setForm((p) => ({
+                                                        ...p,
+                                                        is_contact_only: e.target.checked,
+                                                    }))
+                                                }
+                                                className="w-4 h-4 text-[#B00000] border-gray-300 rounded focus:ring-[#B00000]"
+                                            />
+                                            Contact Only 📱
                                         </label>
 
                                         <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">

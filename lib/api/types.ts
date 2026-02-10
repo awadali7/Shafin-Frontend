@@ -356,7 +356,7 @@ export interface KYCVerification {
     contact_number: string;
     whatsapp_number: string;
     id_proof_url: string;
-    profile_photo_url: string;
+    id_proof_2_url: string;
     status: "pending" | "verified" | "rejected";
     rejection_reason?: string;
     verified_by?: string;
@@ -409,6 +409,9 @@ export interface Product {
     name: string;
     slug: string;
     description?: string;
+    english_description?: string;
+    malayalam_description?: string;
+    hindi_description?: string;
     price: number;
     category?: string | null; // First category for backward compatibility
     categories?: string[]; // Array of up to 4 categories
@@ -434,6 +437,7 @@ export interface Product {
     reviews_count?: number;
     is_active?: boolean;
     is_coming_soon?: boolean;
+    is_contact_only?: boolean; // Product can only be contacted via WhatsApp (no direct purchase)
     requires_kyc?: boolean; // Product requires KYC verification to purchase
     created_at?: string;
     updated_at?: string;

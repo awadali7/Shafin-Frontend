@@ -97,9 +97,10 @@ export default function BlogPage() {
     };
 
     return (
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white min-h-screen">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Header */}
-            <div className="mb-8">
+            <div className="mb-6">
                 <h1 className="text-3xl font-bold text-slate-900 mb-2">Blog</h1>
                 <p className="text-slate-600">
                     Latest articles, tips, and insights from our experts
@@ -252,6 +253,7 @@ export default function BlogPage() {
                     )}
                 </>
             )}
+            </div>
         </div>
     );
 }

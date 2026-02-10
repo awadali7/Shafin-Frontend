@@ -5,16 +5,33 @@ export interface ListProductsParams {
     q?: string;
     category?: string;
     type?: ProductType;
+    page?: number;
+    limit?: number;
+}
+
+export interface PaginationInfo {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+}
+
+export interface PaginatedResponse<T> extends ApiResponse<T> {
+    pagination?: PaginationInfo;
 }
 
 export const productsApi = {
     list: async (
         params?: ListProductsParams
-    ): Promise<ApiResponse<Product[]>> => {
+    ): Promise<PaginatedResponse<Product[]>> => {
         const qs = new URLSearchParams();
         if (params?.q) qs.set("q", params.q);
         if (params?.category) qs.set("category", params.category);
         if (params?.type) qs.set("type", params.type);
+        if (params?.page) qs.set("page", params.page.toString());
+        if (params?.limit) qs.set("limit", params.limit.toString());
         const suffix = qs.toString() ? `?${qs.toString()}` : "";
         return apiClient.get<Product[]>(`/products${suffix}`);
     },
@@ -36,6 +53,9 @@ export const productsApi = {
         name: string;
         slug: string;
         description?: string;
+        english_description?: string;
+        malayalam_description?: string;
+        hindi_description?: string;
         category?: string;
         categories?: string[];
         product_type: ProductType;
@@ -57,6 +77,9 @@ export const productsApi = {
         form.append("name", data.name);
         form.append("slug", data.slug);
         if (data.description) form.append("description", data.description);
+        if (data.english_description) form.append("english_description", data.english_description);
+        if (data.malayalam_description) form.append("malayalam_description", data.malayalam_description);
+        if (data.hindi_description) form.append("hindi_description", data.hindi_description);
         if (data.category) form.append("category", data.category);
         // Send categories as JSON string
         if (data.categories && data.categories.length > 0) {
@@ -107,6 +130,9 @@ export const productsApi = {
             name: string;
             slug: string;
             description: string;
+            english_description: string;
+            malayalam_description: string;
+            hindi_description: string;
             category: string;
             categories: string[];
             product_type: ProductType;

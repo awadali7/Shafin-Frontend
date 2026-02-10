@@ -143,9 +143,9 @@ export const KYCModal: React.FC<KYCModalProps> = ({
                 await addImage(`${BACKEND_BASE_URL}${kyc.id_proof_url}`, "ID Proof");
             }
             
-            // Add Profile Photo
-            if (kyc.profile_photo_url) {
-                await addImage(`${BACKEND_BASE_URL}${kyc.profile_photo_url}`, "Profile Photo");
+            // Add ID Proof 2
+            if (kyc.id_proof_2_url) {
+                await addImage(`${BACKEND_BASE_URL}${kyc.id_proof_2_url}`, "ID Proof 2");
             }
             
             // Business Information (if applicable)
@@ -223,7 +223,7 @@ WhatsApp Number: ${kyc.whatsapp_number}
 Documents:
 ----------
 ID Proof URL: ${BACKEND_BASE_URL}${kyc.id_proof_url || "N/A"}
-Profile Photo URL: ${BACKEND_BASE_URL}${kyc.profile_photo_url || "N/A"}
+ID Proof 2 URL: ${BACKEND_BASE_URL}${kyc.id_proof_2_url || "N/A"}
 ${(kyc as any).business_id ? `
 Business Information:
 --------------------
@@ -416,24 +416,24 @@ Generated on: ${new Date().toLocaleString()}
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-600 mb-2 block">
-                                            Profile Photo
+                                            ID Proof 2
                                         </label>
-                                        {kyc.profile_photo_url ? (
+                                        {kyc.id_proof_2_url ? (
                                             <a
-                                                href={`${BACKEND_BASE_URL}${kyc.profile_photo_url}`}
+                                                href={`${BACKEND_BASE_URL}${kyc.id_proof_2_url}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="block"
                                             >
                                                 <img
-                                                    src={`${BACKEND_BASE_URL}${kyc.profile_photo_url}`}
-                                                    alt="Profile Photo"
+                                                    src={`${BACKEND_BASE_URL}${kyc.id_proof_2_url}`}
+                                                    alt="ID Proof 2"
                                                     className="w-full h-48 object-cover border border-gray-200 rounded-lg bg-gray-50"
                                                 />
                                             </a>
                                         ) : (
                                             <p className="text-sm text-gray-500">
-                                                No photo uploaded
+                                                No ID Proof 2 uploaded
                                             </p>
                                         )}
                                     </div>

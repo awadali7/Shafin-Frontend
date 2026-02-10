@@ -26,6 +26,7 @@ export default function Footer() {
         "/dashboard",
         "/admin",
         "/choose-user-type",
+        "/checkout",
     ];
 
     const shouldHideFooter =
@@ -107,7 +108,7 @@ export default function Footer() {
                         </h3>
                         <div className="flex space-x-4">
                             <a
-                                href="#"
+                                href="https://www.instagram.com/diagtools.in?igsh=dWx3MmpkOGs4aHQ="
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-gray-600 hover:text-[#B00000] transition-colors"
@@ -116,7 +117,7 @@ export default function Footer() {
                                 <Instagram className="w-6 h-6" />
                             </a>
                             <a
-                                href="#"
+                                href="https://www.facebook.com/share/182iG6zhSp/"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-gray-600 hover:text-[#B00000] transition-colors"
@@ -125,7 +126,7 @@ export default function Footer() {
                                 <Facebook className="w-6 h-6" />
                             </a>
                             <a
-                                href="#"
+                                href="https://youtube.com/@diagwheels?si=Ji913duMc8Bg63VX"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-gray-600 hover:text-[#B00000] transition-colors"

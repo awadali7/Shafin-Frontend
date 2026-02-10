@@ -101,52 +101,68 @@ export default function Header() {
                 <nav className="hidden lg:flex items-center space-x-8">
                     <Link
                         href="/"
-                        className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
-                            pathname === "/" ? "text-[#B00000]" : ""
+                        className={`font-medium transition-all duration-200 relative pb-1 ${
+                            pathname === "/" 
+                                ? "text-[#B00000]" 
+                                : "text-gray-700 hover:text-[#B00000]"
                         }`}
                     >
                         Home
+                        {pathname === "/" && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B00000]"></span>
+                        )}
                     </Link>
                     <Link
                         href="/about"
-                        className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
-                            pathname === "/about" ? "text-[#B00000]" : ""
+                        className={`font-medium transition-all duration-200 relative pb-1 ${
+                            pathname === "/about" 
+                                ? "text-[#B00000]" 
+                                : "text-gray-700 hover:text-[#B00000]"
                         }`}
                     >
                         About Us
+                        {pathname === "/about" && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B00000]"></span>
+                        )}
                     </Link>
                     <Link
                         href="/courses"
-                        className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
-                            pathname === "/courses" ||
-                            pathname?.startsWith("/courses/")
+                        className={`font-medium transition-all duration-200 relative pb-1 ${
+                            pathname === "/courses" || pathname?.startsWith("/courses/")
                                 ? "text-[#B00000]"
-                                : ""
+                                : "text-gray-700 hover:text-[#B00000]"
                         }`}
                     >
                         Courses
+                        {(pathname === "/courses" || pathname?.startsWith("/courses/")) && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B00000]"></span>
+                        )}
                     </Link>
                     <Link
                         href="/shop"
-                        className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
-                            pathname === "/shop" ||
-                            pathname?.startsWith("/shop/")
+                        className={`font-medium transition-all duration-200 relative pb-1 ${
+                            pathname === "/shop" || pathname?.startsWith("/shop/")
                                 ? "text-[#B00000]"
-                                : ""
+                                : "text-gray-700 hover:text-[#B00000]"
                         }`}
                     >
                         Shop
+                        {(pathname === "/shop" || pathname?.startsWith("/shop/")) && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B00000]"></span>
+                        )}
                     </Link>
                     <Link
                         href="/blog"
-                        className={`text-gray-700 hover:text-[#B00000] font-medium transition-colors ${
-                            pathname === "/blog" ||
-                            pathname?.startsWith("/blog/")
+                        className={`font-medium transition-all duration-200 relative pb-1 ${
+                            pathname === "/blog" || pathname?.startsWith("/blog/")
                                 ? "text-[#B00000]"
-                                : ""
+                                : "text-gray-700 hover:text-[#B00000]"
                         }`}
                     >
                         Blog
+                        {(pathname === "/blog" || pathname?.startsWith("/blog/")) && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B00000]"></span>
+                        )}
                     </Link>
                 </nav>
 
@@ -204,62 +220,158 @@ export default function Header() {
                                         className="fixed inset-0 z-10"
                                         onClick={toggleProfile}
                                     ></div>
-                                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-gray-200 z-20 overflow-hidden shadow-lg">
-                                        <div className="p-4 border-b border-gray-200">
+                                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-gray-200 z-20 overflow-hidden shadow-lg max-h-[80vh] overflow-y-auto">
+                                        {/* User Info */}
+                                        <div className="p-4 border-b border-gray-200 bg-gray-50">
                                             <p className="text-sm font-semibold text-black">
                                                 {displayName}
                                             </p>
                                             <p className="text-xs text-gray-600">
                                                 {displayEmail}
                                             </p>
+                                            <p className="text-xs text-[#B00000] font-medium mt-1">
+                                                {user.role === "admin" ? "Administrator" : "User"}
+                                            </p>
                                         </div>
-                                        <div className="py-2">
+
+                                        {/* Dashboard */}
+                                        <div className="py-2 border-b border-gray-200">
                                             <Link
-                                                href="/profile"
+                                                href="/dashboard"
                                                 onClick={toggleProfile}
-                                                className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${
+                                                    pathname === "/dashboard"
+                                                        ? "bg-red-50 text-[#B00000] font-medium"
+                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                }`}
                                             >
-                                                My Profile
+                                                Dashboard
                                             </Link>
+                                        </div>
+
+                                        {/* My Learning Section */}
+                                        <div className="py-2 border-b border-gray-200">
+                                            <div className="px-4 py-1.5">
+                                                <p className="text-xs font-semibold text-gray-500 uppercase">
+                                                    My Learning
+                                                </p>
+                                            </div>
                                             <Link
                                                 href="/my-learning"
                                                 onClick={toggleProfile}
-                                                className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${
+                                                    pathname === "/my-learning" || pathname?.startsWith("/my-learning/")
+                                                        ? "bg-red-50 text-[#B00000] font-medium"
+                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                }`}
                                             >
                                                 My Learning
                                             </Link>
                                             <Link
                                                 href="/orders"
                                                 onClick={toggleProfile}
-                                                className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${
+                                                    pathname === "/orders" || pathname?.startsWith("/orders/")
+                                                        ? "bg-red-50 text-[#B00000] font-medium"
+                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                }`}
                                             >
                                                 My Orders
                                             </Link>
                                             <Link
                                                 href="/downloads"
                                                 onClick={toggleProfile}
-                                                className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${
+                                                    pathname === "/downloads" || pathname?.startsWith("/downloads/")
+                                                        ? "bg-red-50 text-[#B00000] font-medium"
+                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                }`}
                                             >
                                                 My Downloads
                                             </Link>
-                                            {user.role === "admin" && (
+                                            {user.user_type === "student" && (
                                                 <Link
-                                                    href="/admin"
+                                                    href="/kyc"
                                                     onClick={toggleProfile}
-                                                    className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                                    className={`block px-4 py-2.5 text-sm transition-colors ${
+                                                        pathname === "/kyc"
+                                                            ? "bg-red-50 text-[#B00000] font-medium"
+                                                            : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                    }`}
                                                 >
-                                                    Admin Dashboard
+                                                    Student KYC
                                                 </Link>
                                             )}
+                                            {user.user_type === "business_owner" && (
+                                                <Link
+                                                    href="/kyc/product"
+                                                    onClick={toggleProfile}
+                                                    className={`block px-4 py-2.5 text-sm transition-colors ${
+                                                        pathname === "/kyc/product"
+                                                            ? "bg-red-50 text-[#B00000] font-medium"
+                                                            : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                    }`}
+                                                >
+                                                    Business KYC
+                                                </Link>
+                                            )}
+                                        </div>
+
+                                        {/* Account Section */}
+                                        <div className="py-2 border-b border-gray-200">
+                                            <div className="px-4 py-1.5">
+                                                <p className="text-xs font-semibold text-gray-500 uppercase">
+                                                    Account
+                                                </p>
+                                            </div>
+                                            <Link
+                                                href="/profile"
+                                                onClick={toggleProfile}
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${
+                                                    pathname === "/profile"
+                                                        ? "bg-red-50 text-[#B00000] font-medium"
+                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                }`}
+                                            >
+                                                My Profile
+                                            </Link>
                                             <Link
                                                 href="/settings"
                                                 onClick={toggleProfile}
-                                                className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${
+                                                    pathname === "/settings" || pathname?.startsWith("/settings/")
+                                                        ? "bg-red-50 text-[#B00000] font-medium"
+                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                }`}
                                             >
                                                 Settings
                                             </Link>
                                         </div>
-                                        <div className="border-t border-gray-200">
+
+                                        {/* Admin Section */}
+                                        {user.role === "admin" && (
+                                            <div className="py-2 border-b border-gray-200">
+                                                <div className="px-4 py-1.5">
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase">
+                                                        Admin
+                                                    </p>
+                                                </div>
+                                                <Link
+                                                    href="/admin"
+                                                    onClick={toggleProfile}
+                                                    className={`block px-4 py-2.5 text-sm transition-colors ${
+                                                        pathname === "/admin" || pathname?.startsWith("/admin/")
+                                                            ? "bg-red-50 text-[#B00000] font-medium"
+                                                            : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                    }`}
+                                                >
+                                                    Admin Dashboard
+                                                </Link>
+                                            </div>
+                                        )}
+
+                                        {/* Logout */}
+                                        <div className="py-2">
                                             <button
                                                 onClick={handleLogout}
                                                 className="w-full text-left px-4 py-2.5 text-sm text-[#B00000] hover:bg-gray-100 font-medium transition-colors flex items-center space-x-2"
@@ -409,81 +521,159 @@ export default function Header() {
                                     {/* User Links (if authenticated) */}
                                     {isAuth && user && (
                                         <>
+                                            {/* Dashboard */}
+                                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                                <Link
+                                                    href="/dashboard"
+                                                    onClick={() =>
+                                                        setIsMobileMenuOpen(false)
+                                                    }
+                                                    className={`block px-6 py-3 text-base font-medium transition-colors ${
+                                                        pathname === "/dashboard"
+                                                            ? "text-[#B00000] bg-red-50"
+                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                    }`}
+                                                >
+                                                    Dashboard
+                                                </Link>
+                                            </div>
+
+                                            {/* My Learning Section */}
                                             <div className="mt-6 pt-6 border-t border-gray-200">
                                                 <div className="px-6 mb-3">
                                                     <p className="text-xs font-semibold text-gray-500 uppercase">
-                                                        My Account
+                                                        My Learning
                                                     </p>
                                                 </div>
                                                 <Link
-                                                    href="/profile"
-                                                    onClick={() =>
-                                                        setIsMobileMenuOpen(
-                                                            false
-                                                        )
-                                                    }
-                                                    className="block px-6 py-3 text-base text-gray-700 hover:text-[#B00000] hover:bg-gray-50 transition-colors"
-                                                >
-                                                    My Profile
-                                                </Link>
-                                                <Link
                                                     href="/my-learning"
                                                     onClick={() =>
-                                                        setIsMobileMenuOpen(
-                                                            false
-                                                        )
+                                                        setIsMobileMenuOpen(false)
                                                     }
-                                                    className="block px-6 py-3 text-base text-gray-700 hover:text-[#B00000] hover:bg-gray-50 transition-colors"
+                                                    className={`block px-6 py-3 text-base transition-colors ${
+                                                        pathname === "/my-learning" || pathname?.startsWith("/my-learning/")
+                                                            ? "text-[#B00000] bg-red-50 font-medium"
+                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                    }`}
                                                 >
                                                     My Learning
                                                 </Link>
                                                 <Link
                                                     href="/orders"
                                                     onClick={() =>
-                                                        setIsMobileMenuOpen(
-                                                            false
-                                                        )
+                                                        setIsMobileMenuOpen(false)
                                                     }
-                                                    className="block px-6 py-3 text-base text-gray-700 hover:text-[#B00000] hover:bg-gray-50 transition-colors"
+                                                    className={`block px-6 py-3 text-base transition-colors ${
+                                                        pathname === "/orders" || pathname?.startsWith("/orders/")
+                                                            ? "text-[#B00000] bg-red-50 font-medium"
+                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                    }`}
                                                 >
                                                     My Orders
                                                 </Link>
                                                 <Link
                                                     href="/downloads"
                                                     onClick={() =>
-                                                        setIsMobileMenuOpen(
-                                                            false
-                                                        )
+                                                        setIsMobileMenuOpen(false)
                                                     }
-                                                    className="block px-6 py-3 text-base text-gray-700 hover:text-[#B00000] hover:bg-gray-50 transition-colors"
+                                                    className={`block px-6 py-3 text-base transition-colors ${
+                                                        pathname === "/downloads" || pathname?.startsWith("/downloads/")
+                                                            ? "text-[#B00000] bg-red-50 font-medium"
+                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                    }`}
                                                 >
                                                     My Downloads
                                                 </Link>
-                                                {user.role === "admin" && (
+                                                {user.user_type === "student" && (
                                                     <Link
-                                                        href="/admin"
+                                                        href="/kyc"
                                                         onClick={() =>
-                                                            setIsMobileMenuOpen(
-                                                                false
-                                                            )
+                                                            setIsMobileMenuOpen(false)
                                                         }
-                                                        className="block px-6 py-3 text-base text-gray-700 hover:text-[#B00000] hover:bg-gray-50 transition-colors"
+                                                        className={`block px-6 py-3 text-base transition-colors ${
+                                                            pathname === "/kyc"
+                                                                ? "text-[#B00000] bg-red-50 font-medium"
+                                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                        }`}
                                                     >
-                                                        Admin Dashboard
+                                                        Student KYC
                                                     </Link>
                                                 )}
+                                                {user.user_type === "business_owner" && (
+                                                    <Link
+                                                        href="/kyc/product"
+                                                        onClick={() =>
+                                                            setIsMobileMenuOpen(false)
+                                                        }
+                                                        className={`block px-6 py-3 text-base transition-colors ${
+                                                            pathname === "/kyc/product"
+                                                                ? "text-[#B00000] bg-red-50 font-medium"
+                                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                        }`}
+                                                    >
+                                                        Business KYC
+                                                    </Link>
+                                                )}
+                                            </div>
+
+                                            {/* Account Section */}
+                                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                                <div className="px-6 mb-3">
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase">
+                                                        Account
+                                                    </p>
+                                                </div>
+                                                <Link
+                                                    href="/profile"
+                                                    onClick={() =>
+                                                        setIsMobileMenuOpen(false)
+                                                    }
+                                                    className={`block px-6 py-3 text-base transition-colors ${
+                                                        pathname === "/profile"
+                                                            ? "text-[#B00000] bg-red-50 font-medium"
+                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                    }`}
+                                                >
+                                                    My Profile
+                                                </Link>
                                                 <Link
                                                     href="/settings"
                                                     onClick={() =>
-                                                        setIsMobileMenuOpen(
-                                                            false
-                                                        )
+                                                        setIsMobileMenuOpen(false)
                                                     }
-                                                    className="block px-6 py-3 text-base text-gray-700 hover:text-[#B00000] hover:bg-gray-50 transition-colors"
+                                                    className={`block px-6 py-3 text-base transition-colors ${
+                                                        pathname === "/settings" || pathname?.startsWith("/settings/")
+                                                            ? "text-[#B00000] bg-red-50 font-medium"
+                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                    }`}
                                                 >
                                                     Settings
                                                 </Link>
                                             </div>
+
+                                            {/* Admin Section */}
+                                            {user.role === "admin" && (
+                                                <div className="mt-6 pt-6 border-t border-gray-200">
+                                                    <div className="px-6 mb-3">
+                                                        <p className="text-xs font-semibold text-gray-500 uppercase">
+                                                            Admin
+                                                        </p>
+                                                    </div>
+                                                    <Link
+                                                        href="/admin"
+                                                        onClick={() =>
+                                                            setIsMobileMenuOpen(false)
+                                                        }
+                                                        className={`block px-6 py-3 text-base transition-colors ${
+                                                            pathname === "/admin" || pathname?.startsWith("/admin/")
+                                                                ? "text-[#B00000] bg-red-50 font-medium"
+                                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                        }`}
+                                                    >
+                                                        Admin Dashboard
+                                                    </Link>
+                                                </div>
+                                            )}
                                         </>
                                     )}
                                 </nav>
