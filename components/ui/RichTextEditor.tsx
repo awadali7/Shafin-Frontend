@@ -34,7 +34,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 hideToolbar={false}
                 enableScroll={true}
                 visibleDragbar={false}
-                placeholder={placeholder}
                 autoFocus={false}
                 highlightEnable={false}
                 textareaProps={{

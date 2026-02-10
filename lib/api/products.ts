@@ -65,6 +65,7 @@ export const productsApi = {
         reviews_count?: number;
         is_featured?: boolean;
         is_coming_soon?: boolean;
+        is_contact_only?: boolean;
         requires_kyc?: boolean;
         cover_image?: File | null;
         digital_file?: File | null;
@@ -95,6 +96,8 @@ export const productsApi = {
             form.append("is_featured", String(data.is_featured));
         if (data.is_coming_soon !== undefined)
             form.append("is_coming_soon", String(data.is_coming_soon));
+        if (data.is_contact_only !== undefined)
+            form.append("is_contact_only", String(data.is_contact_only));
         if (data.requires_kyc !== undefined)
             form.append("requires_kyc", String(data.requires_kyc));
         if (data.product_type === "physical") {
@@ -143,6 +146,7 @@ export const productsApi = {
             is_active: boolean;
             is_featured: boolean;
             is_coming_soon: boolean;
+            is_contact_only: boolean;
             requires_kyc: boolean;
             cover_image: File | null;
             digital_file: File | null;
