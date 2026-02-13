@@ -72,11 +72,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                                                 <div className="text-sm font-medium text-slate-900">
                                                     {blog.title}
                                                 </div>
-                                                {blog.excerpt && (
-                                                    <div className="text-xs text-gray-500 truncate max-w-md">
-                                                        {blog.excerpt}
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     </td>

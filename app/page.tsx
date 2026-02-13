@@ -10,6 +10,7 @@ import { ContainerTextFlip } from "@/components/ui/container-text-flip";
 import { motion } from "motion/react";
 import { coursesApi } from "@/lib/api/courses";
 import { productsApi } from "@/lib/api/products";
+import { settingsApi, type PublicSettings } from "@/lib/api/settings";
 import type { Course, Product } from "@/lib/api/types";
 
 export default function LandingPage() {
@@ -17,6 +18,7 @@ export default function LandingPage() {
     const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [courses, setCourses] = useState<Course[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [settings, setSettings] = useState<PublicSettings>({});
     const [loadingCourses, setLoadingCourses] = useState(true);
     const [loadingProducts, setLoadingProducts] = useState(true);
     const [cardsPerView, setCardsPerView] = useState(3);
@@ -72,6 +74,21 @@ export default function LandingPage() {
             }
         };
         fetchProducts();
+    }, []);
+
+    // Fetch public settings
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const response = await settingsApi.getPublic();
+                if (response.success && response.data) {
+                    setSettings(response.data);
+                }
+            } catch (error) {
+                console.error("Error fetching settings:", error);
+            }
+        };
+        fetchSettings();
     }, []);
 
     // Start from the middle set for infinite scrolling
@@ -252,9 +269,9 @@ export default function LandingPage() {
                     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                             <div>
-                                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight flex flex-wrap items-center gap-2">
+                                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight flex flex-wrap items-center gap-2">
                                     <span>
-                                        Master Automotive Technology with
+                                        {settings.hero_title || "Master Automotive Technology with"}
                                     </span>
                                     <ContainerTextFlip
                                         words={[
@@ -264,18 +281,13 @@ export default function LandingPage() {
                                             "Innovation",
                                         ]}
                                         interval={3000}
-                                        className="text-3xl sm:text-4xl lg:text-5xl [background:linear-gradient(to_bottom,#ffffff,#f3f4f6)] shadow-[inset_0_-1px_#ffffff,inset_0_0_0_1px_#ffffff,0_4px_8px_rgba(0,0,0,0.3)] text-[#B00000] dark:text-[#B00000]"
+                                        className="text-3xl sm:text-4xl lg:text-5xl [background:linear-gradient(to_bottom,#ffffff,#f3f4f6)] shadow-[inset_0_-1px_#ffffff,inset_0_0_0_1px_#ffffff,0_4px_8px_rgba(0,0,0,0.3)] text-[#B00000]"
                                         textClassName="text-[#B00000] font-bold"
                                         animationDuration={700}
                                     />
                                 </h1>
                                 <p className="text-xl sm:text-2xl mb-8 text-gray-100">
-                                    India's leading e-learning platform for
-                                    advanced automotive diagnostics, key
-                                    programming, ECM repairing, and specialized
-                                    training. Learn in multiple languages
-                                    including Malayalam, English, Tamil, and
-                                    Hindi.
+                                    {settings.hero_description || "India's leading e-learning platform for advanced automotive diagnostics, key programming, ECM repairing, and specialized training. Learn in multiple languages including Malayalam, English, Tamil, and Hindi."}
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-4">
                                     <button
@@ -301,18 +313,24 @@ export default function LandingPage() {
                                     <div className="absolute inset-0 bg-white/20 rounded-3xl blur-3xl"></div>
                                     <div className="relative bg-white/10 backdrop-blur-sm rounded-3xl p-8 border border-white/20 overflow-hidden">
                                         <div className="aspect-video rounded-xl overflow-hidden relative">
-                                            <iframe
-                                                width="560"
-                                                height="315"
-                                                src="https://www.youtube.com/embed/IIBU1v3Ae0E?si=_3Ifnu-vi2K5xSyq"
-                                                title="DiagTools Automotive Diagnostic Training Video"
-                                                frameBorder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                                referrerPolicy="strict-origin-when-cross-origin"
-                                                allowFullScreen
-                                                className="w-full h-full rounded-xl"
-                                                aria-label="DiagTools training video introduction"
-                                            ></iframe>
+                                            {settings.hero_video_url ? (
+                                                <iframe
+                                                    width="560"
+                                                    height="315"
+                                                    src={settings.hero_video_url}
+                                                    title="DiagTools Automotive Diagnostic Training Video"
+                                                    frameBorder="0"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                    referrerPolicy="strict-origin-when-cross-origin"
+                                                    allowFullScreen
+                                                    className="w-full h-full rounded-xl"
+                                                    aria-label="DiagTools training video introduction"
+                                                ></iframe>
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-gray-800/50">
+                                                    <p className="text-white text-sm">Loading video...</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -417,7 +435,7 @@ export default function LandingPage() {
                                 </p>
                             </div>
                         ) : (
-                            <div className="relative px-4 md:px-8 lg:px-12">
+                            <div className="relative px-0 md:px-8 lg:px-12">
                                 <div className="overflow-hidden">
                                     <motion.div
                                         className="flex gap-4 md:gap-6"
@@ -456,7 +474,7 @@ export default function LandingPage() {
                                             >
                                                 <Link
                                                     href={`/courses/${course.slug}`}
-                                                    className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden group block h-full"
+                                                    className="bg-white rounded-lg border border-gray-100 overflow-hidden group block h-full hover:border-[#B00000]/20 transition-colors duration-200"
                                                 >
                                                     <div className="h-40 md:h-48 w-full overflow-hidden relative">
                                                         <Image
@@ -498,14 +516,14 @@ export default function LandingPage() {
                                 {/* Navigation Arrows */}
                                 <button
                                     onClick={prevSlide}
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 md:p-3 shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-200 z-10 group"
+                                    className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 md:p-3 shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-200 z-10 group"
                                     aria-label="Previous slide"
                                 >
                                     <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-slate-900 group-hover:text-[#B00000] transition-colors" />
                                 </button>
                                 <button
                                     onClick={nextSlide}
-                                    className="absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 md:p-3 shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-200 z-10 group"
+                                    className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-2 md:p-3 shadow-lg hover:bg-gray-50 hover:shadow-xl transition-all duration-200 z-10 group"
                                     aria-label="Next slide"
                                 >
                                     <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-slate-900 group-hover:text-[#B00000] transition-colors" />
@@ -576,7 +594,7 @@ export default function LandingPage() {
                                 </p>
                             </div>
                         ) : (
-                            <div className="relative px-8 md:px-12 lg:px-16">
+                            <div className="relative px-0 md:px-12 lg:px-16">
                                 <div className="overflow-hidden rounded-2xl">
                                     <motion.div
                                         className="flex gap-4 md:gap-6"
@@ -615,7 +633,7 @@ export default function LandingPage() {
                                             >
                                                 <Link
                                                     href={`/shop/${product.slug}`}
-                                                    className="bg-white rounded-2xl border border-gray-100 shadow-md hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 overflow-hidden group block h-full"
+                                                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden group block h-full hover:border-[#B00000]/20 transition-colors duration-200"
                                                 >
                                                     {/* Image with Badge */}
                                                     <div className="h-64 w-full overflow-hidden relative bg-gray-50">
@@ -633,37 +651,27 @@ export default function LandingPage() {
                                                             sizes="(max-width: 768px) 100vw, 33vw"
                                                             loading="lazy"
                                                         />
-                                                        <div className="absolute top-4 right-4 bg-[#B00000] text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
-                                                            Premium
-                                                        </div>
+
                                                     </div>
 
                                                     {/* Content */}
-                                                    <div className="p-7">
-                                                        <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-4 group-hover:text-[#B00000] transition-colors line-clamp-2 min-h-14">
+                                                    <div className="p-4">
+                                                        <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-2 group-hover:text-[#B00000] transition-colors line-clamp-2 min-h-[3.5rem]">
                                                             {product.name}
                                                         </h3>
-                                                        <p className="text-sm text-slate-600 mb-6 line-clamp-2 min-h-10 leading-relaxed">
-                                                            {product.description ||
-                                                                "Professional diagnostic tool for automotive technicians"}
-                                                        </p>
+
 
                                                         {/* Price and CTA */}
-                                                        <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                                                            <div>
-                                                                <p className="text-xs text-gray-500 mb-1.5">
-                                                                    Starting from
-                                                                </p>
-                                                                <p className="text-2xl font-bold text-[#B00000]">
-                                                                    ₹{product.price?.toLocaleString() || "0"}
-                                                                </p>
-                                                            </div>
+                                                        <div className="flex items-center justify-between mt-2">
+                                                            <p className="text-xl font-bold text-[#B00000]">
+                                                                ₹{product.price?.toLocaleString() || "0"}
+                                                            </p>
                                                             <motion.div
-                                                                className="flex items-center justify-center w-12 h-12 rounded-full bg-[#B00000] text-white group-hover:bg-red-800 transition-colors shadow-lg"
-                                                                whileHover={{ scale: 1.1 }}
+                                                                className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-50 text-slate-900 group-hover:bg-[#B00000] group-hover:text-white transition-colors border border-gray-100"
+                                                                whileHover={{ scale: 1.05 }}
                                                                 whileTap={{ scale: 0.95 }}
                                                             >
-                                                                <ArrowRight className="w-5 h-5" />
+                                                                <ArrowRight className="w-4 h-4" />
                                                             </motion.div>
                                                         </div>
                                                     </div>
@@ -676,14 +684,14 @@ export default function LandingPage() {
                                 {/* Navigation Arrows */}
                                 <button
                                     onClick={prevProductSlide}
-                                    className="absolute -left-4 lg:left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-3 lg:p-4 shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 z-10 group border border-gray-100"
+                                    className="hidden md:block absolute -left-4 lg:left-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-3 lg:p-4 shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 z-10 group border border-gray-100"
                                     aria-label="Previous slide"
                                 >
                                     <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6 text-slate-700 group-hover:text-[#B00000] transition-colors" />
                                 </button>
                                 <button
                                     onClick={nextProductSlide}
-                                    className="absolute -right-4 lg:right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-3 lg:p-4 shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 z-10 group border border-gray-100"
+                                    className="hidden md:block absolute -right-4 lg:right-0 top-1/2 -translate-y-1/2 bg-white rounded-full p-3 lg:p-4 shadow-xl hover:shadow-2xl hover:scale-110 transition-all duration-300 z-10 group border border-gray-100"
                                     aria-label="Next slide"
                                 >
                                     <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6 text-slate-700 group-hover:text-[#B00000] transition-colors" />
@@ -711,7 +719,7 @@ export default function LandingPage() {
                             <div className="text-center mt-12 lg:mt-16">
                                 <Link
                                     href="/shop"
-                                    className="inline-flex items-center gap-2 px-8 py-4 bg-[#B00000] text-white rounded-xl font-semibold hover:bg-red-800 hover:shadow-2xl hover:scale-105 transition-all duration-300 shadow-lg"
+                                    className="inline-flex items-center gap-2 px-8 py-4 bg-[#B00000] text-white rounded-xl font-semibold hover:bg-red-800 hover:scale-105 transition-all duration-300"
                                 >
                                     Browse All Products
                                     <ArrowRight className="w-5 h-5" />

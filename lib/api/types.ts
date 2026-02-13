@@ -307,7 +307,6 @@ export interface BlogPost {
     id: string;
     title: string;
     slug: string;
-    excerpt?: string;
     content?: string;
     cover_image?: string;
     author_id: string;
@@ -332,7 +331,6 @@ export interface BlogPostListResponse {
 
 export interface CreateBlogPostRequest {
     title: string;
-    excerpt?: string;
     content: string;
     cover_image?: string;
     is_published?: boolean;
@@ -340,7 +338,6 @@ export interface CreateBlogPostRequest {
 
 export interface UpdateBlogPostRequest {
     title?: string;
-    excerpt?: string;
     content?: string;
     cover_image?: string;
     is_published?: boolean;
@@ -486,6 +483,11 @@ export interface Order {
     total: number;
     payment_provider?: string | null;
     payment_reference?: string | null;
+    tracking_number?: string | null;
+    tracking_url?: string | null;
+    estimated_delivery_date?: string | null;
+    shipped_at?: string | null;
+    delivered_at?: string | null;
     created_at: string;
     updated_at?: string;
     items?: OrderItem[];
@@ -499,6 +501,13 @@ export interface AdminOrderSummary extends Order {
     digital_items: number;
     physical_items: number;
     item_names?: string;
+}
+
+export interface UpdateTrackingRequest {
+    tracking_number?: string;
+    tracking_url?: string;
+    estimated_delivery_date?: string;
+    shipped_at?: string;
 }
 
 export interface OrderItem {

@@ -5,6 +5,7 @@ import type {
     CreateOrderRequest,
     AdminOrderSummary,
     AdminOrderDetailsResponse,
+    UpdateTrackingRequest,
 } from "./types";
 
 export const ordersApi = {
@@ -32,5 +33,12 @@ export const ordersApi = {
         payload?: { payment_provider?: string; payment_reference?: string }
     ): Promise<ApiResponse<any>> => {
         return apiClient.post<any>(`/orders/${id}/mark-paid`, payload || {});
+    },
+
+    adminUpdateTracking: async (
+        id: string,
+        data: UpdateTrackingRequest
+    ): Promise<ApiResponse<Order>> => {
+        return apiClient.patch<Order>(`/orders/${id}/tracking`, data);
     },
 };

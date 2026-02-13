@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Package, ChevronDown, ChevronUp, CreditCard } from "lucide-react";
+import { Loader2, Package, ChevronDown, CreditCard, Truck, Calendar, ExternalLink, CheckCircle, Clock, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersApi } from "@/lib/api/orders";
 import { paymentsApi } from "@/lib/api/payments";
@@ -10,6 +10,7 @@ import type { Order } from "@/lib/api/types";
 import LoginDrawer from "@/components/LoginDrawer";
 import RegisterDrawer from "@/components/RegisterDrawer";
 import { toast } from "sonner";
+import { Badge, NotificationBanner, TimelineStep, SummaryRow, OrderItemCard } from "@/components/orders";
 
 // Razorpay types
 interface RazorpaySuccessResponse {
@@ -56,20 +57,20 @@ function formatDate(dateString: string) {
     return d.toLocaleString();
 }
 
-function StatusPill({ status }: { status: string }) {
-    const styles =
-        status === "paid"
-            ? "bg-green-50 text-green-700 border-green-200"
-            : status === "pending"
-            ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-            : "bg-gray-50 text-gray-700 border-gray-200";
-    return (
-        <span
-            className={`inline-flex px-2 py-1 text-xs font-medium border rounded-full ${styles}`}
-        >
-            {status.toUpperCase()}
-        </span>
-    );
+function formatShortDate(dateString: string) {
+    const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// StatusPill replaced by Badge component
+
+function hasPhysicalItems(order: Order): boolean {
+    return order.items?.some(item => item.product_type === 'physical') || false;
+}
+
+function hasDigitalItems(order: Order): boolean {
+    return order.items?.some(item => item.product_type === 'digital') || false;
 }
 
 export default function OrdersPage() {
@@ -254,20 +255,47 @@ export default function OrdersPage() {
 
     return (
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-            <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="mb-6">
                 <h1 className="text-3xl font-bold text-slate-900">My Orders</h1>
-                <Link
-                    href="/downloads"
-                    className="px-4 py-2 bg-[#B00000] text-white rounded-lg text-sm font-semibold hover:bg-red-800 transition-colors"
-                >
-                    My Downloads
-                </Link>
             </div>
 
             {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <p className="text-sm text-red-600">{error}</p>
                 </div>
+            )}
+
+            {/* Quick Access Notifications */}
+            {orders.length > 0 && (
+                <>
+                    {/* Digital Products Ready */}
+                    {orders.some(o => o.status === 'paid' && hasDigitalItems(o)) && (
+                        <NotificationBanner
+                            variant="purple"
+                            icon={Download}
+                            title="Digital Products Available"
+                            description="Your digital products are ready to download"
+                            action={
+                                <Link
+                                    href="/downloads"
+                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors whitespace-nowrap"
+                                >
+                                    View Downloads
+                                </Link>
+                            }
+                        />
+                    )}
+                    
+                    {/* Tracked Shipments */}
+                    {orders.some(o => o.status === 'paid' && hasPhysicalItems(o) && o.tracking_number && !o.delivered_at) && (
+                        <NotificationBanner
+                            variant="blue"
+                            icon={Truck}
+                            title={`${orders.filter(o => o.status === 'paid' && hasPhysicalItems(o) && o.tracking_number && !o.delivered_at).length} Shipment(s) In Transit`}
+                            description="Track your orders to see estimated delivery times"
+                        />
+                    )}
+                </>
             )}
 
             {orders.length === 0 ? (
@@ -287,11 +315,11 @@ export default function OrdersPage() {
                         const isExpanded = expandedOrders.has(order.id);
                         const itemCount = order.items?.length || 0;
                         
-                        return (
-                            <div
-                                key={order.id}
-                                className="bg-white rounded-lg border border-gray-200 overflow-hidden"
-                            >
+                                        return (
+                                            <div
+                                                key={order.id}
+                                                className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md"
+                                            >
                                 {/* Order Header */}
                                 <div className="p-4 md:p-6">
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -300,14 +328,36 @@ export default function OrdersPage() {
                                                 <h3 className="text-lg font-semibold text-slate-900">
                                                     #{order.id.slice(0, 8)}
                                                 </h3>
-                                                <StatusPill status={order.status} />
+                                                <Badge variant={order.status as any}>
+                                                    {order.status.toUpperCase()}
+                                                </Badge>
+                                                
+                                                {/* Quick Indicators */}
+                                                {order.status === 'paid' && hasPhysicalItems(order) && order.tracking_number && (
+                                                    <Badge variant="tracked" icon={Truck}>
+                                                        Tracked
+                                                    </Badge>
+                                                )}
+                                                {order.status === 'paid' && hasDigitalItems(order) && (
+                                                    <Badge variant="ready" icon={Download}>
+                                                        Ready
+                                                    </Badge>
+                                                )}
                                             </div>
                                             <p className="text-sm text-gray-500">
                                                 {formatDate(order.created_at)}
                                             </p>
+                                            
+                                            {/* Quick Info - Estimated Delivery */}
+                                            {order.status === 'paid' && order.estimated_delivery_date && !isExpanded && (
+                                                <p className="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1">
+                                                    <Calendar className="w-3 h-3" />
+                                                    ETA: {formatShortDate(order.estimated_delivery_date)}
+                                                </p>
+                                            )}
                                         </div>
                                         
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-4 justify-end md:justify-start">
                                             <div className="text-right">
                                                 <p className="text-sm text-gray-600">Total</p>
                                                 <p className="text-xl font-bold text-[#B00000]">
@@ -319,17 +369,17 @@ export default function OrdersPage() {
                                                 <button
                                                     onClick={() => handleContinuePayment(order.id, Number(order.total))}
                                                     disabled={processingOrderId === order.id}
-                                                    className="flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
                                                 >
                                                     {processingOrderId === order.id ? (
                                                         <>
                                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                                            <span className="text-sm font-medium">Processing...</span>
+                                                            <span>Processing...</span>
                                                         </>
                                                     ) : (
                                                         <>
                                                             <CreditCard className="w-4 h-4" />
-                                                            <span className="text-sm font-medium">Continue Payment</span>
+                                                            <span>Continue Payment</span>
                                                         </>
                                                     )}
                                                 </button>
@@ -338,76 +388,187 @@ export default function OrdersPage() {
                                             {itemCount > 0 && (
                                                 <button
                                                     onClick={() => toggleOrderExpansion(order.id)}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 flex-shrink-0"
                                                     aria-label={isExpanded ? "Collapse" : "Expand"}
                                                 >
-                                                    {isExpanded ? (
-                                                        <ChevronUp className="w-5 h-5 text-gray-600" />
-                                                    ) : (
-                                                        <ChevronDown className="w-5 h-5 text-gray-600" />
-                                                    )}
+                                                    <ChevronDown 
+                                                        className={`w-5 h-5 text-gray-600 transition-transform duration-300 ease-in-out ${
+                                                            isExpanded ? 'rotate-180' : 'rotate-0'
+                                                        }`}
+                                                    />
                                                 </button>
                                             )}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Order Items - Expandable */}
-                                {isExpanded && order.items && order.items.length > 0 && (
-                                    <div className="border-t border-gray-200 bg-gray-50">
+                                {/* Tracking Information - Priority 2 - Only show when expanded */}
+                                {order.status === 'paid' && hasPhysicalItems(order) && (order.tracking_number || order.estimated_delivery_date) && (
+                                    <div 
+                                        className={`border-t border-gray-200 bg-gradient-to-br from-blue-50 to-indigo-50 transition-all duration-300 ease-in-out overflow-hidden ${
+                                            isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                                        }`}
+                                    >
+                                        <div className="p-4 md:p-6">
+                                            <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                                                <Truck className="w-5 h-5 text-blue-600" />
+                                                Shipment Tracking
+                                            </h4>
+                                            
+                                            <div className="bg-white rounded-lg p-4 shadow-sm">
+                                                {/* Tracking Number & Link */}
+                                                {order.tracking_number && (
+                                                    <div className="mb-4">
+                                                        <p className="text-xs text-gray-600 mb-1">Tracking Number</p>
+                                                        <div className="flex items-center gap-3 flex-wrap">
+                                                            <p className="text-base font-semibold text-slate-900 font-mono">
+                                                                {order.tracking_number}
+                                                            </p>
+                                                            {order.tracking_url && (
+                                                                <a
+                                                                    href={order.tracking_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                                                >
+                                                                    <ExternalLink className="w-3.5 h-3.5" />
+                                                                    Track Your Order
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Estimated Delivery */}
+                                                {order.estimated_delivery_date && (
+                                                    <div className="mb-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Calendar className="w-4 h-4 text-green-600" />
+                                                            <p className="text-xs text-gray-600">Estimated Delivery</p>
+                                                        </div>
+                                                        <p className="text-sm font-semibold text-slate-900 mt-1 ml-6">
+                                                            {formatShortDate(order.estimated_delivery_date)}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Shipment Timeline */}
+                                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                                    <p className="text-xs font-medium text-gray-700 mb-3">Shipment Progress</p>
+                                                    <div className="space-y-3">
+                                                        <TimelineStep
+                                                            icon={CheckCircle}
+                                                            status="complete"
+                                                            title="Order Placed"
+                                                            description={formatDate(order.created_at)}
+                                                        />
+                                                        
+                                                        {order.status === 'paid' && (
+                                                            <TimelineStep
+                                                                icon={CheckCircle}
+                                                                status="complete"
+                                                                title="Payment Confirmed"
+                                                                description="Order is being processed"
+                                                            />
+                                                        )}
+                                                        
+                                                        {order.shipped_at ? (
+                                                            <TimelineStep
+                                                                icon={CheckCircle}
+                                                                status="complete"
+                                                                title="Shipped"
+                                                                description={formatDate(order.shipped_at)}
+                                                            />
+                                                        ) : (
+                                                            <TimelineStep
+                                                                icon={Clock}
+                                                                status="pending"
+                                                                title="Preparing to Ship"
+                                                                description="Your order is being prepared"
+                                                            />
+                                                        )}
+                                                        
+                                                        {order.delivered_at ? (
+                                                            <TimelineStep
+                                                                icon={CheckCircle}
+                                                                status="complete"
+                                                                title="✨ Delivered"
+                                                                description={formatDate(order.delivered_at)}
+                                                            />
+                                                        ) : order.shipped_at ? (
+                                                            <TimelineStep
+                                                                icon={Truck}
+                                                                status="active"
+                                                                title="In Transit"
+                                                                description={
+                                                                    order.estimated_delivery_date 
+                                                                        ? `Expected: ${formatShortDate(order.estimated_delivery_date)}`
+                                                                        : 'On the way to you'
+                                                                }
+                                                                animated
+                                                            />
+                                                        ) : (
+                                                            <TimelineStep
+                                                                icon={Clock}
+                                                                status="pending"
+                                                                title="Delivery Pending"
+                                                                description="Will be shipped soon"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Order Items - Priority 4 - Enhanced with Downloads */}
+                                {order.items && order.items.length > 0 && (
+                                    <div 
+                                        className={`border-t border-gray-200 bg-gray-50 transition-all duration-300 ease-in-out overflow-hidden ${
+                                            isExpanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'
+                                        }`}
+                                    >
                                         <div className="p-4 md:p-6">
                                             <h4 className="text-sm font-semibold text-gray-700 mb-3">
                                                 Order Items ({itemCount})
                                             </h4>
                                             <div className="space-y-3">
                                                 {order.items.map((item) => (
-                                                    <div
+                                                    <OrderItemCard
                                                         key={item.id}
-                                                        className="bg-white rounded-lg p-3 flex items-center gap-4"
-                                                    >
-                                                        {/* Product Image */}
-                                                        <Link
-                                                            href={`/shop/${item.product_slug}`}
-                                                            className="flex-shrink-0"
-                                                        >
-                                                            {item.cover_image ? (
-                                                                <img
-                                                                    src={`${BACKEND_BASE_URL}${item.cover_image}`}
-                                                                    alt={item.product_name}
-                                                                    className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-lg border border-gray-200"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                                                                    <Package className="w-8 h-8 text-gray-400" />
-                                                                </div>
-                                                            )}
-                                                        </Link>
-
-                                                        {/* Product Details */}
-                                                        <div className="flex-1 min-w-0">
-                                                            <Link
-                                                                href={`/shop/${item.product_slug}`}
-                                                                className="text-sm font-medium text-slate-900 hover:text-[#B00000] transition-colors line-clamp-2"
-                                                            >
-                                                                {item.product_name}
-                                                            </Link>
-                                                            <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                                                                <span>Qty: {item.quantity}</span>
-                                                                <span>•</span>
-                                                                <span>₹{Number(item.unit_price).toFixed(2)} each</span>
-                                                                <span>•</span>
-                                                                <span className="capitalize">{item.product_type}</span>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Item Total */}
-                                                        <div className="text-right flex-shrink-0">
-                                                            <p className="text-sm font-semibold text-slate-900">
-                                                                ₹{(Number(item.unit_price) * item.quantity).toFixed(2)}
-                                                            </p>
-                                                        </div>
-                                                    </div>
+                                                        productId={item.product_id}
+                                                        productSlug={item.product_slug}
+                                                        productName={item.product_name}
+                                                        coverImage={item.cover_image}
+                                                        quantity={item.quantity}
+                                                        unitPrice={Number(item.unit_price)}
+                                                        productType={item.product_type}
+                                                        isPaid={order.status === 'paid'}
+                                                        backendBaseUrl={BACKEND_BASE_URL}
+                                                    />
                                                 ))}
+                                            </div>
+                                            
+                                            {/* Order Summary */}
+                                            <div className="mt-4 pt-4 border-t border-gray-200 bg-white rounded-lg p-4">
+                                                <div className="space-y-2">
+                                                    <SummaryRow
+                                                        label="Subtotal"
+                                                        value={`₹${Number(order.subtotal).toFixed(2)}`}
+                                                    />
+                                                    <SummaryRow
+                                                        label="Shipping"
+                                                        value={Number(order.shipping_cost) > 0 
+                                                            ? `₹${Number(order.shipping_cost).toFixed(2)}`
+                                                            : 'Free'}
+                                                    />
+                                                    <SummaryRow
+                                                        variant="total"
+                                                        label="Total"
+                                                        value={`₹${Number(order.total).toFixed(2)}`}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

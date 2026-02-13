@@ -152,9 +152,6 @@ export default function BlogPage() {
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {posts.map((post) => {
-                            const isExcerptLong =
-                                post.excerpt && post.excerpt.length > 100;
-
                             return (
                                 <Link
                                     key={post.id}
@@ -198,24 +195,6 @@ export default function BlogPage() {
                                         <h2 className="text-lg font-semibold text-slate-900 mb-2 line-clamp-2 min-h-14 group-hover:text-[#B00000] transition-colors">
                                             {post.title}
                                         </h2>
-
-                                        {/* Excerpt with Tooltip */}
-                                        {post.excerpt && (
-                                            <p
-                                                className={`text-sm text-gray-600 mb-4 line-clamp-2 grow ${
-                                                    isExcerptLong
-                                                        ? "cursor-help"
-                                                        : ""
-                                                }`}
-                                                title={
-                                                    isExcerptLong
-                                                        ? post.excerpt
-                                                        : undefined
-                                                }
-                                            >
-                                                {post.excerpt}
-                                            </p>
-                                        )}
 
                                         {/* Footer */}
                                         <div className="mt-auto pt-4 border-t border-gray-100">

@@ -4,6 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { blogsApi } from "@/lib/api";
 import type { BlogPost } from "@/lib/api/types";
 
@@ -81,87 +85,110 @@ export default function BlogPostPage() {
     }
 
     return (
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Back Button */}
-            <Link
-                href="/blog"
-                className="inline-flex items-center text-gray-600 hover:text-[#B00000] mb-8 transition-colors text-sm"
-            >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Blog
-            </Link>
+        <div className="bg-white min-h-screen">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Back Button */}
+                <Link
+                    href="/blog"
+                    className="inline-flex items-center text-gray-600 hover:text-[#B00000] mb-8 transition-colors text-sm"
+                >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Blog
+                </Link>
 
-            {/* Cover Image */}
-            {post.cover_image && (
-                <div className="mb-8 rounded-lg overflow-hidden">
-                    <img
-                        src={post.cover_image}
-                        alt={post.title}
-                        className="w-full h-64 md:h-80 object-cover"
-                    />
-                </div>
-            )}
-
-            {/* Post Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 leading-tight">
-                    {post.title}
-                </h1>
-
-                {/* Meta Information */}
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6 pb-6 border-b border-gray-200">
-                    <div className="flex items-center space-x-1.5">
-                        <span>
-                            {formatDate(post.published_at || post.created_at)}
-                        </span>
+                {/* Cover Image */}
+                {post.cover_image && (
+                    <div className="mb-8 rounded-lg overflow-hidden">
+                        <img
+                            src={post.cover_image}
+                            alt={post.title}
+                            className="w-full h-64 md:h-80 object-cover"
+                        />
                     </div>
-                    {post.views > 0 && (
-                        <>
-                            <span>•</span>
-                            <span>{post.views} views</span>
-                        </>
-                    )}
-                    <span>•</span>
-                    <span>{post.author_name}</span>
-                </div>
-
-                {/* Excerpt */}
-                {post.excerpt && (
-                    <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                        {post.excerpt}
-                    </p>
                 )}
-            </div>
 
-            {/* Post Content */}
-            <article className="mb-12">
-                <div
-                    className="blog-content prose prose-lg max-w-none"
-                    dangerouslySetInnerHTML={{ __html: post.content || "" }}
-                />
-            </article>
+                {/* Post Header */}
+                <div className="mb-8">
+                    <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 leading-tight">
+                        {post.title}
+                    </h1>
 
-            {/* Footer */}
-            <div className="mt-12 pt-8 border-t border-gray-200">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <p className="text-sm text-gray-600">
-                            Written by{" "}
-                            <span className="font-medium">
-                                {post.author_name}
+                    {/* Meta Information */}
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6 pb-6 border-b border-gray-200">
+                        <div className="flex items-center space-x-1.5">
+                            <span>
+                                {formatDate(
+                                    post.published_at || post.created_at
+                                )}
                             </span>
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Published on{" "}
-                            {formatDate(post.published_at || post.created_at)}
-                        </p>
+                        </div>
+                        {post.views > 0 && (
+                            <>
+                                <span>•</span>
+                                <span>{post.views} views</span>
+                            </>
+                        )}
+                        <span>•</span>
+                        <span>{post.author_name}</span>
                     </div>
-                    <Link
-                        href="/blog"
-                        className="inline-flex items-center px-5 py-2.5 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors text-sm font-medium"
-                    >
-                        View All Posts
-                    </Link>
+                </div>
+
+                {/* Post Content */}
+                <article className="mb-12">
+                    <div className="blog-content prose prose-lg max-w-none prose-img:rounded-lg prose-img:w-full prose-a:text-[#B00000] prose-a:no-underline hover:prose-a:underline">
+                        <ReactMarkdown
+                            rehypePlugins={[rehypeRaw]}
+                            remarkPlugins={[remarkGfm, remarkBreaks]}
+                            components={{
+                                img: ({ node, ...props }) => (
+                                    <img
+                                        {...props}
+                                        className="max-w-full md:max-w-3xl h-auto max-h-[500px] object-contain mx-auto rounded-lg my-8 shadow-sm"
+                                        alt={props.alt || "Blog image"}
+                                    />
+                                ),
+                            }}
+                        >
+                            {/* Hotfix for existing content with spaces in URLs (images and links) */}
+                            {(post.content || "").replace(
+                                /(!?)\[(.*?)\]\((.*?)\)/g,
+                                (match, prefix, text, url) => {
+                                    if (url && url.includes(" ")) {
+                                        return `${prefix}[${text}](${encodeURI(
+                                            url
+                                        )})`;
+                                    }
+                                    return match;
+                                }
+                            )}
+                        </ReactMarkdown>
+                    </div>
+                </article>
+
+                {/* Footer */}
+                <div className="mt-12 pt-8 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm text-gray-600">
+                                Written by{" "}
+                                <span className="font-medium">
+                                    {post.author_name}
+                                </span>
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Published on{" "}
+                                {formatDate(
+                                    post.published_at || post.created_at
+                                )}
+                            </p>
+                        </div>
+                        <Link
+                            href="/blog"
+                            className="inline-flex items-center px-5 py-2.5 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors text-sm font-medium"
+                        >
+                            View All Posts
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>

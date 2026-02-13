@@ -30,12 +30,12 @@ import {
     FileText,
     Upload,
 } from "lucide-react";
+import { toast } from "sonner";
+import "easymde/dist/easymde.min.css";
 
-// Dynamically import markdown editor to avoid SSR issues
-const MDEditor = dynamic(
-    () => import("@uiw/react-md-editor").then((mod) => mod.default),
-    { ssr: false }
-);
+const SimpleMDE = dynamic(() => import("react-simplemde-editor"), {
+    ssr: false,
+});
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api/admin";
 import { requestsApi } from "@/lib/api/requests";
@@ -58,6 +58,7 @@ import { KYCModal } from "@/components/admin/KYCModal";
 import { ProductKYCModal } from "@/components/admin/ProductKYCModal";
 import { DigitalFilesTab } from "@/components/admin/DigitalFilesTab";
 import { GrantAccessModal } from "@/components/admin/GrantAccessModal";
+import { SettingsTab } from "@/components/admin/SettingsTab";
 import { formatDate, generateSlug } from "@/components/admin/utils";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type {
@@ -86,6 +87,7 @@ export default function AdminPage() {
         | "products"
         | "orders"
         | "digital_files"
+        | "settings"
     >("dashboard");
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [users, setUsers] = useState<User[]>([]);
@@ -156,7 +158,6 @@ export default function AdminPage() {
     const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
     const [blogFormData, setBlogFormData] = useState({
         title: "",
-        excerpt: "",
         content: "",
         cover_image: "",
         is_published: false,
@@ -1069,7 +1070,6 @@ export default function AdminPage() {
         setEditingBlog(null);
         setBlogFormData({
             title: "",
-            excerpt: "",
             content: "",
             cover_image: "",
             is_published: false,
@@ -1081,10 +1081,46 @@ export default function AdminPage() {
 
     const handleEditBlog = (blog: BlogPost) => {
         setEditingBlog(blog);
+
+        // Sanitize content if it seems to be wrapped in a JSON string (fix for corrupted data)
+        let content = blog.content || "";
+        console.log("Original content:", content);
+
+        if (
+            (typeof content === "string" && content.includes('"content":')) ||
+            content.trim().startsWith("{")
+        ) {
+            try {
+                let jsonString = content.trim();
+                // If it looks like a partial JSON object (key-value pair without braces)
+                if (
+                    !jsonString.startsWith("{") &&
+                    jsonString.includes('"content":')
+                ) {
+                    jsonString = `{${jsonString}}`;
+                }
+
+                const parsed = JSON.parse(jsonString);
+                if (parsed.content) {
+                    content = parsed.content;
+                    console.log("Sanitized content (JSON parsed):", content);
+                }
+            } catch (e) {
+                // Fallback: Try regex to extract content value if JSON parse fails
+                // match "content": "..." and extract captured group
+                const contentMatch = content.match(/"content"\s*:\s*"(.*)"/);
+                if (contentMatch && contentMatch[1]) {
+                     // We need to unescape the content
+                     // This is a naive unescape, but better than nothing
+                     content = contentMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+                     console.log("Sanitized content (Regex fallback):", content);
+                }
+            }
+        }
+
         setBlogFormData({
             title: blog.title || "",
-            excerpt: blog.excerpt || "",
-            content: blog.content || "",
+            content: content,
             cover_image: blog.cover_image || "",
             is_published: blog.is_published || false,
         });
@@ -1132,44 +1168,40 @@ export default function AdminPage() {
                     blogFormData
                 );
                 if (response.success) {
-                    setBlogFormSuccess("Blog post updated successfully!");
+                    toast.success("Blog post updated successfully!");
                     await fetchData();
-                    setTimeout(() => {
-                        setIsBlogModalOpen(false);
-                        setBlogFormSuccess(null);
-                        setError(null);
-                        setBlogFormData({
-                            title: "",
-                            excerpt: "",
-                            content: "",
-                            cover_image: "",
-                            is_published: false,
-                        });
-                    }, 1500);
+                    setIsBlogModalOpen(false);
+                    setBlogFormData({
+                        title: "",
+                        content: "",
+                        cover_image: "",
+                        is_published: false,
+                    });
+                } else {
+                    toast.error(response.message || "Failed to update blog post");
                 }
             } else {
                 // Create new blog post
                 const response = await blogsApi.create(blogFormData);
                 if (response.success) {
-                    setBlogFormSuccess("Blog post created successfully!");
+                    toast.success("Blog post created successfully!");
                     await fetchData();
-                    setTimeout(() => {
-                        setIsBlogModalOpen(false);
-                        setBlogFormSuccess(null);
-                        setError(null);
-                        setBlogFormData({
-                            title: "",
-                            excerpt: "",
-                            content: "",
-                            cover_image: "",
-                            is_published: false,
-                        });
-                    }, 1500);
+                    setIsBlogModalOpen(false);
+                    setBlogFormData({
+                        title: "",
+                        content: "",
+                        cover_image: "",
+                        is_published: false,
+                    });
+                } else {
+                    toast.error(response.message || "Failed to create blog post");
                 }
             }
         } catch (err: any) {
-            setError(err.message || "Failed to save blog post");
-            setBlogFormSuccess(null);
+            console.error("Error saving blog post:", err);
+            const errorMessage = err.message || "Failed to save blog post";
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsSubmittingBlog(false);
         }
@@ -1795,6 +1827,8 @@ export default function AdminPage() {
                 {activeTab === "digital_files" && <DigitalFilesTab />}
 
                 {activeTab === "orders" && <OrdersTab />}
+
+                {activeTab === "settings" && <SettingsTab />}
 
                 {activeTab === "kyc" && (
                     <KYCTab
@@ -2973,24 +3007,6 @@ export default function AdminPage() {
                                     />
                                 </div>
 
-                                {/* Excerpt */}
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-900 mb-2">
-                                        Excerpt
-                                    </label>
-                                    <textarea
-                                        value={blogFormData.excerpt}
-                                        onChange={(e) =>
-                                            setBlogFormData({
-                                                ...blogFormData,
-                                                excerpt: e.target.value,
-                                            })
-                                        }
-                                        rows={3}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                        placeholder="Short description of the blog post"
-                                    />
-                                </div>
 
                                 {/* Content */}
                                 <div>
@@ -3001,19 +3017,49 @@ export default function AdminPage() {
                                         data-color-mode="light"
                                         className="markdown-editor-wrapper"
                                     >
-                                        <MDEditor
+                                        <SimpleMDE
+                                            key={
+                                                editingBlog
+                                                    ? editingBlog.id
+                                                    : "new-blog"
+                                            }
                                             value={blogFormData.content}
                                             onChange={(value) =>
                                                 setBlogFormData({
                                                     ...blogFormData,
-                                                    content: value || "",
+                                                    content: value,
                                                 })
                                             }
-                                            preview="edit"
-                                            hideToolbar={false}
-                                            visibleDragbar={true}
-                                            height={500}
-                                            data-color-mode="light"
+                                            options={{
+                                                spellChecker: false,
+                                                placeholder:
+                                                    "Write your blog post content here...",
+                                                maxHeight: "500px",
+                                                toolbar: [
+                                                    "bold",
+                                                    "italic",
+                                                    "strikethrough",
+                                                    "|",
+                                                    "heading-1",
+                                                    "heading-2",
+                                                    "heading-3",
+                                                    "|",
+                                                    "code",
+                                                    "quote",
+                                                    "unordered-list",
+                                                    "ordered-list",
+                                                    "|",
+                                                    "link",
+                                                    "image",
+                                                    "table",
+                                                    "|",
+                                                    "preview",
+                                                    "side-by-side",
+                                                    "fullscreen",
+                                                    "|",
+                                                    "guide",
+                                                ],
+                                            }}
                                         />
                                         <div className="mt-2 space-y-2">
                                             <div className="flex items-center justify-between">
@@ -3080,7 +3126,14 @@ export default function AdminPage() {
                                                                                         url,
                                                                                         index
                                                                                     ) =>
-                                                                                        `\n![${files[index].name}](${url})`
+                                                                                        `\n![${
+                                                                                            files[
+                                                                                                index
+                                                                                            ]
+                                                                                                .name
+                                                                                        }](${encodeURI(
+                                                                                            url
+                                                                                        )})`
                                                                                 )
                                                                                 .join(
                                                                                     "\n"
@@ -3090,8 +3143,8 @@ export default function AdminPage() {
                                                                             {
                                                                                 ...blogFormData,
                                                                                 content:
-                                                                                    currentContent +
-                                                                                    imageMarkdown,
+                                                                                    imageMarkdown +
+                                                                                    currentContent,
                                                                             }
                                                                         );
                                                                     } catch (error) {
@@ -3784,22 +3837,51 @@ export default function AdminPage() {
 
                                             {/* Markdown Editor */}
                                             <div data-color-mode="light">
-                                                <MDEditor
+                                                <SimpleMDE
+                                                    key={
+                                                        editingVideo
+                                                            ? editingVideo.id
+                                                            : "new-video"
+                                                    }
                                                     value={
                                                         videoFormData.markdown
                                                     }
                                                     onChange={(value) =>
                                                         setVideoFormData({
                                                             ...videoFormData,
-                                                            markdown:
-                                                                value || "",
+                                                            markdown: value,
                                                         })
                                                     }
-                                                    preview="edit"
-                                                    hideToolbar={false}
-                                                    visibleDragbar={false}
-                                                    height={450}
-                                                    data-color-mode="light"
+                                                    options={{
+                                                        spellChecker: false,
+                                                        placeholder:
+                                                            "Write video description...",
+                                                        maxHeight: "450px",
+                                                        toolbar: [
+                                                            "bold",
+                                                            "italic",
+                                                            "strikethrough",
+                                                            "|",
+                                                            "heading-1",
+                                                            "heading-2",
+                                                            "heading-3",
+                                                            "|",
+                                                            "code",
+                                                            "quote",
+                                                            "unordered-list",
+                                                            "ordered-list",
+                                                            "|",
+                                                            "link",
+                                                            "image",
+                                                            "table",
+                                                            "|",
+                                                            "preview",
+                                                            "side-by-side",
+                                                            "fullscreen",
+                                                            "|",
+                                                            "guide",
+                                                        ],
+                                                    }}
                                                 />
                                             </div>
 

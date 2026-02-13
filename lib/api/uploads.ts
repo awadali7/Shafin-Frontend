@@ -22,8 +22,8 @@ export const uploadsApi = {
         }
 
         const formData = new FormData();
-        formData.append("file", file, file.name);
         formData.append("type", type);
+        formData.append("file", file, file.name);
 
         // Don't set Content-Type header - let browser set it with boundary
         return apiClient.post<UploadedFile>("/uploads/single", formData);
@@ -35,6 +35,7 @@ export const uploadsApi = {
         type: "images" | "documents" | "blog" = "images"
     ): Promise<ApiResponse<UploadedFile[]>> => {
         const formData = new FormData();
+        formData.append("type", type);
 
         // Ensure all files are valid File objects
         files.forEach((file) => {
@@ -44,7 +45,6 @@ export const uploadsApi = {
                 throw new Error(`Invalid file object: ${file}`);
             }
         });
-        formData.append("type", type);
 
         // Don't set Content-Type header - let browser set it with boundary
         return apiClient.post<UploadedFile[]>("/uploads/multiple", formData);

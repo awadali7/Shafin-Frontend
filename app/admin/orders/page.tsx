@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle, Loader2, Eye, ArrowLeft, Package, Download, MapPin, Phone, Mail, ChevronDown, ChevronUp, Printer, FileText } from "lucide-react";
+import { CheckCircle, Loader2, Eye, ArrowLeft, Package, Download, MapPin, Phone, Mail, ChevronDown, ChevronUp, Printer, FileText, Truck, Calendar, Save, ExternalLink } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersApi } from "@/lib/api/orders";
 import type { AdminOrderSummary } from "@/lib/api/types";
@@ -43,6 +43,12 @@ export default function AdminOrdersPage() {
     const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
     const [orderDetails, setOrderDetails] = useState<any>(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
+    const [savingTracking, setSavingTracking] = useState(false);
+    const [trackingForm, setTrackingForm] = useState({
+        tracking_number: "",
+        tracking_url: "",
+        estimated_delivery_date: "",
+    });
 
     // Authentication check
     useEffect(() => {
@@ -99,6 +105,7 @@ export default function AdminOrdersPage() {
         if (expandedOrderId === orderId) {
             setExpandedOrderId(null);
             setOrderDetails(null);
+            setTrackingForm({ tracking_number: "", tracking_url: "", estimated_delivery_date: "" });
             return;
         }
         
@@ -107,10 +114,50 @@ export default function AdminOrdersPage() {
             const resp = await ordersApi.adminGetById(orderId);
             setOrderDetails(resp.data);
             setExpandedOrderId(orderId);
+            
+            // Populate tracking form with existing data
+            const order = resp.data?.order;
+            setTrackingForm({
+                tracking_number: order?.tracking_number || "",
+                tracking_url: order?.tracking_url || "",
+                estimated_delivery_date: order?.estimated_delivery_date 
+                    ? new Date(order.estimated_delivery_date).toISOString().split('T')[0] 
+                    : "",
+            });
         } catch (e: any) {
             alert(e?.message || "Failed to load order details");
         } finally {
             setLoadingDetails(false);
+        }
+    };
+
+    const saveTrackingInfo = async (orderId: string) => {
+        try {
+            setSavingTracking(true);
+            
+            const payload: any = {
+                tracking_number: trackingForm.tracking_number || null,
+                tracking_url: trackingForm.tracking_url || null,
+                estimated_delivery_date: trackingForm.estimated_delivery_date || null,
+            };
+            
+            // If tracking number is being added and order hasn't been shipped yet, mark as shipped now
+            if (trackingForm.tracking_number && !orderDetails?.order?.shipped_at) {
+                payload.shipped_at = new Date().toISOString();
+            }
+            
+            await ordersApi.adminUpdateTracking(orderId, payload);
+            
+            toast.success("Tracking information updated successfully!");
+            
+            // Refresh order details and orders list
+            await viewOrderDetails(orderId);
+            await fetchOrders();
+        } catch (e: any) {
+            console.error("Error updating tracking:", e);
+            toast.error(e?.message || "Failed to update tracking information");
+        } finally {
+            setSavingTracking(false);
         }
     };
 
@@ -253,6 +300,24 @@ export default function AdminOrdersPage() {
                 yPosition += 5;
                 if (details.payment_reference) {
                     addText(`Reference: ${details.payment_reference}`, margin, yPosition, 9);
+                }
+                yPosition += 10;
+            }
+            
+            // Shipping & Tracking info
+            if (details?.tracking_number || details?.estimated_delivery_date) {
+                addText("Shipping Information:", margin, yPosition, 10, true);
+                yPosition += 6;
+                if (details.tracking_number) {
+                    addText(`Tracking Number: ${details.tracking_number}`, margin, yPosition, 9);
+                    yPosition += 5;
+                }
+                if (details.estimated_delivery_date) {
+                    addText(`Estimated Delivery: ${new Date(details.estimated_delivery_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`, margin, yPosition, 9);
+                    yPosition += 5;
+                }
+                if (details.shipped_at) {
+                    addText(`Shipped On: ${new Date(details.shipped_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`, margin, yPosition, 9);
                 }
                 yPosition += 10;
             }
@@ -485,6 +550,8 @@ export default function AdminOrdersPage() {
                     <div style="display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; margin: 6px 0; padding: 6px; background: #f0f0f0; border: 1px dashed #000;">
                         <div class="barcode">
                             <div class="barcode-text">${order.id.toUpperCase()}</div>
+                            ${details?.tracking_number ? `<div style="font-size: 8px; margin-top: 3px; color: #000;"><strong>Tracking:</strong> ${details.tracking_number}</div>` : ''}
+                            ${details?.estimated_delivery_date ? `<div style="font-size: 7px; margin-top: 2px; color: #000;">Est. Delivery: ${new Date(details.estimated_delivery_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>` : ''}
                         </div>
                         <div style="text-align: center;">
                             <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(order.id)}" alt="QR Code" style="width: 50px; height: 50px; border: 1px solid #000; padding: 2px; background: white;">
@@ -734,6 +801,20 @@ export default function AdminOrdersPage() {
                                                                 {Number(order.digital_items)} Digital
                                                             </span>
                                                         </div>
+                                                        {Number(order.physical_items) > 0 && order.tracking_number && (
+                                                            <div className="flex items-center gap-1 mt-1">
+                                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded text-xs font-medium" title={`Tracking: ${order.tracking_number}`}>
+                                                                    <Truck className="w-3 h-3" />
+                                                                    Tracked
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {Number(order.physical_items) > 0 && order.estimated_delivery_date && (
+                                                            <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                                <Calendar className="w-3 h-3" />
+                                                                ETA: {new Date(order.estimated_delivery_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -802,6 +883,118 @@ export default function AdminOrdersPage() {
                                                                 </button>
                                                             )}
                                                         </div>
+
+                                                        {/* Tracking Information Section */}
+                                                        {Number(order.physical_items) > 0 && (
+                                                            <div className="mb-6 bg-white rounded-lg p-4 border border-gray-200">
+                                                                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                                                                    <Truck className="w-4 h-4" />
+                                                                    Shipping & Tracking Information
+                                                                </h3>
+                                                                
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                                            Tracking Number
+                                                                        </label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={trackingForm.tracking_number}
+                                                                            onChange={(e) => setTrackingForm({
+                                                                                ...trackingForm,
+                                                                                tracking_number: e.target.value
+                                                                            })}
+                                                                            placeholder="Enter tracking number"
+                                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                                        />
+                                                                    </div>
+                                                                    
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                                            Estimated Delivery Date
+                                                                        </label>
+                                                                        <input
+                                                                            type="date"
+                                                                            value={trackingForm.estimated_delivery_date}
+                                                                            onChange={(e) => setTrackingForm({
+                                                                                ...trackingForm,
+                                                                                estimated_delivery_date: e.target.value
+                                                                            })}
+                                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                <div className="mb-4">
+                                                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                                                        Tracking Link (Optional)
+                                                                    </label>
+                                                                    <input
+                                                                        type="url"
+                                                                        value={trackingForm.tracking_url}
+                                                                        onChange={(e) => setTrackingForm({
+                                                                            ...trackingForm,
+                                                                            tracking_url: e.target.value
+                                                                        })}
+                                                                        placeholder="https://tracking.courierwebsite.com/track?id=..."
+                                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                                    />
+                                                                    <p className="text-xs text-gray-500 mt-1">
+                                                                        Add external courier tracking URL for easy access
+                                                                    </p>
+                                                                    {orderDetails?.order?.tracking_url && (
+                                                                        <a
+                                                                            href={orderDetails.order.tracking_url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                                                        >
+                                                                            <ExternalLink className="w-3 h-3" />
+                                                                            View Current Tracking Link
+                                                                        </a>
+                                                                    )}
+                                                                </div>
+                                                                
+                                                                {/* Status Timeline */}
+                                                                {(orderDetails.order?.shipped_at || orderDetails.order?.delivered_at) && (
+                                                                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                                                                        <div className="text-xs font-medium text-gray-700 mb-2">Shipment Status:</div>
+                                                                        <div className="space-y-2">
+                                                                            {orderDetails.order?.shipped_at && (
+                                                                                <div className="flex items-center gap-2 text-xs text-gray-600">
+                                                                                    <Truck className="w-3 h-3 text-blue-600" />
+                                                                                    <span>Shipped on {new Date(orderDetails.order.shipped_at).toLocaleString('en-IN')}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {orderDetails.order?.delivered_at && (
+                                                                                <div className="flex items-center gap-2 text-xs text-green-600">
+                                                                                    <CheckCircle className="w-3 h-3" />
+                                                                                    <span>Delivered on {new Date(orderDetails.order.delivered_at).toLocaleString('en-IN')}</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                <button
+                                                                    onClick={() => saveTrackingInfo(order.id)}
+                                                                    disabled={savingTracking}
+                                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-60 font-medium"
+                                                                >
+                                                                    {savingTracking ? (
+                                                                        <>
+                                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                                            Saving...
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Save className="w-4 h-4" />
+                                                                            Save Tracking Info
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                         
                                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                                             {/* Left Column - Order Items */}

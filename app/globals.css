@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@uiw/react-md-editor/markdown-editor.css";
+@plugin "@tailwindcss/typography";
 
 :root {
     --background: #ffffff;
@@ -164,21 +164,79 @@ a {
     margin: 1rem 0;
 }
 
-.blog-content h1,
-.blog-content h2,
-.blog-content h3,
-.blog-content h4,
-.blog-content h5,
-.blog-content h6 {
+.blog-content h1 {
+    margin-top: 2.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 800;
+    font-size: 2.25rem;
+    line-height: 1.2;
+}
+
+.blog-content h2 {
     margin-top: 2rem;
     margin-bottom: 1rem;
     font-weight: 700;
+    font-size: 1.875rem;
+    line-height: 1.3;
 }
 
-.blog-content ul,
+.blog-content h3 {
+    margin-top: 1.75rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 1.5rem;
+    line-height: 1.4;
+}
+
+.blog-content h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 1.25rem;
+    line-height: 1.5;
+}
+
+.blog-content h5,
+.blog-content h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+/* List Styles */
+.blog-content ul {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+    list-style-type: disc;
+}
+
 .blog-content ol {
     margin: 1rem 0;
-    padding-left: 2rem;
+    padding-left: 1.5rem;
+    list-style-type: decimal;
+}
+
+.blog-content li {
+    margin: 0.5rem 0;
+    padding-left: 0.25rem;
+}
+
+.blog-content li::marker {
+    color: #B00000; /* Use brand color for list markers if possible */
+}
+
+/* Nested lists */
+.blog-content ul ul,
+.blog-content ol ul {
+    list-style-type: circle;
+    margin: 0.5rem 0;
+}
+
+.blog-content ol ol,
+.blog-content ul ol {
+    list-style-type: lower-alpha;
+    margin: 0.5rem 0;
 }
 
 .blog-content blockquote {
@@ -186,6 +244,9 @@ a {
     padding-left: 1rem;
     margin: 1.5rem 0;
     font-style: italic;
+    background-color: #f9f9f9;
+    padding: 1rem;
+    border-radius: 0 0.5rem 0.5rem 0;
 }
 
 .blog-content code {
@@ -193,19 +254,23 @@ a {
     padding: 0.2rem 0.4rem;
     border-radius: 0.25rem;
     font-size: 0.9em;
+    font-family: monospace;
 }
 
 .blog-content pre {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: #1e1e1e;
+    color: #e4e4e4;
     padding: 1rem;
     border-radius: 0.5rem;
     overflow-x: auto;
     margin: 1.5rem 0;
+    font-family: monospace;
 }
 
 .blog-content pre code {
     background-color: transparent;
     padding: 0;
+    color: inherit;
 }
 
 /* Hide YouTube share button menu and Copy Link button */
