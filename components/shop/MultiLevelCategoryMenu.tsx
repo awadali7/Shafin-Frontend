@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useRef, useEffect } from "react";
-import { ChevronRight, Filter, X } from "lucide-react";
+import { ChevronRight, Filter, X, ChevronDown } from "lucide-react";
 
 interface Product {
     id: string;
@@ -27,7 +27,24 @@ export default function MultiLevelCategoryMenu({
     const [isOpen, setIsOpen] = useState(false);
     const [selectedPath, setSelectedPath] = useState<string[]>([]);
     const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(new Set());
+    const [isMobile, setIsMobile] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    // Detect mobile viewport
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768); // md breakpoint (Tailwind default)
+        };
+
+        // Check immediately on mount
+        checkMobile();
+
+        // Listen for resize events
+        window.addEventListener('resize', checkMobile);
+
+        // Cleanup
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Build category tree structure
     const categoryTree = useMemo(() => {
@@ -78,6 +95,19 @@ export default function MultiLevelCategoryMenu({
         setOpenSubmenus(new Set());
     };
 
+    // Toggle submenu (for mobile click behavior)
+    const toggleSubmenu = (itemKey: string) => {
+        setOpenSubmenus((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(itemKey)) {
+                newSet.delete(itemKey);
+            } else {
+                newSet.add(itemKey);
+            }
+            return newSet;
+        });
+    };
+
     // Close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -123,29 +153,33 @@ export default function MultiLevelCategoryMenu({
                 .slice(0, itemPath.length)
                 .every((cat, idx) => itemPath[idx] === cat);
 
-        // Calculate fixed position for submenu
-        const [submenuPos, setSubmenuPos] = useState<{top: number, left: number} | null>(null);
-
-        useEffect(() => {
-            if (isSubmenuOpen && buttonRef.current) {
-                const rect = buttonRef.current.getBoundingClientRect();
-                setSubmenuPos({
-                    top: rect.top,
-                    left: rect.right
-                });
+        // Mobile: click to expand, desktop: hover to expand
+        const handleItemClick = (e: React.MouseEvent) => {
+            if (isMobile && hasChildren) {
+                e.stopPropagation();
+                toggleSubmenu(itemKey);
+            } else {
+                handleSelect(itemPath);
             }
-        }, [isSubmenuOpen]);
+        };
+
+        const handleChevronClick = (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (hasChildren) {
+                toggleSubmenu(itemKey);
+            }
+        };
 
         return (
             <div
-                className="relative overflow-visible"
+                className="relative"
                 onMouseEnter={() => {
-                    if (hasChildren) {
+                    if (!isMobile && hasChildren) {
                         setOpenSubmenus((prev) => new Set([...prev, itemKey]));
                     }
                 }}
                 onMouseLeave={() => {
-                    if (hasChildren) {
+                    if (!isMobile && hasChildren) {
                         setTimeout(() => {
                             setOpenSubmenus((prev) => {
                                 const newSet = new Set(prev);
@@ -158,40 +192,57 @@ export default function MultiLevelCategoryMenu({
             >
                 <button
                     ref={buttonRef}
-                    onClick={() => handleSelect(itemPath)}
-                    className={`w-full px-4 py-2.5 flex items-center justify-between text-left text-sm transition-colors ${
-                        isSelected
-                            ? "bg-[#B00000] text-white font-medium"
-                            : isInSelectedPath
+                    onClick={handleItemClick}
+                    className={`w-full px-4 py-2.5 flex items-center justify-between text-left text-sm transition-colors ${isSelected
+                        ? "bg-[#B00000] text-white font-medium"
+                        : isInSelectedPath
                             ? "bg-red-50 text-[#B00000] font-medium"
                             : "text-gray-700 hover:bg-gray-100"
-                    }`}
+                        }`}
                 >
                     <span className="flex-1 truncate">{node.name}</span>
                     {hasChildren && (
-                        <ChevronRight
-                            className={`w-4 h-4 shrink-0 ml-2 ${
-                                isSelected ? "text-white" : "text-gray-400"
-                            }`}
-                        />
+                        <button
+                            onClick={handleChevronClick}
+                            className="ml-2 p-1 hover:bg-black/10 rounded"
+                        >
+                            {isMobile ? (
+                                <ChevronDown
+                                    className={`w-4 h-4 shrink-0 transition-transform ${isSubmenuOpen ? "rotate-180" : ""
+                                        } ${isSelected ? "text-white" : "text-gray-400"}`}
+                                />
+                            ) : (
+                                <ChevronRight
+                                    className={`w-4 h-4 shrink-0 ${isSelected ? "text-white" : "text-gray-400"
+                                        }`}
+                                />
+                            )}
+                        </button>
                     )}
                 </button>
 
                 {/* Submenu */}
                 {hasChildren && isSubmenuOpen && (
-                    <div 
-                        className="absolute left-full top-0 shadow-xl border border-gray-200 bg-white min-w-[200px] max-h-[400px] overflow-y-auto z-9999"
+                    <div
+                        className={`${isMobile
+                            ? "relative left-0 top-0 pl-4 bg-gray-50"
+                            : "absolute left-full top-0 shadow-xl border border-gray-200 bg-white min-w-[200px] z-[9999]"
+                            }`}
                         onMouseEnter={() => {
-                            setOpenSubmenus((prev) => new Set([...prev, itemKey]));
+                            if (!isMobile) {
+                                setOpenSubmenus((prev) => new Set([...prev, itemKey]));
+                            }
                         }}
                         onMouseLeave={() => {
-                            setTimeout(() => {
-                                setOpenSubmenus((prev) => {
-                                    const newSet = new Set(prev);
-                                    newSet.delete(itemKey);
-                                    return newSet;
-                                });
-                            }, 300);
+                            if (!isMobile) {
+                                setTimeout(() => {
+                                    setOpenSubmenus((prev) => {
+                                        const newSet = new Set(prev);
+                                        newSet.delete(itemKey);
+                                        return newSet;
+                                    });
+                                }, 300);
+                            }
                         }}
                     >
                         {Array.from(node.children.values())
@@ -219,11 +270,10 @@ export default function MultiLevelCategoryMenu({
             {/* Filter Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`h-10 px-4 flex items-center gap-2 text-sm font-medium rounded-md transition-all ${
-                    selectedPath.length > 0
-                        ? "bg-[#B00000] text-white shadow-sm"
-                        : "border border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                }`}
+                className={`h-10 px-4 flex items-center gap-2 text-sm font-medium rounded-md transition-all ${selectedPath.length > 0
+                    ? "bg-[#B00000] text-white shadow-sm"
+                    : "border border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                    }`}
             >
                 <Filter className="w-4 h-4" />
                 {selectedPath.length > 0 ? (
@@ -249,8 +299,14 @@ export default function MultiLevelCategoryMenu({
 
             {/* Cascading Menu */}
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 z-50">
-                    <div className="shadow-xl border border-gray-200 bg-white min-w-[220px] max-h-[400px] overflow-auto">
+                <div className={`absolute top-full mt-2 z-50 ${isMobile
+                        ? 'left-0 right-0 w-full'
+                        : 'left-0'
+                    }`}>
+                    <div className={`shadow-xl border border-gray-200 bg-white ${isMobile
+                            ? 'w-full max-h-[70vh] overflow-y-auto rounded-lg'
+                            : 'min-w-[220px] overflow-visible rounded-md'
+                        }`}>
                         <div className="relative">
                             {rootCategories.map((node) => (
                                 <MenuItem
@@ -277,3 +333,4 @@ export default function MultiLevelCategoryMenu({
         </div>
     );
 }
+

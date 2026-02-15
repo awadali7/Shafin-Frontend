@@ -436,6 +436,7 @@ export interface Product {
     is_coming_soon?: boolean;
     is_contact_only?: boolean; // Product can only be contacted via WhatsApp (no direct purchase)
     requires_kyc?: boolean; // Product requires KYC verification to purchase
+    product_detail_pdf?: string; // URL to product details PDF
     created_at?: string;
     updated_at?: string;
 

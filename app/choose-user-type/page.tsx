@@ -72,22 +72,22 @@ function ChooseUserTypeContent() {
     }
 
     return (
-        <div className="bg-gradient-to-br from-red-50 to-white flex items-center justify-center p-4" style={{ height: 'calc(100vh - 64px)' }}>
+        <div className="bg-gradient-to-br from-red-50 to-white flex items-center justify-center p-4 sm:p-6 lg:p-8" style={{ height: 'calc(100vh - 64px)' }}>
             <div className="max-w-4xl w-full">
                 {/* Header */}
-                <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold text-slate-900 mb-4">
+                <div className="text-center mb-6 sm:mb-8 md:mb-12">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-3 sm:mb-4 px-2">
                         {currentUserType ? "Update Your Account Type" : "Welcome to Our Platform! 👋"}
                     </h1>
-                    <p className="text-lg text-slate-600">
-                        {currentUserType 
+                    <p className="text-base sm:text-lg text-slate-600 px-4">
+                        {currentUserType
                             ? `You can change your selection before completing KYC verification.`
                             : "To provide you with the best experience, please tell us which describes you best:"
                         }
                     </p>
                     {currentUserType && (
-                        <div className="mt-4 inline-block px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="text-sm text-blue-700">
+                        <div className="mt-3 sm:mt-4 inline-block px-3 sm:px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-xs sm:text-sm text-blue-700">
                                 Current type: <strong className="capitalize">{currentUserType.replace('_', ' ')}</strong>
                             </p>
                         </div>
@@ -96,38 +96,37 @@ function ChooseUserTypeContent() {
 
                 {/* Error Message */}
                 {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                    <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm sm:text-base">
                         {error}
                     </div>
                 )}
 
                 {/* Options */}
-                <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <div className="grid md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
                     {/* Student Option */}
                     <button
                         onClick={() => handleSelectType("student")}
                         disabled={loading}
-                        className={`group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 border-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                            currentUserType === "student" 
-                                ? "border-blue-500 bg-blue-50" 
+                        className={`group relative bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 border-2 disabled:opacity-50 disabled:cursor-not-allowed ${currentUserType === "student"
+                                ? "border-blue-500 bg-blue-50"
                                 : "border-transparent hover:border-blue-500"
-                        }`}
+                            }`}
                     >
-                        <div className="flex flex-col items-center text-center space-y-4">
-                            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-500 transition-colors">
-                                <GraduationCap className="w-10 h-10 text-blue-600 group-hover:text-white transition-colors" />
+                        <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-500 transition-colors">
+                                <GraduationCap className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600 group-hover:text-white transition-colors" />
                             </div>
-                            
+
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1 sm:mb-2">
                                     🎓 I'm a Student
                                 </h3>
-                                <p className="text-slate-600">
+                                <p className="text-sm sm:text-base text-slate-600">
                                     I want to learn and purchase courses
                                 </p>
                             </div>
 
-                            <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="hidden sm:block absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <ArrowRight className="w-6 h-6 text-blue-500" />
                             </div>
                         </div>
@@ -137,27 +136,26 @@ function ChooseUserTypeContent() {
                     <button
                         onClick={() => handleSelectType("business_owner")}
                         disabled={loading}
-                        className={`group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 border-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                            currentUserType === "business_owner" 
-                                ? "border-green-500 bg-green-50" 
+                        className={`group relative bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 border-2 disabled:opacity-50 disabled:cursor-not-allowed ${currentUserType === "business_owner"
+                                ? "border-green-500 bg-green-50"
                                 : "border-transparent hover:border-green-500"
-                        }`}
+                            }`}
                     >
-                        <div className="flex flex-col items-center text-center space-y-4">
-                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-500 transition-colors">
-                                <Building2 className="w-10 h-10 text-green-600 group-hover:text-white transition-colors" />
+                        <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-500 transition-colors">
+                                <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-green-600 group-hover:text-white transition-colors" />
                             </div>
-                            
+
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1 sm:mb-2">
                                     🏢 I'm a Business Owner
                                 </h3>
-                                <p className="text-slate-600">
+                                <p className="text-sm sm:text-base text-slate-600">
                                     I want to purchase products in bulk
                                 </p>
                             </div>
 
-                            <div className="absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="hidden sm:block absolute bottom-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <ArrowRight className="w-6 h-6 text-green-500" />
                             </div>
                         </div>
@@ -169,10 +167,10 @@ function ChooseUserTypeContent() {
                     <button
                         onClick={handleSkip}
                         disabled={loading}
-                        className="text-slate-600 hover:text-slate-900 font-medium transition-colors disabled:opacity-50 underline"
+                        className="text-sm sm:text-base text-slate-600 hover:text-slate-900 font-medium transition-colors disabled:opacity-50 underline"
                     >
-                        {currentUserType 
-                            ? "← Go Back" 
+                        {currentUserType
+                            ? "← Go Back"
                             : "⏭️ Skip for now (you can choose later)"
                         }
                     </button>
@@ -181,9 +179,9 @@ function ChooseUserTypeContent() {
                 {/* Loading Indicator */}
                 {loading && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-lg p-6 flex flex-col items-center space-y-4">
+                        <div className="bg-white rounded-lg p-6 flex flex-col items-center space-y-4 mx-4">
                             <Loader2 className="w-10 h-10 animate-spin text-[#B00000]" />
-                            <p className="text-slate-700 font-medium">
+                            <p className="text-slate-700 font-medium text-sm sm:text-base">
                                 Setting up your account...
                             </p>
                         </div>

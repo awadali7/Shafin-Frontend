@@ -588,8 +588,7 @@ export default function AdminPage() {
 
             if (response.success) {
                 setKycSuccess(
-                    `KYC ${
-                        kycAction === "verify" ? "verified" : "rejected"
+                    `KYC ${kycAction === "verify" ? "verified" : "rejected"
                     } successfully!`
                 );
                 // Refresh KYC list and close modal after 1.5 seconds
@@ -675,8 +674,7 @@ export default function AdminPage() {
 
             if (response.success) {
                 setProductKycSuccess(
-                    `Product KYC ${
-                        productKycAction === "verify" ? "verified" : "rejected"
+                    `Product KYC ${productKycAction === "verify" ? "verified" : "rejected"
                     } successfully!`
                 );
                 // Refresh Product KYC list and close modal after 1.5 seconds
@@ -692,7 +690,7 @@ export default function AdminPage() {
             } else {
                 setProductKycError(
                     (response as any).message ||
-                        `Failed to ${productKycAction} Product KYC`
+                    `Failed to ${productKycAction} Product KYC`
                 );
             }
         } catch (err: any) {
@@ -1110,10 +1108,10 @@ export default function AdminPage() {
                 // match "content": "..." and extract captured group
                 const contentMatch = content.match(/"content"\s*:\s*"(.*)"/);
                 if (contentMatch && contentMatch[1]) {
-                     // We need to unescape the content
-                     // This is a naive unescape, but better than nothing
-                     content = contentMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
-                     console.log("Sanitized content (Regex fallback):", content);
+                    // We need to unescape the content
+                    // This is a naive unescape, but better than nothing
+                    content = contentMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+                    console.log("Sanitized content (Regex fallback):", content);
                 }
             }
         }
@@ -1694,8 +1692,8 @@ export default function AdminPage() {
                         const maxOrderIndex =
                             videos.length > 0
                                 ? Math.max(
-                                      ...videos.map((v) => v.order_index || 0)
-                                  )
+                                    ...videos.map((v) => v.order_index || 0)
+                                )
                                 : -1;
                         const nextOrderIndex = maxOrderIndex + 1;
 
@@ -1739,7 +1737,7 @@ export default function AdminPage() {
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
             <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <h1 className="text-3xl font-bold text-slate-900">
                         Admin Dashboard
                     </h1>
@@ -2124,12 +2122,11 @@ export default function AdminPage() {
                                                     {userToDelete.email}
                                                 </p>
                                                 <span
-                                                    className={`mt-1 inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${
-                                                        userToDelete.role ===
-                                                        "admin"
+                                                    className={`mt-1 inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${userToDelete.role ===
+                                                            "admin"
                                                             ? "bg-purple-100 text-purple-800"
                                                             : "bg-gray-100 text-gray-800"
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {userToDelete.role ||
                                                         "user"}
@@ -2269,68 +2266,68 @@ export default function AdminPage() {
                                                 </div>
                                                 {loginDetails.user
                                                     .last_login_at && (
-                                                    <>
-                                                        <div>
-                                                            <p className="text-sm text-gray-600">
-                                                                Last Login
-                                                            </p>
-                                                            <p className="font-medium text-slate-900">
-                                                                {formatDate(
-                                                                    loginDetails
-                                                                        .user
-                                                                        .last_login_at
-                                                                )}
-                                                            </p>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm text-gray-600">
-                                                                Last Login IP
-                                                            </p>
-                                                            <p className="font-medium text-slate-900">
-                                                                {
-                                                                    loginDetails
-                                                                        .user
-                                                                        .last_login_ip
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                        {loginDetails.user
-                                                            .last_login_device && (
-                                                            <div className="col-span-2">
-                                                                <p className="text-sm text-gray-600 mb-2">
+                                                        <>
+                                                            <div>
+                                                                <p className="text-sm text-gray-600">
                                                                     Last Login
-                                                                    Device
                                                                 </p>
-                                                                <div className="flex items-center space-x-4">
-                                                                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                                                                        {
-                                                                            loginDetails
-                                                                                .user
-                                                                                .last_login_device
-                                                                                .deviceType
-                                                                        }
-                                                                    </span>
-                                                                    <span className="text-sm text-gray-700">
-                                                                        {
-                                                                            loginDetails
-                                                                                .user
-                                                                                .last_login_device
-                                                                                .browser
-                                                                        }
-                                                                    </span>
-                                                                    <span className="text-sm text-gray-700">
-                                                                        {
-                                                                            loginDetails
-                                                                                .user
-                                                                                .last_login_device
-                                                                                .os
-                                                                        }
-                                                                    </span>
-                                                                </div>
+                                                                <p className="font-medium text-slate-900">
+                                                                    {formatDate(
+                                                                        loginDetails
+                                                                            .user
+                                                                            .last_login_at
+                                                                    )}
+                                                                </p>
                                                             </div>
-                                                        )}
-                                                    </>
-                                                )}
+                                                            <div>
+                                                                <p className="text-sm text-gray-600">
+                                                                    Last Login IP
+                                                                </p>
+                                                                <p className="font-medium text-slate-900">
+                                                                    {
+                                                                        loginDetails
+                                                                            .user
+                                                                            .last_login_ip
+                                                                    }
+                                                                </p>
+                                                            </div>
+                                                            {loginDetails.user
+                                                                .last_login_device && (
+                                                                    <div className="col-span-2">
+                                                                        <p className="text-sm text-gray-600 mb-2">
+                                                                            Last Login
+                                                                            Device
+                                                                        </p>
+                                                                        <div className="flex items-center space-x-4">
+                                                                            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                                                                                {
+                                                                                    loginDetails
+                                                                                        .user
+                                                                                        .last_login_device
+                                                                                        .deviceType
+                                                                                }
+                                                                            </span>
+                                                                            <span className="text-sm text-gray-700">
+                                                                                {
+                                                                                    loginDetails
+                                                                                        .user
+                                                                                        .last_login_device
+                                                                                        .browser
+                                                                                }
+                                                                            </span>
+                                                                            <span className="text-sm text-gray-700">
+                                                                                {
+                                                                                    loginDetails
+                                                                                        .user
+                                                                                        .last_login_device
+                                                                                        .os
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                        </>
+                                                    )}
                                             </div>
                                         </div>
 
@@ -2362,15 +2359,15 @@ export default function AdminPage() {
                                             </h3>
                                             <div className="space-y-3">
                                                 {loginDetails.sessions.length >
-                                                0 ? (
+                                                    0 ? (
                                                     loginDetails.sessions.map(
                                                         (session) => {
                                                             const deviceInfo =
                                                                 typeof session.device_info ===
-                                                                "string"
+                                                                    "string"
                                                                     ? JSON.parse(
-                                                                          session.device_info
-                                                                      )
+                                                                        session.device_info
+                                                                    )
                                                                     : session.device_info;
                                                             const isActive =
                                                                 session.is_active &&
@@ -2383,30 +2380,28 @@ export default function AdminPage() {
                                                                     key={
                                                                         session.id
                                                                     }
-                                                                    className={`border rounded-lg p-4 ${
-                                                                        isActive
+                                                                    className={`border rounded-lg p-4 ${isActive
                                                                             ? "border-green-200 bg-green-50"
                                                                             : "border-gray-200 bg-gray-50"
-                                                                    }`}
+                                                                        }`}
                                                                 >
                                                                     <div className="flex items-start justify-between">
                                                                         <div className="flex-1">
                                                                             <div className="flex items-center space-x-3 mb-2">
                                                                                 {deviceInfo.deviceType ===
-                                                                                "mobile" ? (
+                                                                                    "mobile" ? (
                                                                                     <Smartphone className="w-5 h-5 text-gray-600" />
                                                                                 ) : deviceInfo.deviceType ===
-                                                                                  "tablet" ? (
+                                                                                    "tablet" ? (
                                                                                     <Tablet className="w-5 h-5 text-gray-600" />
                                                                                 ) : (
                                                                                     <Monitor className="w-5 h-5 text-gray-600" />
                                                                                 )}
                                                                                 <span
-                                                                                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                                                        isActive
+                                                                                    className={`px-2 py-1 rounded-full text-xs font-medium ${isActive
                                                                                             ? "bg-green-100 text-green-800"
                                                                                             : "bg-gray-100 text-gray-800"
-                                                                                    }`}
+                                                                                        }`}
                                                                                 >
                                                                                     {
                                                                                         deviceInfo.deviceType
@@ -2590,8 +2585,8 @@ export default function AdminPage() {
                                                 slug: editingCourse
                                                     ? courseFormData.slug
                                                     : generateSlug(
-                                                          e.target.value
-                                                      ),
+                                                        e.target.value
+                                                    ),
                                             });
                                         }}
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
@@ -2858,14 +2853,14 @@ export default function AdminPage() {
                                                 <p className="text-sm font-medium text-[#B00000]">
                                                     ₹
                                                     {(typeof courseToDelete.price ===
-                                                    "number"
+                                                        "number"
                                                         ? courseToDelete.price
                                                         : parseFloat(
-                                                              String(
-                                                                  courseToDelete.price ||
-                                                                      "0"
-                                                              )
-                                                          )
+                                                            String(
+                                                                courseToDelete.price ||
+                                                                "0"
+                                                            )
+                                                        )
                                                     ).toFixed(2)}
                                                 </p>
                                             </div>
@@ -3086,7 +3081,7 @@ export default function AdminPage() {
                                                                     Array.from(
                                                                         e.target
                                                                             .files ||
-                                                                            []
+                                                                        []
                                                                     );
                                                                 if (
                                                                     files.length >
@@ -3126,11 +3121,10 @@ export default function AdminPage() {
                                                                                         url,
                                                                                         index
                                                                                     ) =>
-                                                                                        `\n![${
-                                                                                            files[
-                                                                                                index
-                                                                                            ]
-                                                                                                .name
+                                                                                        `\n![${files[
+                                                                                            index
+                                                                                        ]
+                                                                                            .name
                                                                                         }](${encodeURI(
                                                                                             url
                                                                                         )})`
@@ -3168,7 +3162,7 @@ export default function AdminPage() {
                                                                     Array.from(
                                                                         e.target
                                                                             .files ||
-                                                                            []
+                                                                        []
                                                                     );
                                                                 if (
                                                                     files.length >
@@ -3267,15 +3261,15 @@ export default function AdminPage() {
                                         </div>
                                         {(uploadingImage ||
                                             uploadingDocument) && (
-                                            <div className="mt-2 text-sm text-blue-600 flex items-center space-x-2">
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                <span>
-                                                    {uploadingImage
-                                                        ? "Uploading image..."
-                                                        : "Uploading document..."}
-                                                </span>
-                                            </div>
-                                        )}
+                                                <div className="mt-2 text-sm text-blue-600 flex items-center space-x-2">
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    <span>
+                                                        {uploadingImage
+                                                            ? "Uploading image..."
+                                                            : "Uploading document..."}
+                                                    </span>
+                                                </div>
+                                            )}
                                     </div>
                                     <p className="mt-2 text-xs text-gray-500">
                                         Write your blog post content using
@@ -3589,11 +3583,10 @@ export default function AdminPage() {
                                                                 ) || 0,
                                                         })
                                                     }
-                                                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${
-                                                        !editingVideo
+                                                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${!editingVideo
                                                             ? "bg-gray-50 cursor-not-allowed"
                                                             : ""
-                                                    }`}
+                                                        }`}
                                                     placeholder="Auto-generated"
                                                     readOnly={!editingVideo}
                                                 />
@@ -3760,7 +3753,7 @@ export default function AdminPage() {
                                                 {/* Existing PDFs from Database */}
                                                 {videoFormData.pdfs &&
                                                     videoFormData.pdfs.length >
-                                                        0 && (
+                                                    0 && (
                                                         <div className="mt-3 space-y-2">
                                                             <p className="text-xs font-medium text-gray-700">
                                                                 Existing PDFs (
@@ -4359,12 +4352,12 @@ export default function AdminPage() {
                                                         value={
                                                             accessStartDate
                                                                 ? new Date(
-                                                                      accessStartDate
-                                                                  )
-                                                                      .toISOString()
-                                                                      .split(
-                                                                          "T"
-                                                                      )[0]
+                                                                    accessStartDate
+                                                                )
+                                                                    .toISOString()
+                                                                    .split(
+                                                                        "T"
+                                                                    )[0]
                                                                 : ""
                                                         }
                                                         onChange={(e) => {
@@ -4375,7 +4368,7 @@ export default function AdminPage() {
                                                                 const isoDate =
                                                                     new Date(
                                                                         dateValue +
-                                                                            "T00:00:00.000Z"
+                                                                        "T00:00:00.000Z"
                                                                     ).toISOString();
                                                                 setAccessStartDate(
                                                                     isoDate
@@ -4395,12 +4388,12 @@ export default function AdminPage() {
                                                         value={
                                                             accessEndDate
                                                                 ? new Date(
-                                                                      accessEndDate
-                                                                  )
-                                                                      .toISOString()
-                                                                      .split(
-                                                                          "T"
-                                                                      )[0]
+                                                                    accessEndDate
+                                                                )
+                                                                    .toISOString()
+                                                                    .split(
+                                                                        "T"
+                                                                    )[0]
                                                                 : ""
                                                         }
                                                         onChange={(e) => {
@@ -4411,7 +4404,7 @@ export default function AdminPage() {
                                                                 const isoDate =
                                                                     new Date(
                                                                         dateValue +
-                                                                            "T23:59:59.999Z"
+                                                                        "T23:59:59.999Z"
                                                                     ).toISOString();
                                                                 setAccessEndDate(
                                                                     isoDate
@@ -4421,12 +4414,12 @@ export default function AdminPage() {
                                                         min={
                                                             accessStartDate
                                                                 ? new Date(
-                                                                      accessStartDate
-                                                                  )
-                                                                      .toISOString()
-                                                                      .split(
-                                                                          "T"
-                                                                      )[0]
+                                                                    accessStartDate
+                                                                )
+                                                                    .toISOString()
+                                                                    .split(
+                                                                        "T"
+                                                                    )[0]
                                                                 : ""
                                                         }
                                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"

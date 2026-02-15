@@ -41,6 +41,7 @@ type ProductFormState = {
     requires_kyc: boolean;
     cover_image: File | null;
     digital_file: File | null;
+    product_detail_pdf: File | null;
     digital_file_name_input?: string;
     images: ImageFile[];
     videos: VideoFile[];
@@ -75,6 +76,7 @@ const defaultForm: ProductFormState = {
     requires_kyc: false,
     cover_image: null,
     digital_file: null,
+    product_detail_pdf: null,
     digital_file_name_input: "",
     images: [],
     videos: [],
@@ -114,7 +116,7 @@ export default function NewProductPage() {
             const resp = await productsApi.adminListAll();
             const products = resp.data || [];
             const categoryHierarchies: string[][] = [];
-            
+
             products.forEach((p: any) => {
                 if (p.categories && Array.isArray(p.categories)) {
                     // Product has category hierarchy
@@ -127,7 +129,7 @@ export default function NewProductPage() {
                     categoryHierarchies.push([p.category]);
                 }
             });
-            
+
             setExistingCategories(categoryHierarchies);
         } catch (e) {
             console.error("Failed to fetch categories:", e);
@@ -147,7 +149,7 @@ export default function NewProductPage() {
 
     const onCropComplete = async (croppedBlob: Blob) => {
         const croppedFile = new File([croppedBlob], 'cropped-image.jpg', { type: 'image/jpeg' });
-        
+
         if (cropTarget?.type === 'cover') {
             setForm(prev => ({ ...prev, cover_image: croppedFile }));
         } else if (cropTarget?.type === 'gallery' && cropTarget.index !== undefined) {
@@ -156,7 +158,7 @@ export default function NewProductPage() {
             newImages[cropTarget.index] = { file: croppedFile, preview };
             setForm(prev => ({ ...prev, images: newImages }));
         }
-        
+
         setCropModalOpen(false);
         setCropImageSrc(null);
         setCropTarget(null);
@@ -171,9 +173,9 @@ export default function NewProductPage() {
     // Get available options for each category level based on parent selections
     const getCategoryOptions = (level: number): string[] => {
         if (existingCategories.length === 0) return [];
-        
+
         const options = new Set<string>();
-        
+
         existingCategories.forEach((hierarchy) => {
             // Check if parent levels match current form values
             let matches = true;
@@ -183,13 +185,13 @@ export default function NewProductPage() {
                     break;
                 }
             }
-            
+
             // If parent levels match and this level exists, add it
             if (matches && hierarchy[level]) {
                 options.add(hierarchy[level]);
             }
         });
-        
+
         return Array.from(options).sort();
     };
 
@@ -208,7 +210,7 @@ export default function NewProductPage() {
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!form.name.trim() || !form.slug.trim() || !form.categories[0]?.trim()) {
             toast.error("Validation Error", {
                 description: "Please fill in Name, Slug, and at least Main Category"
@@ -225,10 +227,10 @@ export default function NewProductPage() {
 
         setIsSubmitting(true);
         const toastId = toast.loading("Creating product...");
-        
+
         try {
             const filteredCategories = form.categories.filter(c => c && c.trim());
-            
+
             const validPricing = form.quantity_pricing
                 .filter(tier => tier.min_qty !== "" && tier.price_per_item !== "")
                 .map(tier => ({
@@ -240,9 +242,9 @@ export default function NewProductPage() {
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
 
             const images = form.images.map(img => img.file).filter((f): f is File => f !== null);
-            
+
             // Filter valid videos (must have title and url)
-            const validVideos = form.videos.filter(vid => 
+            const validVideos = form.videos.filter(vid =>
                 vid.title.trim() && vid.url.trim()
             );
 
@@ -264,6 +266,7 @@ export default function NewProductPage() {
                 requires_kyc: form.requires_kyc,
                 cover_image: form.cover_image,
                 digital_file: form.product_type === "digital" ? form.digital_file : undefined,
+                product_detail_pdf: form.product_detail_pdf,
                 digital_file_name: form.digital_file_name_input?.trim() || undefined,
                 images: images.length > 0 ? images : undefined,
                 videos: validVideos.length > 0 ? validVideos : undefined,
@@ -274,7 +277,7 @@ export default function NewProductPage() {
                 description: `${form.name} has been successfully created.`,
                 id: toastId
             });
-            
+
             router.push("/admin?tab=products");
         } catch (error: any) {
             toast.error("Failed to Create Product", {
@@ -388,7 +391,7 @@ export default function NewProductPage() {
                             ].map(({ index, label, placeholder }) => {
                                 const availableOptions = getCategoryOptions(index);
                                 const currentValue = form.categories[index] || "";
-                                
+
                                 return (
                                     <div key={index} className="relative">
                                         <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -422,8 +425,8 @@ export default function NewProductPage() {
                                         {showCategoryDropdown === index && availableOptions.length > 0 && (
                                             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                                                 {availableOptions
-                                                    .filter(opt => 
-                                                        !currentValue || 
+                                                    .filter(opt =>
+                                                        !currentValue ||
                                                         opt.toLowerCase().includes(currentValue.toLowerCase())
                                                     )
                                                     .map((opt) => (
@@ -437,10 +440,10 @@ export default function NewProductPage() {
                                                                 for (let i = index + 1; i < 4; i++) {
                                                                     newCategories[i] = "";
                                                                 }
-                                                                setForm((p) => ({ 
-                                                                    ...p, 
-                                                                    categories: newCategories, 
-                                                                    category: newCategories[0] || "" 
+                                                                setForm((p) => ({
+                                                                    ...p,
+                                                                    categories: newCategories,
+                                                                    category: newCategories[0] || ""
                                                                 }));
                                                                 setShowCategoryDropdown(null);
                                                             }}
@@ -489,7 +492,7 @@ export default function NewProductPage() {
                         <h2 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-gray-200">
                             Multi-language Descriptions
                         </h2>
-                        
+
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -598,7 +601,7 @@ export default function NewProductPage() {
                             <p className="text-xs text-gray-600 mb-3">
                                 Set price per item and courier charge based on quantity ranges.
                             </p>
-                            
+
                             <div className="space-y-3">
                                 {form.quantity_pricing.map((tier, index) => {
                                     const minQty = Number(tier.min_qty) || 0;
@@ -606,11 +609,11 @@ export default function NewProductPage() {
                                     const courierCharge = Number(tier.courier_charge) || 0;
                                     const savingsPerItem = form.price > 0 && pricePerItem > 0 ? form.price - pricePerItem : 0;
                                     const savingsPercent = form.price > 0 ? Math.round((savingsPerItem / form.price) * 100) : 0;
-                                    
+
                                     // Example calculation for display (e.g., 2 items)
                                     const exampleQty = minQty > 0 ? Math.max(minQty, 2) : 2;
                                     const exampleTotal = pricePerItem > 0 ? (pricePerItem * exampleQty) + courierCharge : 0;
-                                    
+
                                     return (
                                         <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -727,7 +730,7 @@ export default function NewProductPage() {
                                         </div>
                                     );
                                 })}
-                                
+
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -764,8 +767,8 @@ export default function NewProductPage() {
                             </label>
                             {form.cover_image && (
                                 <div className="mb-3 relative inline-block">
-                                    <img 
-                                        src={URL.createObjectURL(form.cover_image)} 
+                                    <img
+                                        src={URL.createObjectURL(form.cover_image)}
                                         alt="Cover preview"
                                         className="w-40 h-24 object-cover rounded border border-gray-200"
                                     />
@@ -797,8 +800,8 @@ export default function NewProductPage() {
                                 {form.images.map((img, index) => (
                                     <div key={index} className="flex gap-2 items-center">
                                         {(img.preview || (img.file && URL.createObjectURL(img.file))) && (
-                                            <img 
-                                                src={img.preview || (img.file ? URL.createObjectURL(img.file) : "")} 
+                                            <img
+                                                src={img.preview || (img.file ? URL.createObjectURL(img.file) : "")}
                                                 alt={`Preview ${index + 1}`}
                                                 className="w-16 h-16 object-cover rounded border border-gray-200"
                                             />
@@ -906,12 +909,12 @@ export default function NewProductPage() {
                             <h3 className="text-sm font-medium text-blue-900 mb-2">
                                 Digital File Source
                             </h3>
-                            
+
                             <div className="flex items-center space-x-4 mb-4">
                                 <label className="flex items-center space-x-2 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="digital_source" 
+                                    <input
+                                        type="radio"
+                                        name="digital_source"
                                         checked={!form.digital_file_name_input}
                                         onChange={() => setForm(p => ({ ...p, digital_file_name_input: "" }))}
                                         className="text-[#B00000] focus:ring-[#B00000]"
@@ -919,9 +922,9 @@ export default function NewProductPage() {
                                     <span className="text-sm text-gray-700">Upload New File</span>
                                 </label>
                                 <label className="flex items-center space-x-2 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="digital_source" 
+                                    <input
+                                        type="radio"
+                                        name="digital_source"
                                         checked={!!form.digital_file_name_input}
                                         onChange={() => setForm(p => ({ ...p, digital_file_name_input: " " }))}
                                         className="text-[#B00000] focus:ring-[#B00000]"
@@ -975,6 +978,33 @@ export default function NewProductPage() {
                             )}
                         </div>
                     )}
+
+
+                    {/* Product Documents Section */}
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-gray-200">
+                            Documents
+                        </h2>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Product Details PDF (Brochure/Spec Sheet)
+                            </label>
+                            <input
+                                type="file"
+                                accept="application/pdf"
+                                onChange={(e) =>
+                                    setForm((prev) => ({
+                                        ...prev,
+                                        product_detail_pdf: e.target.files?.[0] || null,
+                                    }))
+                                }
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Upload a PDF containing product details, specifications, or brochure.
+                            </p>
+                        </div>
+                    </div>
 
                     {/* Options Section */}
                     <div>

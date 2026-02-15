@@ -4,6 +4,7 @@ import type { ApiResponse, Product, ProductType } from "./types";
 export interface ListProductsParams {
     q?: string;
     category?: string;
+    categoryPath?: string[]; // Hierarchical category path
     type?: ProductType;
     page?: number;
     limit?: number;
@@ -29,6 +30,12 @@ export const productsApi = {
         const qs = new URLSearchParams();
         if (params?.q) qs.set("q", params.q);
         if (params?.category) qs.set("category", params.category);
+        // Add categoryPath as repeated query params
+        if (params?.categoryPath && params.categoryPath.length > 0) {
+            params.categoryPath.forEach(cat => {
+                qs.append("categoryPath", cat);
+            });
+        }
         if (params?.type) qs.set("type", params.type);
         if (params?.page) qs.set("page", params.page.toString());
         if (params?.limit) qs.set("limit", params.limit.toString());
@@ -69,6 +76,7 @@ export const productsApi = {
         requires_kyc?: boolean;
         cover_image?: File | null;
         digital_file?: File | null;
+        product_detail_pdf?: File | null;
         images?: File[];
         videos?: Array<{ title: string; url: string; thumbnail?: string }>;
         digital_file_name?: string; // For linking existing files
@@ -105,25 +113,26 @@ export const productsApi = {
         }
         if (data.cover_image) form.append("cover_image", data.cover_image);
         if (data.digital_file) form.append("digital_file", data.digital_file);
+        if (data.product_detail_pdf) form.append("product_detail_pdf", data.product_detail_pdf);
         if (data.digital_file_name) form.append("digital_file_name", data.digital_file_name);
-        
+
         // Append image files directly
         if (data.images && data.images.length > 0) {
             data.images.forEach((file) => {
                 if (file) form.append("images", file);
             });
         }
-        
+
         // Append videos as JSON
         if (data.videos && data.videos.length > 0) {
             form.append("videos", JSON.stringify(data.videos));
         }
-        
+
         // Append quantity pricing as JSON string
         if (data.quantity_pricing && data.quantity_pricing.length > 0) {
             form.append("quantity_pricing", JSON.stringify(data.quantity_pricing));
         }
-        
+
         return apiClient.post<Product>("/products/admin", form);
     },
 
@@ -150,6 +159,7 @@ export const productsApi = {
             requires_kyc: boolean;
             cover_image: File | null;
             digital_file: File | null;
+            product_detail_pdf: File | null;
             images?: File[];
             videos?: Array<{ title: string; url: string; thumbnail?: string }>;
             digital_file_name?: string; // For linking existing files
@@ -176,27 +186,30 @@ export const productsApi = {
         if (data.digital_file instanceof File) {
             form.append("digital_file", data.digital_file);
         }
-        if (data.digital_file_name) {
-             form.append("digital_file_name", data.digital_file_name);
+        if (data.product_detail_pdf instanceof File) {
+            form.append("product_detail_pdf", data.product_detail_pdf);
         }
-        
+        if (data.digital_file_name) {
+            form.append("digital_file_name", data.digital_file_name);
+        }
+
         // Append image files directly
         if (data.images && data.images.length > 0) {
             data.images.forEach((file) => {
                 if (file) form.append("images", file);
             });
         }
-        
+
         // Append videos as JSON
         if (data.videos && data.videos.length > 0) {
             form.append("videos", JSON.stringify(data.videos));
         }
-        
+
         // Append quantity pricing as JSON string
         if (data.quantity_pricing && data.quantity_pricing.length > 0) {
             form.append("quantity_pricing", JSON.stringify(data.quantity_pricing));
         }
-        
+
         return apiClient.put<Product>(`/products/admin/${id}`, form);
     },
 

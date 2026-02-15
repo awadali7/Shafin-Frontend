@@ -18,6 +18,7 @@ import {
     Link2,
     Share2,
     Check,
+    FileText,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { productsApi } from "@/lib/api/products";
@@ -51,6 +52,7 @@ type ShopProductDetails = {
     english_description?: string;
     malayalam_description?: string;
     hindi_description?: string;
+    product_detail_pdf?: string;
     digitalFile?: {
         format?: DigitalFileFormat;
         filename?: string;
@@ -71,8 +73,8 @@ function mapApiProductToDetails(p: Product): ShopProductDetails {
         p.images && p.images.length > 0
             ? p.images
             : p.cover_image
-            ? [p.cover_image]
-            : [FALLBACK_IMAGE];
+                ? [p.cover_image]
+                : [FALLBACK_IMAGE];
 
     return {
         id: p.id,
@@ -102,12 +104,13 @@ function mapApiProductToDetails(p: Product): ShopProductDetails {
         english_description: p.english_description,
         malayalam_description: p.malayalam_description,
         hindi_description: p.hindi_description,
+        product_detail_pdf: p.product_detail_pdf,
         digitalFile:
             p.type === "digital"
                 ? {
-                      format: p.digital_file_format || undefined,
-                      filename: p.digital_file_name || undefined,
-                  }
+                    format: p.digital_file_format || undefined,
+                    filename: p.digital_file_name || undefined,
+                }
                 : undefined,
         quantity_pricing: p.tiered_pricing || p.quantity_pricing || undefined,
     };
@@ -200,8 +203,7 @@ export default function ProductDetailPage() {
         if (product.type === "digital") {
             return [
                 "Instant download after payment",
-                `Format: ${
-                    product.digitalFile?.format?.toUpperCase() || "DIGITAL"
+                `Format: ${product.digitalFile?.format?.toUpperCase() || "DIGITAL"
                 }`,
                 product.digitalFile?.filename
                     ? `File: ${product.digitalFile.filename}`
@@ -264,7 +266,7 @@ export default function ProductDetailPage() {
     const handleShare = async () => {
         const url = window.location.href;
         const text = `Check out ${product?.name} on our shop!`;
-        
+
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -383,7 +385,7 @@ export default function ProductDetailPage() {
                 {/* Product Images */}
                 <div className="space-y-3">
                     {/* Main Image - Click to open gallery */}
-                    <div 
+                    <div
                         className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:border-[#B00000] transition-colors"
                         onClick={() => setIsGalleryOpen(true)}
                     >
@@ -404,11 +406,10 @@ export default function ProductDetailPage() {
                                 <button
                                     key={index}
                                     onClick={() => setSelectedImageIndex(index)}
-                                    className={`relative border-2 rounded-lg overflow-hidden aspect-square ${
-                                        selectedImageIndex === index
-                                            ? "border-[#B00000]"
-                                            : "border-gray-200 hover:border-gray-300"
-                                    }`}
+                                    className={`relative border-2 rounded-lg overflow-hidden aspect-square ${selectedImageIndex === index
+                                        ? "border-[#B00000]"
+                                        : "border-gray-200 hover:border-gray-300"
+                                        }`}
                                 >
                                     <img
                                         src={img}
@@ -453,7 +454,7 @@ export default function ProductDetailPage() {
                             <h1 className="text-2xl font-bold text-slate-900">
                                 {product.name}
                             </h1>
-                            
+
                             {/* Share & Copy Link Buttons */}
                             <div className="flex items-center gap-2 shrink-0">
                                 <button
@@ -496,11 +497,10 @@ export default function ProductDetailPage() {
 
                             {/* Product Type Badge */}
                             <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                                    product.type === "digital"
-                                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                }`}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${product.type === "digital"
+                                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    }`}
                             >
                                 {product.type === "digital" ? (
                                     <Download className="w-3 h-3" />
@@ -508,10 +508,9 @@ export default function ProductDetailPage() {
                                     <Package className="w-3 h-3" />
                                 )}
                                 {product.type === "digital"
-                                    ? `${
-                                          product.digitalFile?.format?.toUpperCase() ||
-                                          "DIGITAL"
-                                      }`
+                                    ? `${product.digitalFile?.format?.toUpperCase() ||
+                                    "DIGITAL"
+                                    }`
                                     : "PHYSICAL"}
                             </span>
                         </div>
@@ -545,13 +544,12 @@ export default function ProductDetailPage() {
                                     </div>
                                     <p className="text-xs text-gray-600 mt-1">
                                         {product.type === "digital"
-                                            ? `Instant download (${
-                                                  product.digitalFile?.format?.toUpperCase() ||
-                                                  "DIGITAL"
-                                              })`
+                                            ? `Instant download (${product.digitalFile?.format?.toUpperCase() ||
+                                            "DIGITAL"
+                                            })`
                                             : product.inStock
-                                            ? "In Stock"
-                                            : "Out of Stock"}
+                                                ? "In Stock"
+                                                : "Out of Stock"}
                                     </p>
                                 </>
                             )}
@@ -581,10 +579,10 @@ export default function ProductDetailPage() {
                                                 const savingsPercent =
                                                     product.price > 0
                                                         ? (
-                                                              (savingsPerItem /
-                                                                  product.price) *
-                                                              100
-                                                          ).toFixed(0)
+                                                            (savingsPerItem /
+                                                                product.price) *
+                                                            100
+                                                        ).toFixed(0)
                                                         : "0";
                                                 const rangeText = tier.max_qty
                                                     ? `${tier.min_qty}-${tier.max_qty}`
@@ -607,14 +605,14 @@ export default function ProductDetailPage() {
                                                             </span>
                                                             {savingsPerItem >
                                                                 0 && (
-                                                                <span className="text-xs text-green-600">
-                                                                    (
-                                                                    {
-                                                                        savingsPercent
-                                                                    }
-                                                                    % off)
-                                                                </span>
-                                                            )}
+                                                                    <span className="text-xs text-green-600">
+                                                                        (
+                                                                        {
+                                                                            savingsPercent
+                                                                        }
+                                                                        % off)
+                                                                    </span>
+                                                                )}
                                                         </div>
                                                     </div>
                                                 );
@@ -633,11 +631,10 @@ export default function ProductDetailPage() {
                                         {product.english_description && (
                                             <button
                                                 onClick={() => setSelectedLanguage('en')}
-                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                                                    selectedLanguage === 'en'
-                                                        ? 'bg-[#B00000] text-white'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
+                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${selectedLanguage === 'en'
+                                                    ? 'bg-[#B00000] text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    }`}
                                             >
                                                 English
                                             </button>
@@ -645,11 +642,10 @@ export default function ProductDetailPage() {
                                         {product.malayalam_description && (
                                             <button
                                                 onClick={() => setSelectedLanguage('ml')}
-                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                                                    selectedLanguage === 'ml'
-                                                        ? 'bg-[#B00000] text-white'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
+                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${selectedLanguage === 'ml'
+                                                    ? 'bg-[#B00000] text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    }`}
                                             >
                                                 മലയാളം
                                             </button>
@@ -657,11 +653,10 @@ export default function ProductDetailPage() {
                                         {product.hindi_description && (
                                             <button
                                                 onClick={() => setSelectedLanguage('hi')}
-                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                                                    selectedLanguage === 'hi'
-                                                        ? 'bg-[#B00000] text-white'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                }`}
+                                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${selectedLanguage === 'hi'
+                                                    ? 'bg-[#B00000] text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                    }`}
                                             >
                                                 हिन्दी
                                             </button>
@@ -669,32 +664,32 @@ export default function ProductDetailPage() {
                                     </div>
                                 </div>
                             )}
-                            
+
                             {/* Description Text */}
                             <div className="prose prose-sm max-w-none text-gray-600">
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     rehypePlugins={[rehypeRaw]}
                                     components={{
-                                        h1: ({node, ...props}) => <h1 className="text-xl font-bold mb-2 text-gray-900" {...props} />,
-                                        h2: ({node, ...props}) => <h2 className="text-lg font-bold mb-2 text-gray-900" {...props} />,
-                                        h3: ({node, ...props}) => <h3 className="text-base font-bold mb-1 text-gray-900" {...props} />,
-                                        p: ({node, ...props}) => <p className="mb-2 leading-relaxed" {...props} />,
-                                        ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 space-y-1" {...props} />,
-                                        ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 space-y-1" {...props} />,
-                                        li: ({node, ...props}) => <li className="ml-4" {...props} />,
-                                        strong: ({node, ...props}) => <strong className="font-bold text-gray-900" {...props} />,
-                                        em: ({node, ...props}) => <em className="italic" {...props} />,
-                                        a: ({node, ...props}) => <a className="text-[#B00000] hover:underline" {...props} />,
+                                        h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-2 text-gray-900" {...props} />,
+                                        h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 text-gray-900" {...props} />,
+                                        h3: ({ node, ...props }) => <h3 className="text-base font-bold mb-1 text-gray-900" {...props} />,
+                                        p: ({ node, ...props }) => <p className="mb-2 leading-relaxed" {...props} />,
+                                        ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2 space-y-1" {...props} />,
+                                        ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2 space-y-1" {...props} />,
+                                        li: ({ node, ...props }) => <li className="ml-4" {...props} />,
+                                        strong: ({ node, ...props }) => <strong className="font-bold text-gray-900" {...props} />,
+                                        em: ({ node, ...props }) => <em className="italic" {...props} />,
+                                        a: ({ node, ...props }) => <a className="text-[#B00000] hover:underline" {...props} />,
                                     }}
                                 >
-                                    {selectedLanguage === 'en' && product.english_description 
+                                    {selectedLanguage === 'en' && product.english_description
                                         ? product.english_description
                                         : selectedLanguage === 'ml' && product.malayalam_description
-                                        ? product.malayalam_description
-                                        : selectedLanguage === 'hi' && product.hindi_description
-                                        ? product.hindi_description
-                                        : product.description}
+                                            ? product.malayalam_description
+                                            : selectedLanguage === 'hi' && product.hindi_description
+                                                ? product.hindi_description
+                                                : product.description}
                                 </ReactMarkdown>
                             </div>
                         </div>
@@ -717,7 +712,7 @@ export default function ProductDetailPage() {
                                         className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
                                     >
                                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                                         </svg>
                                         Chat on WhatsApp
                                     </a>
@@ -809,10 +804,10 @@ export default function ProductDetailPage() {
                                         {product.isComingSoon
                                             ? "Coming Soon"
                                             : product.type === "digital"
-                                            ? "Add to Cart"
-                                            : product.inStock
-                                            ? "Add to Cart"
-                                            : "Out of Stock"}
+                                                ? "Add to Cart"
+                                                : product.inStock
+                                                    ? "Add to Cart"
+                                                    : "Out of Stock"}
                                     </span>
                                 </button>
                             </>
@@ -852,6 +847,32 @@ export default function ProductDetailPage() {
                                 )}
                             </div>
                         )}
+
+                        {/* Product Documents - Brochure */}
+                        {product.product_detail_pdf && (
+                            <div className="mt-6 pt-4 border-t border-gray-200">
+                                <h3 className="text-sm font-medium text-gray-900 mb-3">Product Documents</h3>
+                                <a
+                                    href={product.product_detail_pdf}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:border-[#B00000] hover:bg-red-50 transition-all group"
+                                >
+                                    <div className="p-2 bg-white rounded-md border border-gray-200 group-hover:border-red-200">
+                                        <FileText className="w-5 h-5 text-[#B00000]" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-900 group-hover:text-[#B00000]">
+                                            Download Product Brochure
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            PDF Specification Sheet
+                                        </p>
+                                    </div>
+                                    <Download className="w-4 h-4 text-gray-400 ml-auto group-hover:text-[#B00000]" />
+                                </a>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -866,7 +887,7 @@ export default function ProductDetailPage() {
                         {product.videos.map((video, index) => {
                             // Auto-generate YouTube thumbnail from URL
                             const thumbnailUrl = getVideoThumbnail(video.url);
-                            
+
                             return (
                                 <button
                                     key={index}
@@ -922,11 +943,11 @@ export default function ProductDetailPage() {
             {selectedVideo && (
                 <>
                     {/* Backdrop Overlay */}
-                    <div 
+                    <div
                         className="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm"
                         onClick={() => setSelectedVideo(null)}
                     />
-                    
+
                     {/* Modal Content */}
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
                         <div className="relative w-full max-w-4xl bg-white rounded-lg overflow-hidden shadow-2xl pointer-events-auto">
@@ -1003,11 +1024,11 @@ export default function ProductDetailPage() {
             {isGalleryOpen && product.images && (
                 <>
                     {/* Backdrop */}
-                    <div 
+                    <div
                         className="fixed inset-0 z-50 bg-black/90"
                         onClick={() => setIsGalleryOpen(false)}
                     />
-                    
+
                     {/* Gallery Content */}
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         {/* Close Button */}
@@ -1095,11 +1116,10 @@ export default function ProductDetailPage() {
                                                 e.stopPropagation();
                                                 setSelectedImageIndex(index);
                                             }}
-                                            className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                                                selectedImageIndex === index
-                                                    ? "border-[#B00000] scale-110"
-                                                    : "border-white/30 hover:border-white/60"
-                                            }`}
+                                            className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === index
+                                                ? "border-[#B00000] scale-110"
+                                                : "border-white/30 hover:border-white/60"
+                                                }`}
                                         >
                                             <img
                                                 src={img}

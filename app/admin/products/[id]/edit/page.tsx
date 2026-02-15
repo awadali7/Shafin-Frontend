@@ -41,6 +41,8 @@ type ProductFormState = {
     requires_kyc: boolean;
     cover_image: File | null;
     digital_file: File | null;
+    product_detail_pdf: File | null;
+    product_detail_pdf_url?: string | null;
     digital_file_name_input?: string;
     images: ImageFile[];
     videos: VideoFile[];
@@ -75,6 +77,7 @@ const defaultForm: ProductFormState = {
     requires_kyc: false,
     cover_image: null,
     digital_file: null,
+    product_detail_pdf: null,
     digital_file_name_input: "",
     images: [],
     videos: [],
@@ -112,41 +115,41 @@ export default function EditProductPage() {
     useEffect(() => {
         const fetchProduct = async () => {
             if (!productId) return;
-            
+
             try {
                 setLoading(true);
                 const products = await productsApi.adminListAll();
                 const product = products.data?.find((p: any) => p.id === productId);
-                
+
                 if (!product) {
                     alert("Product not found");
                     router.push("/admin");
                     return;
                 }
-                
+
                 // Prepare existing images
                 const existingImages = (product.images || []).map((url: string) => ({
                     file: null,
                     preview: url,
                 }));
-                
+
                 // Prepare existing videos
                 const existingVideos = (product.videos || []).map((v: any) => ({
                     title: v.title || "",
                     url: v.url || "",
                     thumbnail: v.thumbnail || "",
                 }));
-                
+
                 // Prepare categories
-                const productCategories = product.categories && product.categories.length > 0 
-                    ? product.categories 
+                const productCategories = product.categories && product.categories.length > 0
+                    ? product.categories
                     : (product.category ? [product.category] : []);
-                
+
                 const categoriesArray = [...productCategories];
                 while (categoriesArray.length < 4) {
                     categoriesArray.push("");
                 }
-                
+
                 // Prepare quantity pricing
                 const pricingData = product.tiered_pricing || product.quantity_pricing;
                 const quantityPricing = pricingData && Array.isArray(pricingData)
@@ -155,9 +158,9 @@ export default function EditProductPage() {
                         max_qty: qp.max_qty || "",
                         price_per_item: qp.price_per_item || "",
                         courier_charge: qp.courier_charge || ""
-                      }))
+                    }))
                     : [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }];
-                
+
                 setForm({
                     name: product.name,
                     slug: product.slug,
@@ -177,11 +180,13 @@ export default function EditProductPage() {
                     requires_kyc: product.requires_kyc || false,
                     cover_image: null,
                     digital_file: null,
+                    product_detail_pdf: null,
+                    product_detail_pdf_url: product.product_detail_pdf || null,
                     images: existingImages,
                     videos: existingVideos,
                     quantity_pricing: quantityPricing,
                 });
-                
+
                 setSlugManuallyEdited(true);
                 setLoading(false);
             } catch (error) {
@@ -190,7 +195,7 @@ export default function EditProductPage() {
                 router.push("/admin");
             }
         };
-        
+
         fetchProduct();
     }, [productId, router]);
 
@@ -203,7 +208,7 @@ export default function EditProductPage() {
             const resp = await productsApi.adminListAll();
             const products = resp.data || [];
             const categoryHierarchies: string[][] = [];
-            
+
             products.forEach((p: any) => {
                 if (p.categories && Array.isArray(p.categories)) {
                     // Product has category hierarchy
@@ -216,7 +221,7 @@ export default function EditProductPage() {
                     categoryHierarchies.push([p.category]);
                 }
             });
-            
+
             setExistingCategories(categoryHierarchies);
         } catch (e) {
             console.error("Failed to fetch categories:", e);
@@ -236,7 +241,7 @@ export default function EditProductPage() {
 
     const onCropComplete = async (croppedBlob: Blob) => {
         const croppedFile = new File([croppedBlob], 'cropped-image.jpg', { type: 'image/jpeg' });
-        
+
         if (cropTarget?.type === 'cover') {
             setForm(prev => ({ ...prev, cover_image: croppedFile }));
         } else if (cropTarget?.type === 'gallery' && cropTarget.index !== undefined) {
@@ -245,7 +250,7 @@ export default function EditProductPage() {
             newImages[cropTarget.index] = { file: croppedFile, preview };
             setForm(prev => ({ ...prev, images: newImages }));
         }
-        
+
         setCropModalOpen(false);
         setCropImageSrc(null);
         setCropTarget(null);
@@ -260,9 +265,9 @@ export default function EditProductPage() {
     // Get available options for each category level based on parent selections
     const getCategoryOptions = (level: number): string[] => {
         if (existingCategories.length === 0) return [];
-        
+
         const options = new Set<string>();
-        
+
         existingCategories.forEach((hierarchy) => {
             // Check if parent levels match current form values
             let matches = true;
@@ -272,13 +277,13 @@ export default function EditProductPage() {
                     break;
                 }
             }
-            
+
             // If parent levels match and this level exists, add it
             if (matches && hierarchy[level]) {
                 options.add(hierarchy[level]);
             }
         });
-        
+
         return Array.from(options).sort();
     };
 
@@ -297,7 +302,7 @@ export default function EditProductPage() {
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!form.name.trim() || !form.slug.trim() || !form.categories[0]?.trim()) {
             toast.error("Validation Error", {
                 description: "Please fill in Name, Slug, and at least Main Category"
@@ -314,10 +319,10 @@ export default function EditProductPage() {
 
         setIsSubmitting(true);
         const toastId = toast.loading("Updating product...");
-        
+
         try {
             const filteredCategories = form.categories.filter(c => c && c.trim());
-            
+
             const validPricing = form.quantity_pricing
                 .filter(tier => tier.min_qty !== "" && tier.price_per_item !== "")
                 .map(tier => ({
@@ -329,9 +334,9 @@ export default function EditProductPage() {
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
 
             const images = form.images.map(img => img.file).filter((f): f is File => f !== null);
-            
+
             // Filter valid videos (must have title and url)
-            const validVideos = form.videos.filter(vid => 
+            const validVideos = form.videos.filter(vid =>
                 vid.title.trim() && vid.url.trim()
             );
 
@@ -353,6 +358,7 @@ export default function EditProductPage() {
                 requires_kyc: form.requires_kyc,
                 cover_image: form.cover_image || undefined,
                 digital_file: form.product_type === "digital" ? form.digital_file : undefined,
+                product_detail_pdf: form.product_detail_pdf,
                 digital_file_name: form.digital_file_name_input?.trim() || undefined,
                 images: images.length > 0 ? images : undefined,
                 videos: validVideos.length > 0 ? validVideos : undefined,
@@ -363,7 +369,7 @@ export default function EditProductPage() {
                 description: `${form.name} has been successfully updated.`,
                 id: toastId
             });
-            
+
             router.push("/admin?tab=products");
         } catch (error: any) {
             toast.error("Failed to Update Product", {
@@ -477,7 +483,7 @@ export default function EditProductPage() {
                             ].map(({ index, label, placeholder }) => {
                                 const availableOptions = getCategoryOptions(index);
                                 const currentValue = form.categories[index] || "";
-                                
+
                                 return (
                                     <div key={index} className="relative">
                                         <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -511,8 +517,8 @@ export default function EditProductPage() {
                                         {showCategoryDropdown === index && availableOptions.length > 0 && (
                                             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                                                 {availableOptions
-                                                    .filter(opt => 
-                                                        !currentValue || 
+                                                    .filter(opt =>
+                                                        !currentValue ||
                                                         opt.toLowerCase().includes(currentValue.toLowerCase())
                                                     )
                                                     .map((opt) => (
@@ -526,10 +532,10 @@ export default function EditProductPage() {
                                                                 for (let i = index + 1; i < 4; i++) {
                                                                     newCategories[i] = "";
                                                                 }
-                                                                setForm((p) => ({ 
-                                                                    ...p, 
-                                                                    categories: newCategories, 
-                                                                    category: newCategories[0] || "" 
+                                                                setForm((p) => ({
+                                                                    ...p,
+                                                                    categories: newCategories,
+                                                                    category: newCategories[0] || ""
                                                                 }));
                                                                 setShowCategoryDropdown(null);
                                                             }}
@@ -578,7 +584,7 @@ export default function EditProductPage() {
                         <h2 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-gray-200">
                             Multi-language Descriptions
                         </h2>
-                        
+
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -684,7 +690,7 @@ export default function EditProductPage() {
                             <p className="text-xs text-gray-600 mb-3">
                                 Set price per item and courier charge based on quantity ranges.
                             </p>
-                            
+
                             <div className="space-y-3">
                                 {form.quantity_pricing.map((tier, index) => {
                                     const minQty = Number(tier.min_qty) || 0;
@@ -692,11 +698,11 @@ export default function EditProductPage() {
                                     const courierCharge = Number(tier.courier_charge) || 0;
                                     const savingsPerItem = form.price > 0 && pricePerItem > 0 ? form.price - pricePerItem : 0;
                                     const savingsPercent = form.price > 0 ? Math.round((savingsPerItem / form.price) * 100) : 0;
-                                    
+
                                     // Example calculation for display (e.g., 2 items)
                                     const exampleQty = minQty > 0 ? Math.max(minQty, 2) : 2;
                                     const exampleTotal = pricePerItem > 0 ? (pricePerItem * exampleQty) + courierCharge : 0;
-                                    
+
                                     return (
                                         <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -813,7 +819,7 @@ export default function EditProductPage() {
                                         </div>
                                     );
                                 })}
-                                
+
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -850,8 +856,8 @@ export default function EditProductPage() {
                             </label>
                             {form.cover_image && (
                                 <div className="mb-3 relative inline-block">
-                                    <img 
-                                        src={URL.createObjectURL(form.cover_image)} 
+                                    <img
+                                        src={URL.createObjectURL(form.cover_image)}
                                         alt="Cover preview"
                                         className="w-40 h-24 object-cover rounded border border-gray-200"
                                     />
@@ -883,8 +889,8 @@ export default function EditProductPage() {
                                 {form.images.map((img, index) => (
                                     <div key={index} className="flex gap-2 items-center">
                                         {(img.preview || (img.file && URL.createObjectURL(img.file))) && (
-                                            <img 
-                                                src={img.preview || (img.file ? URL.createObjectURL(img.file) : "")} 
+                                            <img
+                                                src={img.preview || (img.file ? URL.createObjectURL(img.file) : "")}
                                                 alt={`Preview ${index + 1}`}
                                                 className="w-16 h-16 object-cover rounded border border-gray-200"
                                             />
@@ -992,12 +998,12 @@ export default function EditProductPage() {
                             <h3 className="text-sm font-medium text-blue-900 mb-2">
                                 Digital File Source
                             </h3>
-                            
+
                             <div className="flex items-center space-x-4 mb-4">
                                 <label className="flex items-center space-x-2 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="digital_source" 
+                                    <input
+                                        type="radio"
+                                        name="digital_source"
                                         checked={!form.digital_file_name_input}
                                         onChange={() => setForm(p => ({ ...p, digital_file_name_input: "" }))}
                                         className="text-[#B00000] focus:ring-[#B00000]"
@@ -1005,9 +1011,9 @@ export default function EditProductPage() {
                                     <span className="text-sm text-gray-700">Upload New File</span>
                                 </label>
                                 <label className="flex items-center space-x-2 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="digital_source" 
+                                    <input
+                                        type="radio"
+                                        name="digital_source"
                                         checked={!!form.digital_file_name_input}
                                         onChange={() => setForm(p => ({ ...p, digital_file_name_input: " " }))}
                                         className="text-[#B00000] focus:ring-[#B00000]"
@@ -1061,6 +1067,58 @@ export default function EditProductPage() {
                             )}
                         </div>
                     )}
+
+
+                    {/* Product Documents Section */}
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-gray-200">
+                            Documents
+                        </h2>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Product Details PDF (Brochure/Spec Sheet)
+                            </label>
+
+                            {form.product_detail_pdf_url && !form.product_detail_pdf && (
+                                <div className="mb-2 p-3 bg-gray-50 rounded-lg flex items-center justify-between border border-gray-200">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <div className="p-2 bg-red-100 rounded text-red-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="M10 13l-2-2m0 0l2-2m-2 2h4" /></svg>
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-gray-900 truncate">Current PDF</p>
+                                            <a href={form.product_detail_pdf_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline truncate block">
+                                                View current file
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setForm(p => ({ ...p, product_detail_pdf_url: null }))}
+                                        className="text-gray-400 hover:text-red-600 p-1"
+                                        title="Remove current file (will not delete until saved)"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+
+                            <input
+                                type="file"
+                                accept="application/pdf"
+                                onChange={(e) =>
+                                    setForm((prev) => ({
+                                        ...prev,
+                                        product_detail_pdf: e.target.files?.[0] || null,
+                                    }))
+                                }
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Upload a PDF containing product details, specifications, or brochure. {form.product_detail_pdf_url ? "Uploading a new file will replace the current one." : ""}
+                            </p>
+                        </div>
+                    </div>
 
                     {/* Options Section */}
                     <div>
