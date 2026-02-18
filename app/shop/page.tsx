@@ -190,26 +190,6 @@ export default function ShopPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 {/* All Controls in One Line */}
                 <div className="mb-6 flex flex-wrap items-center gap-3">
-                    {/* Search Bar */}
-                    <div className="relative flex-1 min-w-[200px] max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <input
-                            type="search"
-                            placeholder="Search products…"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full h-10 pl-10 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#B00000] focus:ring-1 focus:ring-[#B00000]"
-                        />
-                        {searchQuery.trim().length > 0 && (
-                            <button
-                                onClick={() => setSearchQuery("")}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        )}
-                    </div>
-
                     {/* Category Filter */}
                     <MultiLevelCategoryMenu
                         products={products}
@@ -249,9 +229,29 @@ export default function ShopPage() {
                         <option value="price-desc">Price: High to Low</option>
                     </select>
 
+                    {/* Search Bar - Moved to Right */}
+                    <div className="relative ml-auto min-w-[200px] max-w-md">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                            type="search"
+                            placeholder="Search products…"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full h-10 pl-10 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#B00000] focus:ring-1 focus:ring-[#B00000]"
+                        />
+                        {searchQuery.trim().length > 0 && (
+                            <button
+                                onClick={() => setSearchQuery("")}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+
                     {/* Product Count */}
                     {pagination && (
-                        <div className="text-sm text-gray-600 ml-auto">
+                        <div className="text-sm text-gray-600">
                             {filteredProducts.length} of {pagination.total}
                         </div>
                     )}
@@ -367,8 +367,8 @@ export default function ShopPage() {
                                             // Contact Only Product
                                             <>
                                                 <div>
-                                                    <p className="text-sm font-semibold text-gray-600">
-                                                        Contact for Price
+                                                    <p className="text-lg font-bold text-[#B00000]">
+                                                        ₹{product.price.toLocaleString()}
                                                     </p>
                                                     <p className="text-xs text-gray-500">
                                                         {product.type === "digital" ? "Digital" : "Physical"}

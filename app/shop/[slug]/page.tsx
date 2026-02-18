@@ -521,8 +521,8 @@ export default function ProductDetailPage() {
                                 // Contact Only Product
                                 <>
                                     <div className="flex items-baseline gap-2">
-                                        <p className="text-2xl font-bold text-gray-700">
-                                            Contact for Price
+                                        <p className="text-3xl font-bold text-[#B00000]">
+                                            ₹{product.price.toLocaleString("en-IN")}
                                         </p>
                                     </div>
                                     <p className="text-xs text-gray-600 mt-1">

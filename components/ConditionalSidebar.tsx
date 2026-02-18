@@ -8,5 +8,5 @@ import React from "react";
  */
 export default function ConditionalSidebar() {
     // Sidebar has been completely removed - all navigation moved to Header
-        return null;
+    return null;
 }

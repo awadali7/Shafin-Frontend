@@ -14,6 +14,7 @@ import {
     Bell,
     Loader2,
     ExternalLink,
+    Briefcase,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi } from "@/lib/api/auth";
@@ -169,21 +170,19 @@ export default function DashboardPage() {
                         <div className="flex space-x-6">
                             <button
                                 onClick={() => setActiveTab("overview")}
-                                className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-                                    activeTab === "overview"
-                                        ? "border-[#B00000] text-[#B00000]"
-                                        : "border-transparent text-gray-600 hover:text-gray-900"
-                                }`}
+                                className={`pb-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "overview"
+                                    ? "border-[#B00000] text-[#B00000]"
+                                    : "border-transparent text-gray-600 hover:text-gray-900"
+                                    }`}
                             >
                                 Business Overview
                             </button>
                             <button
                                 onClick={() => setActiveTab("performance")}
-                                className={`pb-2 text-sm font-medium border-b-2 transition-colors ${
-                                    activeTab === "performance"
-                                        ? "border-[#B00000] text-[#B00000]"
-                                        : "border-transparent text-gray-600 hover:text-gray-900"
-                                }`}
+                                className={`pb-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "performance"
+                                    ? "border-[#B00000] text-[#B00000]"
+                                    : "border-transparent text-gray-600 hover:text-gray-900"
+                                    }`}
                             >
                                 Performance
                             </button>
@@ -295,15 +294,14 @@ export default function DashboardPage() {
                                                         </p>
                                                     </div>
                                                     <span
-                                                        className={`ml-2 px-2 py-0.5 rounded text-xs font-medium shrink-0 ${
-                                                            request.status ===
+                                                        className={`ml-2 px-2 py-0.5 rounded text-xs font-medium shrink-0 ${request.status ===
                                                             "pending"
-                                                                ? "bg-yellow-100 text-yellow-700"
-                                                                : request.status ===
-                                                                  "approved"
+                                                            ? "bg-yellow-100 text-yellow-700"
+                                                            : request.status ===
+                                                                "approved"
                                                                 ? "bg-green-100 text-green-700"
                                                                 : "bg-red-100 text-red-700"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {request.status}
                                                     </span>
@@ -422,8 +420,8 @@ export default function DashboardPage() {
                                                     <p className="text-xs text-gray-500 mt-0.5">
                                                         {formatDate(
                                                             notif.created_at ||
-                                                                notif.expires_at ||
-                                                                ""
+                                                            notif.expires_at ||
+                                                            ""
                                                         )}
                                                     </p>
                                                 </div>
@@ -518,6 +516,96 @@ export default function DashboardPage() {
                             Continue your learning journey
                         </p>
                     </div>
+
+                    {/* Complete Profile Section (For Guests/New Users) */}
+                    {!user?.user_type && (
+                        <div className="mb-6 bg-white rounded-lg border border-gray-200 p-6">
+                            <h2 className="text-lg font-semibold text-slate-900 mb-4">
+                                Complete Your Profile
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Link
+                                    href="/kyc"
+                                    className="flex items-center p-4 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors group"
+                                >
+                                    <div className="p-3 bg-blue-100 rounded-full mr-4 group-hover:bg-blue-200 transition-colors">
+                                        <BookOpen className="w-6 h-6 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-slate-900">
+                                            I am a Student
+                                        </h3>
+                                        <p className="text-sm text-gray-600">
+                                            Verify your student status to access courses
+                                        </p>
+                                    </div>
+                                    <ExternalLink className="w-5 h-5 text-blue-400 ml-auto group-hover:text-blue-600" />
+                                </Link>
+
+                                <Link
+                                    href="/kyc/product"
+                                    className="flex items-center p-4 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors group"
+                                >
+                                    <div className="p-3 bg-purple-100 rounded-full mr-4 group-hover:bg-purple-200 transition-colors">
+                                        <Briefcase className="w-6 h-6 text-purple-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-slate-900">
+                                            I am a Business Owner
+                                        </h3>
+                                        <p className="text-sm text-gray-600">
+                                            Verify your business to access B2B features
+                                        </p>
+                                    </div>
+                                    <ExternalLink className="w-5 h-5 text-purple-400 ml-auto group-hover:text-purple-600" />
+                                </Link>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Student Status & Business Upgrade (For Students) */}
+                    {user?.user_type === "student" && (
+                        <div className="mb-6 bg-white rounded-lg border border-gray-200 p-6">
+                            <h2 className="text-lg font-semibold text-slate-900 mb-4">
+                                Account Status
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Student Verified Status */}
+                                <div className="flex items-center p-4 bg-green-50 rounded-lg border border-green-100">
+                                    <div className="p-3 bg-green-100 rounded-full mr-4">
+                                        <CheckCircle className="w-6 h-6 text-green-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-slate-900">
+                                            Student Account Verified
+                                        </h3>
+                                        <p className="text-sm text-gray-600">
+                                            You have full access to student features
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Business Upgrade Option */}
+                                <Link
+                                    href="/kyc/product"
+                                    className="flex items-center p-4 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors group"
+                                >
+                                    <div className="p-3 bg-purple-100 rounded-full mr-4 group-hover:bg-purple-200 transition-colors">
+                                        <Briefcase className="w-6 h-6 text-purple-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-slate-900">
+                                            Upgrade to Business
+                                        </h3>
+                                        <p className="text-sm text-gray-600">
+                                            Verify your business for B2B features
+                                        </p>
+                                    </div>
+                                    <ExternalLink className="w-5 h-5 text-purple-400 ml-auto group-hover:text-purple-600" />
+                                </Link>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Performance Stats */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">

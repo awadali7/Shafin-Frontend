@@ -69,15 +69,23 @@ export default function Header() {
         : "Guest";
     const displayEmail = user?.email || "";
 
+    const userTypeLabel = React.useMemo(() => {
+        if (!user) return "Guest";
+        if (user.role === "admin") return "Admin";
+        if (user.user_type === "business_owner") return "Business Owner";
+        if (user.user_type === "student") return "Student";
+        return "Guest";
+    }, [user]);
+
     // Navigation is always visible in header (public navigation)
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white border-b border-gray-200">
             <div className="flex items-center justify-between px-4 lg:px-8 py-4">
-                {/* Mobile Menu Button */}
+                {/* Menu Button (Visible on all screens now) */}
                 <button
                     onClick={() => setIsMobileMenuOpen(true)}
-                    className="lg:hidden p-2 text-gray-700 hover:text-[#B00000] transition-colors"
+                    className="p-2 text-gray-700 hover:text-[#B00000] transition-colors mr-2"
                     aria-label="Open Menu"
                 >
                     <Menu className="w-6 h-6" />
@@ -101,11 +109,10 @@ export default function Header() {
                 <nav className="hidden lg:flex items-center space-x-8">
                     <Link
                         href="/"
-                        className={`font-medium transition-all duration-200 relative pb-1 ${
-                            pathname === "/" 
-                                ? "text-[#B00000]" 
-                                : "text-gray-700 hover:text-[#B00000]"
-                        }`}
+                        className={`font-medium transition-all duration-200 relative pb-1 ${pathname === "/"
+                            ? "text-[#B00000]"
+                            : "text-gray-700 hover:text-[#B00000]"
+                            }`}
                     >
                         Home
                         {pathname === "/" && (
@@ -114,11 +121,10 @@ export default function Header() {
                     </Link>
                     <Link
                         href="/about"
-                        className={`font-medium transition-all duration-200 relative pb-1 ${
-                            pathname === "/about" 
-                                ? "text-[#B00000]" 
-                                : "text-gray-700 hover:text-[#B00000]"
-                        }`}
+                        className={`font-medium transition-all duration-200 relative pb-1 ${pathname === "/about"
+                            ? "text-[#B00000]"
+                            : "text-gray-700 hover:text-[#B00000]"
+                            }`}
                     >
                         About Us
                         {pathname === "/about" && (
@@ -127,11 +133,10 @@ export default function Header() {
                     </Link>
                     <Link
                         href="/courses"
-                        className={`font-medium transition-all duration-200 relative pb-1 ${
-                            pathname === "/courses" || pathname?.startsWith("/courses/")
-                                ? "text-[#B00000]"
-                                : "text-gray-700 hover:text-[#B00000]"
-                        }`}
+                        className={`font-medium transition-all duration-200 relative pb-1 ${pathname === "/courses" || pathname?.startsWith("/courses/")
+                            ? "text-[#B00000]"
+                            : "text-gray-700 hover:text-[#B00000]"
+                            }`}
                     >
                         Courses
                         {(pathname === "/courses" || pathname?.startsWith("/courses/")) && (
@@ -140,11 +145,10 @@ export default function Header() {
                     </Link>
                     <Link
                         href="/shop"
-                        className={`font-medium transition-all duration-200 relative pb-1 ${
-                            pathname === "/shop" || pathname?.startsWith("/shop/")
-                                ? "text-[#B00000]"
-                                : "text-gray-700 hover:text-[#B00000]"
-                        }`}
+                        className={`font-medium transition-all duration-200 relative pb-1 ${pathname === "/shop" || pathname?.startsWith("/shop/")
+                            ? "text-[#B00000]"
+                            : "text-gray-700 hover:text-[#B00000]"
+                            }`}
                     >
                         Shop
                         {(pathname === "/shop" || pathname?.startsWith("/shop/")) && (
@@ -153,11 +157,10 @@ export default function Header() {
                     </Link>
                     <Link
                         href="/blog"
-                        className={`font-medium transition-all duration-200 relative pb-1 ${
-                            pathname === "/blog" || pathname?.startsWith("/blog/")
-                                ? "text-[#B00000]"
-                                : "text-gray-700 hover:text-[#B00000]"
-                        }`}
+                        className={`font-medium transition-all duration-200 relative pb-1 ${pathname === "/blog" || pathname?.startsWith("/blog/")
+                            ? "text-[#B00000]"
+                            : "text-gray-700 hover:text-[#B00000]"
+                            }`}
                     >
                         Blog
                         {(pathname === "/blog" || pathname?.startsWith("/blog/")) && (
@@ -201,15 +204,12 @@ export default function Header() {
                                         {displayName}
                                     </p>
                                     <p className="text-xs text-gray-600">
-                                        {user.role === "admin"
-                                            ? "Admin"
-                                            : "Student"}
+                                        {userTypeLabel}
                                     </p>
                                 </div>
                                 <ChevronDown
-                                    className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${
-                                        isProfileOpen ? "rotate-180" : ""
-                                    }`}
+                                    className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""
+                                        }`}
                                 />
                             </button>
 
@@ -230,7 +230,7 @@ export default function Header() {
                                                 {displayEmail}
                                             </p>
                                             <p className="text-xs text-[#B00000] font-medium mt-1">
-                                                {user.role === "admin" ? "Administrator" : "User"}
+                                                {userTypeLabel}
                                             </p>
                                         </div>
 
@@ -239,11 +239,10 @@ export default function Header() {
                                             <Link
                                                 href="/dashboard"
                                                 onClick={toggleProfile}
-                                                className={`block px-4 py-2.5 text-sm transition-colors ${
-                                                    pathname === "/dashboard"
-                                                        ? "bg-red-50 text-[#B00000] font-medium"
-                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                                                }`}
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${pathname === "/dashboard"
+                                                    ? "bg-red-50 text-[#B00000] font-medium"
+                                                    : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                    }`}
                                             >
                                                 Dashboard
                                             </Link>
@@ -259,33 +258,30 @@ export default function Header() {
                                             <Link
                                                 href="/my-learning"
                                                 onClick={toggleProfile}
-                                                className={`block px-4 py-2.5 text-sm transition-colors ${
-                                                    pathname === "/my-learning" || pathname?.startsWith("/my-learning/")
-                                                        ? "bg-red-50 text-[#B00000] font-medium"
-                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                                                }`}
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${pathname === "/my-learning" || pathname?.startsWith("/my-learning/")
+                                                    ? "bg-red-50 text-[#B00000] font-medium"
+                                                    : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                    }`}
                                             >
                                                 My Learning
                                             </Link>
                                             <Link
                                                 href="/orders"
                                                 onClick={toggleProfile}
-                                                className={`block px-4 py-2.5 text-sm transition-colors ${
-                                                    pathname === "/orders" || pathname?.startsWith("/orders/")
-                                                        ? "bg-red-50 text-[#B00000] font-medium"
-                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                                                }`}
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${pathname === "/orders" || pathname?.startsWith("/orders/")
+                                                    ? "bg-red-50 text-[#B00000] font-medium"
+                                                    : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                    }`}
                                             >
                                                 My Orders
                                             </Link>
                                             <Link
                                                 href="/downloads"
                                                 onClick={toggleProfile}
-                                                className={`block px-4 py-2.5 text-sm transition-colors ${
-                                                    pathname === "/downloads" || pathname?.startsWith("/downloads/")
-                                                        ? "bg-red-50 text-[#B00000] font-medium"
-                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                                                }`}
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${pathname === "/downloads" || pathname?.startsWith("/downloads/")
+                                                    ? "bg-red-50 text-[#B00000] font-medium"
+                                                    : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                    }`}
                                             >
                                                 My Downloads
                                             </Link>
@@ -293,11 +289,10 @@ export default function Header() {
                                                 <Link
                                                     href="/kyc"
                                                     onClick={toggleProfile}
-                                                    className={`block px-4 py-2.5 text-sm transition-colors ${
-                                                        pathname === "/kyc"
-                                                            ? "bg-red-50 text-[#B00000] font-medium"
-                                                            : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                                                    }`}
+                                                    className={`block px-4 py-2.5 text-sm transition-colors ${pathname === "/kyc"
+                                                        ? "bg-red-50 text-[#B00000] font-medium"
+                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                        }`}
                                                 >
                                                     Student KYC
                                                 </Link>
@@ -306,11 +301,10 @@ export default function Header() {
                                                 <Link
                                                     href="/kyc/product"
                                                     onClick={toggleProfile}
-                                                    className={`block px-4 py-2.5 text-sm transition-colors ${
-                                                        pathname === "/kyc/product"
-                                                            ? "bg-red-50 text-[#B00000] font-medium"
-                                                            : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                                                    }`}
+                                                    className={`block px-4 py-2.5 text-sm transition-colors ${pathname === "/kyc/product"
+                                                        ? "bg-red-50 text-[#B00000] font-medium"
+                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                        }`}
                                                 >
                                                     Business KYC
                                                 </Link>
@@ -327,22 +321,20 @@ export default function Header() {
                                             <Link
                                                 href="/profile"
                                                 onClick={toggleProfile}
-                                                className={`block px-4 py-2.5 text-sm transition-colors ${
-                                                    pathname === "/profile"
-                                                        ? "bg-red-50 text-[#B00000] font-medium"
-                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                                                }`}
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${pathname === "/profile"
+                                                    ? "bg-red-50 text-[#B00000] font-medium"
+                                                    : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                    }`}
                                             >
                                                 My Profile
                                             </Link>
                                             <Link
                                                 href="/settings"
                                                 onClick={toggleProfile}
-                                                className={`block px-4 py-2.5 text-sm transition-colors ${
-                                                    pathname === "/settings" || pathname?.startsWith("/settings/")
-                                                        ? "bg-red-50 text-[#B00000] font-medium"
-                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                                                }`}
+                                                className={`block px-4 py-2.5 text-sm transition-colors ${pathname === "/settings" || pathname?.startsWith("/settings/")
+                                                    ? "bg-red-50 text-[#B00000] font-medium"
+                                                    : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                    }`}
                                             >
                                                 Settings
                                             </Link>
@@ -359,11 +351,10 @@ export default function Header() {
                                                 <Link
                                                     href="/admin"
                                                     onClick={toggleProfile}
-                                                    className={`block px-4 py-2.5 text-sm transition-colors ${
-                                                        pathname === "/admin" || pathname?.startsWith("/admin/")
-                                                            ? "bg-red-50 text-[#B00000] font-medium"
-                                                            : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
-                                                    }`}
+                                                    className={`block px-4 py-2.5 text-sm transition-colors ${pathname === "/admin" || pathname?.startsWith("/admin/")
+                                                        ? "bg-red-50 text-[#B00000] font-medium"
+                                                        : "text-gray-700 hover:bg-gray-100 hover:text-[#B00000]"
+                                                        }`}
                                                 >
                                                     Admin Dashboard
                                                 </Link>
@@ -414,7 +405,7 @@ export default function Header() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="fixed inset-0 bg-black/50 z-50 lg:hidden"
+                            className="fixed inset-0 bg-black/50 z-50"
                             onClick={() => setIsMobileMenuOpen(false)}
                         />
 
@@ -428,7 +419,7 @@ export default function Header() {
                                 stiffness: 300,
                                 damping: 30,
                             }}
-                            className="fixed inset-y-0 left-0 w-full bg-white z-50 lg:hidden shadow-xl"
+                            className="fixed inset-y-0 left-0 w-[300px] sm:w-[350px] bg-white z-50 shadow-2xl flex flex-col h-full"
                         >
                             <div className="flex flex-col h-full">
                                 {/* Header */}
@@ -454,11 +445,10 @@ export default function Header() {
                                         onClick={() =>
                                             setIsMobileMenuOpen(false)
                                         }
-                                        className={`block px-6 py-3 text-base font-medium transition-colors ${
-                                            pathname === "/"
-                                                ? "text-[#B00000] bg-red-50"
-                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                        }`}
+                                        className={`block px-6 py-3 text-base font-medium transition-colors ${pathname === "/"
+                                            ? "text-[#B00000] bg-red-50"
+                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                            }`}
                                     >
                                         Home
                                     </Link>
@@ -467,11 +457,10 @@ export default function Header() {
                                         onClick={() =>
                                             setIsMobileMenuOpen(false)
                                         }
-                                        className={`block px-6 py-3 text-base font-medium transition-colors ${
-                                            pathname === "/about"
-                                                ? "text-[#B00000] bg-red-50"
-                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                        }`}
+                                        className={`block px-6 py-3 text-base font-medium transition-colors ${pathname === "/about"
+                                            ? "text-[#B00000] bg-red-50"
+                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                            }`}
                                     >
                                         About Us
                                     </Link>
@@ -480,12 +469,11 @@ export default function Header() {
                                         onClick={() =>
                                             setIsMobileMenuOpen(false)
                                         }
-                                        className={`block px-6 py-3 text-base font-medium transition-colors ${
-                                            pathname === "/courses" ||
+                                        className={`block px-6 py-3 text-base font-medium transition-colors ${pathname === "/courses" ||
                                             pathname?.startsWith("/courses/")
-                                                ? "text-[#B00000] bg-red-50"
-                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                        }`}
+                                            ? "text-[#B00000] bg-red-50"
+                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                            }`}
                                     >
                                         Courses
                                     </Link>
@@ -494,12 +482,11 @@ export default function Header() {
                                         onClick={() =>
                                             setIsMobileMenuOpen(false)
                                         }
-                                        className={`block px-6 py-3 text-base font-medium transition-colors ${
-                                            pathname === "/shop" ||
+                                        className={`block px-6 py-3 text-base font-medium transition-colors ${pathname === "/shop" ||
                                             pathname?.startsWith("/shop/")
-                                                ? "text-[#B00000] bg-red-50"
-                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                        }`}
+                                            ? "text-[#B00000] bg-red-50"
+                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                            }`}
                                     >
                                         Shop
                                     </Link>
@@ -508,12 +495,11 @@ export default function Header() {
                                         onClick={() =>
                                             setIsMobileMenuOpen(false)
                                         }
-                                        className={`block px-6 py-3 text-base font-medium transition-colors ${
-                                            pathname === "/blog" ||
+                                        className={`block px-6 py-3 text-base font-medium transition-colors ${pathname === "/blog" ||
                                             pathname?.startsWith("/blog/")
-                                                ? "text-[#B00000] bg-red-50"
-                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                        }`}
+                                            ? "text-[#B00000] bg-red-50"
+                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                            }`}
                                     >
                                         Blog
                                     </Link>
@@ -528,11 +514,10 @@ export default function Header() {
                                                     onClick={() =>
                                                         setIsMobileMenuOpen(false)
                                                     }
-                                                    className={`block px-6 py-3 text-base font-medium transition-colors ${
-                                                        pathname === "/dashboard"
-                                                            ? "text-[#B00000] bg-red-50"
-                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                                    }`}
+                                                    className={`block px-6 py-3 text-base font-medium transition-colors ${pathname === "/dashboard"
+                                                        ? "text-[#B00000] bg-red-50"
+                                                        : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                        }`}
                                                 >
                                                     Dashboard
                                                 </Link>
@@ -550,11 +535,10 @@ export default function Header() {
                                                     onClick={() =>
                                                         setIsMobileMenuOpen(false)
                                                     }
-                                                    className={`block px-6 py-3 text-base transition-colors ${
-                                                        pathname === "/my-learning" || pathname?.startsWith("/my-learning/")
-                                                            ? "text-[#B00000] bg-red-50 font-medium"
-                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                                    }`}
+                                                    className={`block px-6 py-3 text-base transition-colors ${pathname === "/my-learning" || pathname?.startsWith("/my-learning/")
+                                                        ? "text-[#B00000] bg-red-50 font-medium"
+                                                        : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                        }`}
                                                 >
                                                     My Learning
                                                 </Link>
@@ -563,11 +547,10 @@ export default function Header() {
                                                     onClick={() =>
                                                         setIsMobileMenuOpen(false)
                                                     }
-                                                    className={`block px-6 py-3 text-base transition-colors ${
-                                                        pathname === "/orders" || pathname?.startsWith("/orders/")
-                                                            ? "text-[#B00000] bg-red-50 font-medium"
-                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                                    }`}
+                                                    className={`block px-6 py-3 text-base transition-colors ${pathname === "/orders" || pathname?.startsWith("/orders/")
+                                                        ? "text-[#B00000] bg-red-50 font-medium"
+                                                        : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                        }`}
                                                 >
                                                     My Orders
                                                 </Link>
@@ -576,11 +559,10 @@ export default function Header() {
                                                     onClick={() =>
                                                         setIsMobileMenuOpen(false)
                                                     }
-                                                    className={`block px-6 py-3 text-base transition-colors ${
-                                                        pathname === "/downloads" || pathname?.startsWith("/downloads/")
-                                                            ? "text-[#B00000] bg-red-50 font-medium"
-                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                                    }`}
+                                                    className={`block px-6 py-3 text-base transition-colors ${pathname === "/downloads" || pathname?.startsWith("/downloads/")
+                                                        ? "text-[#B00000] bg-red-50 font-medium"
+                                                        : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                        }`}
                                                 >
                                                     My Downloads
                                                 </Link>
@@ -590,11 +572,10 @@ export default function Header() {
                                                         onClick={() =>
                                                             setIsMobileMenuOpen(false)
                                                         }
-                                                        className={`block px-6 py-3 text-base transition-colors ${
-                                                            pathname === "/kyc"
-                                                                ? "text-[#B00000] bg-red-50 font-medium"
-                                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                                        }`}
+                                                        className={`block px-6 py-3 text-base transition-colors ${pathname === "/kyc"
+                                                            ? "text-[#B00000] bg-red-50 font-medium"
+                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                            }`}
                                                     >
                                                         Student KYC
                                                     </Link>
@@ -605,11 +586,10 @@ export default function Header() {
                                                         onClick={() =>
                                                             setIsMobileMenuOpen(false)
                                                         }
-                                                        className={`block px-6 py-3 text-base transition-colors ${
-                                                            pathname === "/kyc/product"
-                                                                ? "text-[#B00000] bg-red-50 font-medium"
-                                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                                        }`}
+                                                        className={`block px-6 py-3 text-base transition-colors ${pathname === "/kyc/product"
+                                                            ? "text-[#B00000] bg-red-50 font-medium"
+                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                            }`}
                                                     >
                                                         Business KYC
                                                     </Link>
@@ -628,11 +608,10 @@ export default function Header() {
                                                     onClick={() =>
                                                         setIsMobileMenuOpen(false)
                                                     }
-                                                    className={`block px-6 py-3 text-base transition-colors ${
-                                                        pathname === "/profile"
-                                                            ? "text-[#B00000] bg-red-50 font-medium"
-                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                                    }`}
+                                                    className={`block px-6 py-3 text-base transition-colors ${pathname === "/profile"
+                                                        ? "text-[#B00000] bg-red-50 font-medium"
+                                                        : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                        }`}
                                                 >
                                                     My Profile
                                                 </Link>
@@ -641,11 +620,10 @@ export default function Header() {
                                                     onClick={() =>
                                                         setIsMobileMenuOpen(false)
                                                     }
-                                                    className={`block px-6 py-3 text-base transition-colors ${
-                                                        pathname === "/settings" || pathname?.startsWith("/settings/")
-                                                            ? "text-[#B00000] bg-red-50 font-medium"
-                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                                    }`}
+                                                    className={`block px-6 py-3 text-base transition-colors ${pathname === "/settings" || pathname?.startsWith("/settings/")
+                                                        ? "text-[#B00000] bg-red-50 font-medium"
+                                                        : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                        }`}
                                                 >
                                                     Settings
                                                 </Link>
@@ -664,11 +642,10 @@ export default function Header() {
                                                         onClick={() =>
                                                             setIsMobileMenuOpen(false)
                                                         }
-                                                        className={`block px-6 py-3 text-base transition-colors ${
-                                                            pathname === "/admin" || pathname?.startsWith("/admin/")
-                                                                ? "text-[#B00000] bg-red-50 font-medium"
-                                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                                        }`}
+                                                        className={`block px-6 py-3 text-base transition-colors ${pathname === "/admin" || pathname?.startsWith("/admin/")
+                                                            ? "text-[#B00000] bg-red-50 font-medium"
+                                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                                            }`}
                                                     >
                                                         Admin Dashboard
                                                     </Link>
