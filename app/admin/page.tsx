@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
     Users,
@@ -72,23 +72,43 @@ import type {
     ProductKYCVerification,
 } from "@/lib/api/types";
 
+type AdminTab =
+    | "dashboard"
+    | "users"
+    | "requests"
+    | "courses"
+    | "blogs"
+    | "kyc"
+    | "product_kyc"
+    | "products"
+    | "orders"
+    | "digital_files"
+    | "settings";
+
+const VALID_TABS: AdminTab[] = [
+    "dashboard", "users", "requests", "courses", "blogs",
+    "kyc", "product_kyc", "products", "orders", "digital_files", "settings",
+];
+
 export default function AdminPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, loading: authLoading, isAuth } = useAuth();
 
-    const [activeTab, setActiveTab] = useState<
-        | "dashboard"
-        | "users"
-        | "requests"
-        | "courses"
-        | "blogs"
-        | "kyc"
-        | "product_kyc"
-        | "products"
-        | "orders"
-        | "digital_files"
-        | "settings"
-    >("dashboard");
+    // Read initial tab from URL, fall back to "dashboard"
+    const tabFromUrl = searchParams.get("tab") as AdminTab | null;
+    const initialTab: AdminTab =
+        tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : "dashboard";
+
+    const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
+
+    // When tab changes, update the URL param (no full navigation, keeps history clean)
+    const handleTabChange = (tab: AdminTab) => {
+        setActiveTab(tab);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("tab", tab);
+        router.replace(`/admin?${params.toString()}`, { scroll: false });
+    };
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [users, setUsers] = useState<User[]>([]);
     const [requests, setRequests] = useState<CourseRequest[]>([]);
@@ -1748,7 +1768,7 @@ export default function AdminPage() {
             </div>
 
             {/* Tabs */}
-            <AdminTabs activeTab={activeTab} onTabChange={setActiveTab} />
+            <AdminTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
             {/* Content */}
             <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -1762,7 +1782,7 @@ export default function AdminPage() {
                     <DashboardTab
                         stats={stats}
                         loading={loading}
-                        onTabChange={setActiveTab}
+                        onTabChange={handleTabChange}
                     />
                 )}
 

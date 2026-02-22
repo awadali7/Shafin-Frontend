@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Copy, Trash2, FileArchive, Upload, Clock, HardDrive, Check, Download } from "lucide-react";
+import React, { useEffect, useState, useMemo } from "react";
+import { Copy, Trash2, FileArchive, Upload, Clock, HardDrive, Check, Download, Search } from "lucide-react";
 import { adminApi } from "@/lib/api/admin";
 
 type DigitalFile = {
@@ -40,11 +40,18 @@ export const DigitalFilesTab = () => {
     const [error, setError] = useState<string | null>(null);
     const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
     const [downloading, setDownloading] = useState<string | null>(null);
-    
+    const [search, setSearch] = useState("");
+
     // Upload Modal State
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [customName, setCustomName] = useState("");
+
+    const filteredFiles = useMemo(() => {
+        if (!search.trim()) return files;
+        const q = search.trim().toLowerCase();
+        return files.filter((f) => f.name.toLowerCase().includes(q));
+    }, [files, search]);
 
     const fetchFiles = async () => {
         try {
@@ -162,16 +169,25 @@ export const DigitalFilesTab = () => {
                     <h2 className="text-xl font-bold text-slate-900">Digital Files Library</h2>
                     <p className="text-sm text-gray-500 mt-1">Manage static ZIP/RAR files for digital products. Duplicates are auto-numbered.</p>
                 </div>
-                
-
-                
-                <button
-                    onClick={() => setIsUploadModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors"
-                >
-                    <Upload className="w-4 h-4" />
-                    <span>Add file</span>
-                </button>
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder="Search files…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent w-48"
+                        />
+                    </div>
+                    <button
+                        onClick={() => setIsUploadModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors"
+                    >
+                        <Upload className="w-4 h-4" />
+                        <span>Add file</span>
+                    </button>
+                </div>
             </div>
 
             {error && (
@@ -262,7 +278,10 @@ export const DigitalFilesTab = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
-                    {files.map((file) => {
+                    {filteredFiles.length === 0 && search ? (
+                        <div className="col-span-full text-center py-10 text-sm text-gray-500">No files found for "{search}"</div>
+                    ) : null}
+                    {filteredFiles.map((file) => {
                         const style = getFileStyle(file.name);
                         return (
                             <div key={file.name} className={`group bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all duration-200 flex flex-col justify-between relative ${style.borderColor}`}>

@@ -178,13 +178,59 @@ export interface CourseProgress {
 }
 
 // Admin Types
+export interface RecentOrder {
+    id: string;
+    status: string;
+    total: number;
+    created_at: string;
+    first_name: string;
+    last_name: string;
+    user_email: string;
+}
+
+export interface RecentUser {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    created_at: string;
+    role: string;
+}
+
 export interface DashboardStats {
+    // Core
     total_users: number;
     total_courses: number;
     total_requests: number;
     pending_requests: number;
     approved_requests: number;
     rejected_requests: number;
+    total_videos: number;
+    active_access: number;
+    // Orders & Revenue
+    total_orders: number;
+    pending_orders: number;
+    paid_orders: number;
+    cancelled_orders: number;
+    refunded_orders: number;
+    total_revenue: number;
+    monthly_revenue: number;
+    // Products
+    total_products: number;
+    physical_products: number;
+    digital_products: number;
+    low_stock_products: number;
+    // KYC
+    kyc_pending: number;
+    kyc_verified: number;
+    kyc_rejected: number;
+    product_kyc_pending: number;
+    // Blogs
+    total_blogs: number;
+    published_blogs: number;
+    // Recent Activity
+    recent_orders: RecentOrder[];
+    recent_users: RecentUser[];
 }
 
 // User Profile Types

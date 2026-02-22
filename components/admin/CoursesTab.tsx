@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import {
     Plus,
     Edit2,
@@ -11,6 +11,7 @@ import {
     Play,
     Loader2,
     UserPlus,
+    Search,
 } from "lucide-react";
 import { formatDate } from "./utils";
 import type { Course, Video } from "@/lib/api/types";
@@ -44,20 +45,46 @@ export const CoursesTab: React.FC<CoursesTabProps> = ({
     onDeleteVideo,
     onGrantAccess,
 }) => {
+    const [search, setSearch] = useState("");
+
+    const filtered = useMemo(() => {
+        if (!search.trim()) return courses;
+        const q = search.trim().toLowerCase();
+        return courses.filter(
+            (c) =>
+                c.name.toLowerCase().includes(q) ||
+                (c.slug || "").toLowerCase().includes(q)
+        );
+    }, [courses, search]);
+
     return (
         <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-4 flex-wrap">
                 <h2 className="text-lg font-semibold text-slate-900">
                     All Courses
+                    <span className="ml-2 text-sm font-normal text-gray-400">({filtered.length})</span>
                 </h2>
-                <button
-                    onClick={onAddCourse}
-                    className="flex items-center space-x-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-all duration-300 text-sm font-medium"
-                >
-                    <Plus className="w-4 h-4" />
-                    <span>Add New Course</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder="Search courses…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent w-52"
+                        />
+                    </div>
+                    <button
+                        onClick={onAddCourse}
+                        className="flex items-center space-x-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-all duration-300 text-sm font-medium whitespace-nowrap"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Add New Course</span>
+                    </button>
+                </div>
             </div>
+
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -83,8 +110,8 @@ export const CoursesTab: React.FC<CoursesTabProps> = ({
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {courses.length > 0 ? (
-                            courses.map((course) => (
+                        {filtered.length > 0 ? (
+                            filtered.map((course) => (
                                 <React.Fragment key={course.id}>
                                     <tr className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -343,9 +370,9 @@ export const CoursesTab: React.FC<CoursesTabProps> = ({
                             <tr>
                                 <td
                                     colSpan={6}
-                                    className="px-6 py-4 text-center text-sm text-gray-500"
+                                    className="px-6 py-10 text-center text-sm text-gray-500"
                                 >
-                                    No courses found
+                                    No courses found{search ? ` for "${search}"` : ""}
                                 </td>
                             </tr>
                         )}

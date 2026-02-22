@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Edit2, Plus, Trash2, X, Image as ImageIcon, Video, Trash } from "lucide-react";
+import { Edit2, Plus, Trash2, X, Image as ImageIcon, Video, Trash, Search } from "lucide-react";
 import { productsApi } from "@/lib/api/products";
 import { adminApi } from "@/lib/api/admin";
 import type { Product, ProductType, User, ProductVideo } from "@/lib/api/types";
@@ -357,24 +357,49 @@ export const ProductsTab: React.FC = () => {
         [products]
     );
 
+    const [search, setSearch] = useState("");
+    const filteredProducts = useMemo(() => {
+        if (!search.trim()) return products;
+        const q = search.trim().toLowerCase();
+        return products.filter(
+            (p) =>
+                p.name.toLowerCase().includes(q) ||
+                (p.category || "").toLowerCase().includes(q) ||
+                (p.slug || "").toLowerCase().includes(q)
+        );
+    }, [products, search]);
+
     return (
         <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-4 flex-wrap">
                 <div>
                     <h2 className="text-lg font-semibold text-slate-900">
                         Products
+                        <span className="ml-2 text-sm font-normal text-gray-400">({filteredProducts.length})</span>
                     </h2>
                     <p className="text-sm text-gray-500">
                         Physical + Digital (ZIP/RAR)
                     </p>
                 </div>
-                <button
-                    onClick={openCreate}
-                    className="flex items-center space-x-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-all duration-300 text-sm font-medium"
-                >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Product</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder="Search products…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent w-52"
+                        />
+                    </div>
+                    <button
+                        onClick={openCreate}
+                        className="flex items-center space-x-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-all duration-300 text-sm font-medium whitespace-nowrap"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Product</span>
+                    </button>
+                </div>
             </div>
 
             {error && (
@@ -427,7 +452,7 @@ export const ProductsTab: React.FC = () => {
                                 </td>
                             </tr>
                         ) : (
-                            products.map((p) => (
+                            filteredProducts.map((p) => (
                                 <tr key={p.id} className="hover:bg-gray-50">
                                     <td className="px-6 py-4">
                                         <div className="text-sm font-medium text-slate-900">
