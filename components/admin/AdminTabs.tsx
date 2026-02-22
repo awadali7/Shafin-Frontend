@@ -6,6 +6,7 @@ interface AdminTabsProps {
     activeTab:
     | "dashboard"
     | "users"
+    | "requests"
     | "courses"
     | "blogs"
     | "kyc"
@@ -18,6 +19,7 @@ interface AdminTabsProps {
         tab:
             | "dashboard"
             | "users"
+            | "requests"
             | "courses"
             | "blogs"
             | "kyc"
@@ -36,6 +38,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
     const tabs = [
         { id: "dashboard" as const, label: "Dashboard" },
         { id: "users" as const, label: "Users" },
+        { id: "requests" as const, label: "Requests" },
         { id: "courses" as const, label: "Courses" },
         { id: "products" as const, label: "Products" },
         { id: "digital_files" as const, label: "Digital Files" },

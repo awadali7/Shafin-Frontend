@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
@@ -90,7 +90,7 @@ const VALID_TABS: AdminTab[] = [
     "kyc", "product_kyc", "products", "orders", "digital_files", "settings",
 ];
 
-export default function AdminPage() {
+function AdminPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, loading: authLoading, isAuth } = useAuth();
@@ -2143,9 +2143,9 @@ export default function AdminPage() {
                                                 </p>
                                                 <span
                                                     className={`mt-1 inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${userToDelete.role ===
-                                                            "admin"
-                                                            ? "bg-purple-100 text-purple-800"
-                                                            : "bg-gray-100 text-gray-800"
+                                                        "admin"
+                                                        ? "bg-purple-100 text-purple-800"
+                                                        : "bg-gray-100 text-gray-800"
                                                         }`}
                                                 >
                                                     {userToDelete.role ||
@@ -2401,8 +2401,8 @@ export default function AdminPage() {
                                                                         session.id
                                                                     }
                                                                     className={`border rounded-lg p-4 ${isActive
-                                                                            ? "border-green-200 bg-green-50"
-                                                                            : "border-gray-200 bg-gray-50"
+                                                                        ? "border-green-200 bg-green-50"
+                                                                        : "border-gray-200 bg-gray-50"
                                                                         }`}
                                                                 >
                                                                     <div className="flex items-start justify-between">
@@ -2419,8 +2419,8 @@ export default function AdminPage() {
                                                                                 )}
                                                                                 <span
                                                                                     className={`px-2 py-1 rounded-full text-xs font-medium ${isActive
-                                                                                            ? "bg-green-100 text-green-800"
-                                                                                            : "bg-gray-100 text-gray-800"
+                                                                                        ? "bg-green-100 text-green-800"
+                                                                                        : "bg-gray-100 text-gray-800"
                                                                                         }`}
                                                                                 >
                                                                                     {
@@ -3604,8 +3604,8 @@ export default function AdminPage() {
                                                         })
                                                     }
                                                     className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${!editingVideo
-                                                            ? "bg-gray-50 cursor-not-allowed"
-                                                            : ""
+                                                        ? "bg-gray-50 cursor-not-allowed"
+                                                        : ""
                                                         }`}
                                                     placeholder="Auto-generated"
                                                     readOnly={!editingVideo}
@@ -4763,5 +4763,17 @@ export default function AdminPage() {
                 }}
             />
         </div>
+    );
+}
+
+export default function AdminPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-[#B00000]" />
+            </div>
+        }>
+            <AdminPageContent />
+        </Suspense>
     );
 }
