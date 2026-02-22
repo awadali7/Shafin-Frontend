@@ -26,7 +26,7 @@ export default function DownloadsPage() {
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
 
     const apiBaseUrl = useMemo(
-        () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api",
+        () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api",
         []
     );
 

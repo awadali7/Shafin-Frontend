@@ -52,7 +52,7 @@ class PushNotificationService {
             try {
                 const apiUrl =
                     process.env.NEXT_PUBLIC_API_URL ||
-                    "http://localhost:3000/api";
+                    "http://localhost:5001/api";
                 const response = await fetch(
                     `${apiUrl}/notifications/vapid-key`
                 );

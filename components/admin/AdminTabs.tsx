@@ -6,7 +6,6 @@ interface AdminTabsProps {
     activeTab:
     | "dashboard"
     | "users"
-    | "requests"
     | "courses"
     | "blogs"
     | "kyc"
@@ -19,7 +18,6 @@ interface AdminTabsProps {
         tab:
             | "dashboard"
             | "users"
-            | "requests"
             | "courses"
             | "blogs"
             | "kyc"
@@ -38,7 +36,6 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
     const tabs = [
         { id: "dashboard" as const, label: "Dashboard" },
         { id: "users" as const, label: "Users" },
-        { id: "requests" as const, label: "Course Requests" },
         { id: "courses" as const, label: "Courses" },
         { id: "products" as const, label: "Products" },
         { id: "digital_files" as const, label: "Digital Files" },
@@ -57,11 +54,10 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
                         <button
                             key={tab.id}
                             onClick={() => onTabChange(tab.id)}
-                            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
-                                activeTab === tab.id
-                                    ? "border-[#B00000] text-[#B00000]"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                            }`}
+                            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === tab.id
+                                ? "border-[#B00000] text-[#B00000]"
+                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                }`}
                         >
                             {tab.label}
                         </button>

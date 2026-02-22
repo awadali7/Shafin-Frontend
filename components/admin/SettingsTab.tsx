@@ -59,10 +59,34 @@ export const SettingsTab: React.FC = () => {
         }
     };
 
+    // Convert any YouTube URL to embed format
+    const toEmbedUrl = (url: string): string => {
+        try {
+            // Already an embed URL — return as-is
+            if (url.includes('youtube.com/embed/')) return url;
+
+            let videoId: string | null = null;
+
+            // https://www.youtube.com/watch?v=VIDEO_ID&...
+            const watchMatch = url.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+            if (watchMatch) videoId = watchMatch[1];
+
+            // https://youtu.be/VIDEO_ID
+            if (!videoId) {
+                const shortMatch = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+                if (shortMatch) videoId = shortMatch[1];
+            }
+
+            if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+        } catch { }
+        return url; // Return unchanged if not a recognisable YouTube URL
+    };
+
     const handleChange = (key: string, value: string) => {
+        const converted = key === 'hero_video_url' ? toEmbedUrl(value) : value;
         setEditedValues((prev) => ({
             ...prev,
-            [key]: value,
+            [key]: converted,
         }));
     };
 

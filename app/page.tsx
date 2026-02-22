@@ -114,7 +114,7 @@ export default function LandingPage() {
     // Auto-play product slider
     useEffect(() => {
         if (products.length === 0) return;
-        
+
         const timer = setInterval(() => {
             setProductSlide((prev) => prev + 1);
         }, 4000); // Change slide every 4 seconds
@@ -142,7 +142,7 @@ export default function LandingPage() {
     // Handle infinite loop reset for products
     useEffect(() => {
         if (products.length === 0) return;
-        
+
         if (productSlide >= products.length * 2) {
             setTimeout(() => {
                 setIsProductTransitioning(false);
@@ -182,9 +182,8 @@ export default function LandingPage() {
         description:
             "India's leading provider of advanced automotive diagnostic tools, key programming solutions, and specialized online training",
         url: process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com",
-        logo: `${
-            process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com"
-        }/images/logo/header-logo.png`,
+        logo: `${process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com"
+            }/images/logo/header-logo.png`,
         contactPoint: {
             "@type": "ContactPoint",
             telephone: "+91-8714388741",
@@ -229,9 +228,8 @@ export default function LandingPage() {
             "@type": "SearchAction",
             target: {
                 "@type": "EntryPoint",
-                urlTemplate: `${
-                    process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com"
-                }/courses?search={search_term_string}`,
+                urlTemplate: `${process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com"
+                    }/courses?search={search_term_string}`,
             },
             "query-input": "required name=search_term_string",
         },
@@ -340,69 +338,83 @@ export default function LandingPage() {
                 </section>
 
                 {/* Features Section */}
-                <section className="py-16 lg:py-24 bg-gray-50">
+                <section className="py-16 lg:py-24 bg-white">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl font-bold text-slate-900 mb-4">
+                        <div className="text-center mb-16">
+                            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
                                 Why Choose DiagTools?
                             </h2>
                             <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-                                Learn from industry experts with hands-on
-                                training in automotive diagnostics, ECM
-                                repairing, key programming, and IMMO
-                                programming. Multilingual support available.
+                                We provide a complete ecosystem for automotive professionals,
+                                combining world-class tools with specialized technical education.
                             </p>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {[
                                 {
-                                    image: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400&h=300&fit=crop",
-                                    title: "Expert Courses",
+                                    image: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&h=400&fit=crop",
+                                    title: "Industry-Specialized Expertise",
                                     description:
-                                        "Comprehensive courses covering ADAS, EV systems, diagnostics, and more",
+                                        "Focused exclusively on automotive diagnostics, programming, and electronic systems.",
                                 },
                                 {
-                                    image: "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&h=300&fit=crop",
-                                    title: "Learn from Experts",
+                                    image: "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=600&h=400&fit=crop",
+                                    title: "Professional-Grade Products",
                                     description:
-                                        "Taught by certified automotive professionals with years of experience",
+                                        "Reliable diagnostic tools, programmers, and workshop solutions trusted by professionals.",
                                 },
                                 {
-                                    image: "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=400&h=300&fit=crop",
-                                    title: "Certification",
+                                    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&h=400&fit=crop",
+                                    title: "Expert-Led Technical Training",
                                     description:
-                                        "Earn certificates upon completion to boost your career",
+                                        "Practical online training designed for real-world diagnostic and repair challenges.",
                                 },
                                 {
-                                    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=300&fit=crop",
-                                    title: "Video Tutorials",
+                                    image: "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600&h=400&fit=crop",
+                                    title: "Tools & Training in One Platform",
                                     description:
-                                        "Watch detailed video demonstrations and hands-on training",
+                                        "A complete solution combining product sales with skill development.",
+                                },
+                                {
+                                    image: "https://images.unsplash.com/photo-1498887960847-2a5e46312788?w=600&h=400&fit=crop",
+                                    title: "Workshop-Focused Solutions",
+                                    description:
+                                        "Designed to improve efficiency, accuracy, and confidence in modern vehicle repair.",
+                                },
+                                {
+                                    image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=600&h=400&fit=crop",
+                                    title: "Ongoing Support & Knowledge",
+                                    description:
+                                        "Continuous technical guidance and updated learning resources.",
                                 },
                             ].map((feature, index) => (
-                                <div
+                                <motion.div
                                     key={index}
-                                    className="bg-white rounded-lg overflow-hidden hover:shadow-md transition-all duration-200 border border-gray-200"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ once: true }}
+                                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                                    className="bg-gray-50 rounded-2xl overflow-hidden hover:bg-white hover:shadow-2xl hover:shadow-red-900/10 transition-all duration-500 border border-transparent hover:border-red-100 group cursor-default"
                                 >
-                                    <div className="h-40 w-full overflow-hidden relative">
+                                    <div className="h-48 w-full relative overflow-hidden">
                                         <Image
                                             src={feature.image}
-                                            alt={`${feature.title} - ${feature.description}`}
+                                            alt={feature.title}
                                             fill
-                                            className="object-cover"
-                                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                                            loading="lazy"
+                                            className="object-cover group-hover:scale-110 transition-transform duration-700"
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                                         />
+                                        <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                                     </div>
-                                    <div className="p-5">
-                                        <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                                    <div className="p-8">
+                                        <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-[#B00000] transition-colors duration-300">
                                             {feature.title}
                                         </h3>
-                                        <p className="text-sm text-slate-600">
+                                        <p className="text-slate-600 leading-relaxed text-sm">
                                             {feature.description}
                                         </p>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))}
                         </div>
                     </div>
@@ -440,23 +452,21 @@ export default function LandingPage() {
                                     <motion.div
                                         className="flex gap-4 md:gap-6"
                                         animate={{
-                                            x: `calc(${-currentSlide} * (${
-                                                100 / cardsPerView
-                                            }% + ${
-                                                cardsPerView === 1
+                                            x: `calc(${-currentSlide} * (${100 / cardsPerView
+                                                }% + ${cardsPerView === 1
                                                     ? 16
                                                     : cardsPerView === 2
-                                                    ? 12
-                                                    : 8
-                                            }px))`,
+                                                        ? 12
+                                                        : 8
+                                                }px))`,
                                         }}
                                         transition={
                                             isTransitioning
                                                 ? {
-                                                      type: "spring",
-                                                      stiffness: 300,
-                                                      damping: 30,
-                                                  }
+                                                    type: "spring",
+                                                    stiffness: 300,
+                                                    damping: 30,
+                                                }
                                                 : { duration: 0 }
                                         }
                                     >
@@ -482,12 +492,10 @@ export default function LandingPage() {
                                                                 course.cover_image ||
                                                                 "/images/placeholder-course.png"
                                                             }
-                                                            alt={`${
-                                                                course.name
-                                                            } - ${
-                                                                course.description ||
+                                                            alt={`${course.name
+                                                                } - ${course.description ||
                                                                 ""
-                                                            }`}
+                                                                }`}
                                                             fill
                                                             className="object-cover group-hover:scale-110 transition-transform duration-500"
                                                             sizes="(max-width: 768px) 100vw, 33vw"
@@ -537,15 +545,13 @@ export default function LandingPage() {
                                             onClick={() =>
                                                 setCurrentSlide(index)
                                             }
-                                            className={`h-1.5 md:h-2 rounded-full transition-all duration-300 ${
-                                                index ===
+                                            className={`h-1.5 md:h-2 rounded-full transition-all duration-300 ${index ===
                                                 currentSlide % courses.length
-                                                    ? "w-6 md:w-8 bg-[#B00000]"
-                                                    : "w-1.5 md:w-2 bg-gray-300 hover:bg-gray-400"
-                                            }`}
-                                            aria-label={`Go to slide ${
-                                                index + 1
-                                            }`}
+                                                ? "w-6 md:w-8 bg-[#B00000]"
+                                                : "w-1.5 md:w-2 bg-gray-300 hover:bg-gray-400"
+                                                }`}
+                                            aria-label={`Go to slide ${index + 1
+                                                }`}
                                         />
                                     ))}
                                 </div>
@@ -599,23 +605,21 @@ export default function LandingPage() {
                                     <motion.div
                                         className="flex gap-4 md:gap-6"
                                         animate={{
-                                            x: `calc(${-productSlide} * (${
-                                                100 / cardsPerView
-                                            }% + ${
-                                                cardsPerView === 1
+                                            x: `calc(${-productSlide} * (${100 / cardsPerView
+                                                }% + ${cardsPerView === 1
                                                     ? 16
                                                     : cardsPerView === 2
-                                                    ? 12
-                                                    : 8
-                                            }px))`,
+                                                        ? 12
+                                                        : 8
+                                                }px))`,
                                         }}
                                         transition={
                                             isProductTransitioning
                                                 ? {
-                                                      type: "spring",
-                                                      stiffness: 300,
-                                                      damping: 30,
-                                                  }
+                                                    type: "spring",
+                                                    stiffness: 300,
+                                                    damping: 30,
+                                                }
                                                 : { duration: 0 }
                                         }
                                     >
@@ -642,10 +646,9 @@ export default function LandingPage() {
                                                                 product.cover_image ||
                                                                 "/images/placeholder-product.png"
                                                             }
-                                                            alt={`${product.name} - ${
-                                                                product.description ||
+                                                            alt={`${product.name} - ${product.description ||
                                                                 ""
-                                                            }`}
+                                                                }`}
                                                             fill
                                                             className="object-cover group-hover:scale-110 transition-transform duration-500"
                                                             sizes="(max-width: 768px) 100vw, 33vw"
@@ -703,11 +706,10 @@ export default function LandingPage() {
                                         <button
                                             key={index}
                                             onClick={() => setProductSlide(products.length + index)}
-                                            className={`h-1.5 md:h-2 rounded-full transition-all duration-300 ${
-                                                index === productSlide % products.length
-                                                    ? "w-6 md:w-8 bg-[#B00000]"
-                                                    : "w-1.5 md:w-2 bg-gray-300 hover:bg-gray-400"
-                                            }`}
+                                            className={`h-1.5 md:h-2 rounded-full transition-all duration-300 ${index === productSlide % products.length
+                                                ? "w-6 md:w-8 bg-[#B00000]"
+                                                : "w-1.5 md:w-2 bg-gray-300 hover:bg-gray-400"
+                                                }`}
                                             aria-label={`Go to slide ${index + 1}`}
                                         />
                                     ))}

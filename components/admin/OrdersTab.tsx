@@ -17,10 +17,10 @@ function StatusPill({ status }: { status: string }) {
         status === "paid"
             ? "bg-green-50 text-green-700 border-green-200"
             : status === "pending"
-            ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-            : status === "cancelled"
-            ? "bg-red-50 text-red-700 border-red-200"
-            : "bg-gray-50 text-gray-700 border-gray-200";
+                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                : status === "cancelled"
+                    ? "bg-red-50 text-red-700 border-red-200"
+                    : "bg-gray-50 text-gray-700 border-gray-200";
     return (
         <span
             className={`inline-flex px-2 py-1 text-xs font-medium border rounded-full ${styles}`}
@@ -39,12 +39,19 @@ export const OrdersTab: React.FC = () => {
     const [orderDetails, setOrderDetails] = useState<any>(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [savingTracking, setSavingTracking] = useState(false);
+    const [itemImagesMap, setItemImagesMap] = useState<Record<string, { name: string; image: string | null }[]>>({});
     const [trackingForm, setTrackingForm] = useState({
         tracking_number: "",
         tracking_url: "",
         estimated_delivery_date: "",
     });
     const [search, setSearch] = useState("");
+
+    // Batch print state
+    const todayStr = new Date().toISOString().split('T')[0];
+    const [labelFromDate, setLabelFromDate] = useState(todayStr);
+    const [labelToDate, setLabelToDate] = useState(todayStr);
+    const [printingLabels, setPrintingLabels] = useState(false);
 
     const filteredOrders = useMemo(() => {
         if (!search.trim()) return orders;
@@ -110,6 +117,16 @@ export const OrdersTab: React.FC = () => {
             setOrderDetails(resp.data);
             setExpandedOrderId(orderId);
 
+            // Cache item images for this order
+            const items = resp.data?.items || [];
+            setItemImagesMap(prev => ({
+                ...prev,
+                [orderId]: items.map((item: any) => ({
+                    name: item.product_name,
+                    image: item.cover_image || null,
+                }))
+            }));
+
             const order = resp.data?.order;
             setTrackingForm({
                 tracking_number: order?.tracking_number || "",
@@ -154,6 +171,7 @@ export const OrdersTab: React.FC = () => {
     const downloadInvoice = async (order: AdminOrderSummary) => {
         try {
             toast.loading("Generating invoice...");
+            const orderNum = orders.length - orders.findIndex(o => o.id === order.id);
 
             const { jsPDF } = await import("jspdf");
             const pdf = new jsPDF();
@@ -188,8 +206,8 @@ export const OrdersTab: React.FC = () => {
             const leftCol = margin;
             const rightCol = pageWidth / 2 + 10;
 
-            addText(`Invoice No: INV-${order.id.slice(0, 8)}`, leftCol, yPosition, 10, true);
-            addText(`Order ID: #${order.id.slice(0, 8)}`, rightCol, yPosition, 10, true);
+            addText(`Invoice No: INV-${orderNum}`, leftCol, yPosition, 10, true);
+            addText(`Order ID: #${orderNum}`, rightCol, yPosition, 10, true);
             yPosition += 6;
 
             addText(`Date: ${new Date(order.created_at).toLocaleDateString('en-IN')}`, leftCol, yPosition, 9);
@@ -281,7 +299,7 @@ export const OrdersTab: React.FC = () => {
             yPosition += 4;
             pdf.text("This is a computer-generated invoice.", pageWidth / 2, yPosition, { align: 'center' });
 
-            pdf.save(`Invoice_${order.id.slice(0, 8)}_${Date.now()}.pdf`);
+            pdf.save(`Invoice_${orderNum}_${Date.now()}.pdf`);
             toast.dismiss();
             toast.success("Invoice downloaded successfully!");
         } catch (error) {
@@ -293,6 +311,7 @@ export const OrdersTab: React.FC = () => {
 
     const printShippingLabel = (order: AdminOrderSummary) => {
         const details = orderDetails?.order;
+        const orderNum = orders.length - orders.findIndex(o => o.id === order.id);
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
             alert('Please allow popups to print shipping labels');
@@ -304,7 +323,7 @@ export const OrdersTab: React.FC = () => {
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>Shipping Label - Order #${order.id.slice(0, 8)}</title>
+                <title>Shipping Label - Order #${orderNum}</title>
                 <style>
                     @media print { @page { size: A5 landscape; margin: 5mm; } body { margin: 0; padding: 0; } .no-print { display: none; } }
                     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -335,7 +354,7 @@ export const OrdersTab: React.FC = () => {
                             <div class="company-info">Pezhakkppilly P.O, Muvattupezha, Kerala - 686673<br>Phone: +91-8714388741 | Email: contact@diagtools.in</div>
                         </div>
                         <div class="order-info">
-                            <div class="order-number">Order #${order.id.slice(0, 8)}</div>
+                            <div class="order-number">Order #${orderNum}</div>
                             <div class="order-date">${new Date(order.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
                         </div>
                     </div>
@@ -385,33 +404,193 @@ export const OrdersTab: React.FC = () => {
         printWindow.document.close();
     };
 
+    // ─── Batch Print Shipping Labels ─────────────────────────────────────────
+    const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+        const out: T[][] = [];
+        for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+        return out;
+    };
+
+    const printBatchShippingLabels = async () => {
+        const from = new Date(labelFromDate); from.setHours(0, 0, 0, 0);
+        const to = new Date(labelToDate); to.setHours(23, 59, 59, 999);
+
+        const targetOrders = orders.filter((o) => {
+            const d = new Date(o.created_at);
+            return d >= from && d <= to && Number((o as any).physical_items) > 0;
+        });
+
+        if (targetOrders.length === 0) {
+            alert('No physical orders found for the selected date range.');
+            return;
+        }
+
+        setPrintingLabels(true);
+        try {
+            const detailsArr = await Promise.all(
+                targetOrders.map((o) => ordersApi.adminGetById(o.id).then((r) => r.data).catch(() => null))
+            );
+
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) { alert('Please allow popups to print shipping labels.'); return; }
+
+            const buildLabel = (order: AdminOrderSummary, details: any, isSecond: boolean) => {
+                const d = details?.order || {};
+                const name = `${d.first_name || order.first_name || ''} ${d.last_name || order.last_name || ''}`.trim();
+                const cityLine = [d.city, d.state && `${d.state}${d.pincode ? ' - ' + d.pincode : ''}`].filter(Boolean).join(', ');
+                return `
+                <div class="label${isSecond ? ' second' : ''}">
+                    <div class="label-inner">
+                        <div class="lbl-header">
+                            <div>
+                                <div class="co-name">DIAGTOOLS</div>
+                                <div class="co-sub">Pezhakkppilly P.O, Muvattupezha, Kerala - 686673</div>
+                                <div class="co-sub">+91-8714388741 &bull; contact@diagtools.in</div>
+                            </div>
+                            <div class="order-meta">
+                                <div class="ord-num">#${order.id.slice(0, 8).toUpperCase()}</div>
+                                <div class="ord-date">${new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                                ${d.tracking_number ? `<div class="trk">TRK: ${d.tracking_number}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="addrs">
+                            <div class="addr-box">
+                                <div class="addr-title">&#128230; SHIP TO</div>
+                                <div class="addr-name">${name || 'N/A'}</div>
+                                ${d.address ? `<div>${d.address}</div>` : ''}
+                                ${cityLine ? `<div>${cityLine}</div>` : ''}
+                                ${d.phone ? `<div>&#128222; ${d.phone}</div>` : ''}
+                                <div>&#9993; ${d.email || order.user_email || ''}</div>
+                            </div>
+                            <div class="addr-box">
+                                <div class="addr-title">&#128228; SHIP FROM</div>
+                                <div class="addr-name">DIAGTOOLS</div>
+                                <div>Pezhakkppilly P.O</div>
+                                <div>Muvattupezha, Kerala - 686673</div>
+                                <div>&#128222; +91-8714388741</div>
+                                <div>&#9993; contact@diagtools.in</div>
+                            </div>
+                        </div>
+                        ${d.estimated_delivery_date ? `<div class="eta">&#128338; Est. Delivery: ${new Date(d.estimated_delivery_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>` : ''}
+                        <div class="lbl-footer">Handle with care &bull; Automotive diagnostic equipment</div>
+                    </div>
+                </div>`;
+            };
+
+            const pages = chunkArray(detailsArr, 2).map((chunk, pi) => {
+                const label1 = buildLabel(targetOrders[pi * 2], chunk[0], false);
+                const label2 = chunk[1]
+                    ? buildLabel(targetOrders[pi * 2 + 1], chunk[1], true)
+                    : `<div class="label second blank"><div style="color:#ccc;font-size:11pt;text-align:center;padding-top:30mm;">— cut here / blank —</div></div>`;
+                return `<div class="page">${label1}${label2}</div>`;
+            }).join('');
+
+            const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>Shipping Labels ${labelFromDate} to ${labelToDate}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:Arial,sans-serif;background:#fff;}
+  .page{width:210mm;height:297mm;display:flex;flex-direction:column;overflow:hidden;page-break-after:always;}
+  .label{width:210mm;height:148.5mm;position:relative;}
+  .second{border-top:2px dashed #aaa;}
+  .label-inner{padding:7mm 10mm 5mm;height:100%;display:flex;flex-direction:column;gap:3mm;}
+  .lbl-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #000;padding-bottom:3mm;}
+  .co-name{font-size:15pt;font-weight:bold;color:#B00000;}
+  .co-sub{font-size:7pt;color:#444;line-height:1.5;}
+  .order-meta{text-align:right;}
+  .ord-num{font-size:13pt;font-weight:bold;font-family:'Courier New',monospace;}
+  .ord-date{font-size:7.5pt;color:#555;}
+  .trk{font-size:7pt;color:#333;margin-top:2px;}
+  .addrs{display:grid;grid-template-columns:1fr 1fr;gap:4mm;flex:1;}
+  .addr-box{border:1.5px solid #000;padding:3mm;font-size:8pt;line-height:1.6;}
+  .addr-title{font-size:6.5pt;font-weight:bold;text-transform:uppercase;border-bottom:1px solid #bbb;margin-bottom:2mm;padding-bottom:1mm;letter-spacing:.5px;}
+  .addr-name{font-size:10pt;font-weight:bold;margin-bottom:1mm;}
+  .eta{font-size:8pt;color:#333;text-align:center;}
+  .lbl-footer{font-size:7pt;color:#777;text-align:center;border-top:1px solid #eee;padding-top:2mm;}
+  .no-print{position:fixed;top:14px;right:14px;z-index:999;}
+  .pbtn{padding:10px 22px;background:#B00000;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25);}
+  @media print{@page{size:A4 portrait;margin:0;}body{margin:0;}.no-print{display:none;}.page{page-break-after:always;}}
+</style>
+</head><body>
+<div class="no-print"><button class="pbtn" onclick="window.print()">🖨 Print All (${detailsArr.length} labels)</button></div>
+${pages}
+</body></html>`;
+
+            printWindow.document.write(html);
+            printWindow.document.close();
+        } finally {
+            setPrintingLabels(false);
+        }
+    };
+
     return (
         <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                    <h2 className="text-lg font-semibold text-slate-900">Orders Management</h2>
-                    <p className="text-sm text-gray-500">View and manage customer orders</p>
+            <div className="px-6 py-4 border-b border-gray-200">
+                {/* Title row */}
+                <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
+                    <div>
+                        <h2 className="text-lg font-semibold text-slate-900">Orders Management</h2>
+                        <p className="text-sm text-gray-500">View and manage customer orders</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                            <input
+                                type="text"
+                                placeholder="Search orders, customer…"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent w-56"
+                            />
+                        </div>
+                        <button
+                            onClick={fetchOrders}
+                            className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-slate-900 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                        >
+                            Refresh
+                        </button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+
+                {/* Batch print shipping labels toolbar */}
+                <div className="flex items-center gap-3 flex-wrap pt-3 border-t border-gray-100">
+                    <Printer className="w-4 h-4 text-gray-500 shrink-0" />
+                    <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Print Shipping Labels:</span>
+                    <div className="flex items-center gap-2 text-sm">
+                        <label className="text-gray-500 text-xs whitespace-nowrap">From</label>
                         <input
-                            type="text"
-                            placeholder="Search orders, customer…"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent w-56"
+                            type="date"
+                            value={labelFromDate}
+                            onChange={(e) => setLabelFromDate(e.target.value)}
+                            className="px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                        <label className="text-gray-500 text-xs whitespace-nowrap">To</label>
+                        <input
+                            type="date"
+                            value={labelToDate}
+                            onChange={(e) => setLabelToDate(e.target.value)}
+                            className="px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                         />
                     </div>
                     <button
-                        onClick={fetchOrders}
-                        className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-slate-900 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                        onClick={printBatchShippingLabels}
+                        disabled={printingLabels}
+                        className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#B00000] text-white rounded-lg text-sm font-medium hover:bg-red-800 transition-colors disabled:opacity-60 whitespace-nowrap"
                     >
-                        Refresh
+                        {printingLabels ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Preparing…</>
+                        ) : (
+                            <><Printer className="w-4 h-4" /> Print Shipping Labels (2 per A4)</>
+                        )}
                     </button>
+                    <span className="text-xs text-gray-400">Only physical orders • Cut A4 in half to get 2 labels</span>
                 </div>
             </div>
+
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 border-b border-gray-200">
@@ -475,8 +654,39 @@ export const OrdersTab: React.FC = () => {
                                 <React.Fragment key={order.id}>
                                     <tr className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
-                                            <div className="text-sm font-mono font-medium text-slate-900">#{order.id.slice(0, 8)}</div>
-                                            {order.item_names ? (
+                                            <div className="text-sm font-mono font-medium text-slate-900">#{orders.length - orders.findIndex(o => o.id === order.id)}</div>
+                                            {/* Stacked item images */}
+                                            {itemImagesMap[order.id] && itemImagesMap[order.id].length > 0 ? (
+                                                <div className="flex items-center mt-2">
+                                                    <div className="flex -space-x-2">
+                                                        {itemImagesMap[order.id].slice(0, 3).map((item, i) => (
+                                                            item.image ? (
+                                                                <img
+                                                                    key={i}
+                                                                    src={item.image}
+                                                                    alt={item.name}
+                                                                    title={item.name}
+                                                                    className="h-8 w-8 rounded-full object-cover border-2 border-white ring-1 ring-gray-200"
+                                                                />
+                                                            ) : (
+                                                                <div
+                                                                    key={i}
+                                                                    title={item.name}
+                                                                    className="h-8 w-8 rounded-full bg-gray-100 border-2 border-white ring-1 ring-gray-200 flex items-center justify-center text-xs text-gray-400 font-medium"
+                                                                >
+                                                                    {item.name[0]}
+                                                                </div>
+                                                            )
+                                                        ))}
+                                                        {itemImagesMap[order.id].length > 3 && (
+                                                            <div className="h-8 w-8 rounded-full bg-gray-200 border-2 border-white ring-1 ring-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
+                                                                +{itemImagesMap[order.id].length - 3}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <span className="ml-2 text-xs text-gray-500">{itemImagesMap[order.id].length} item{itemImagesMap[order.id].length !== 1 ? 's' : ''}</span>
+                                                </div>
+                                            ) : order.item_names ? (
                                                 <div className="text-xs text-gray-700 mt-1 max-w-xs">
                                                     <span className="font-medium">Items: </span>
                                                     {order.item_names.length > 60 ? `${order.item_names.substring(0, 60)}...` : order.item_names}
@@ -658,9 +868,21 @@ export const OrdersTab: React.FC = () => {
                                                         </h3>
                                                         <div className="space-y-2">
                                                             {orderDetails.items && orderDetails.items.map((item: any) => (
-                                                                <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                                    <div className="flex-1">
-                                                                        <div className="text-sm font-medium text-slate-900">{item.product_name}</div>
+                                                                <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg gap-3">
+                                                                    {/* Thumbnail */}
+                                                                    {item.cover_image ? (
+                                                                        <img
+                                                                            src={item.cover_image}
+                                                                            alt={item.product_name}
+                                                                            className="h-12 w-12 rounded-lg object-cover border border-gray-200 shrink-0"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="h-12 w-12 rounded-lg bg-gray-200 border border-gray-200 flex items-center justify-center shrink-0 text-sm font-bold text-gray-400">
+                                                                            {item.product_name?.[0] || "?"}
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-sm font-medium text-slate-900 truncate">{item.product_name}</div>
                                                                         <div className="text-xs text-gray-500 mt-1">
                                                                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded ${item.product_type === 'physical' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
                                                                                 {item.product_type === 'physical' ? <Package className="w-3 h-3" /> : <Download className="w-3 h-3" />}
@@ -668,7 +890,7 @@ export const OrdersTab: React.FC = () => {
                                                                             </span>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="text-right ml-4">
+                                                                    <div className="text-right ml-2 shrink-0">
                                                                         <div className="text-sm text-gray-600">Qty: {item.quantity}</div>
                                                                         <div className="text-sm font-semibold text-[#B00000]">₹{Number(item.unit_price).toFixed(2)}</div>
                                                                     </div>

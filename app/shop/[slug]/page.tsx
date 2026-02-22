@@ -19,6 +19,7 @@ import {
     Share2,
     Check,
     FileText,
+    Truck,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { productsApi } from "@/lib/api/products";
@@ -785,6 +786,27 @@ export default function ProductDetailPage() {
                                                     </span>
                                                 </div>
                                             )}
+                                        </div>
+
+                                        {/* Delivery Estimates */}
+                                        <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                            <p className="text-xs font-semibold text-slate-900 mb-1.5 flex items-center gap-1.5">
+                                                <Truck className="w-3.5 h-3.5 text-[#B00000]" />
+                                                Estimated Delivery
+                                            </p>
+                                            <ul className="text-[11px] text-slate-600 space-y-1">
+                                                <li className="flex justify-between">
+                                                    <span>Within Kerala:</span>
+                                                    <span className="font-medium">2–3 business days</span>
+                                                </li>
+                                                <li className="flex justify-between">
+                                                    <span>Outside Kerala:</span>
+                                                    <span className="font-medium">3–10 business days</span>
+                                                </li>
+                                            </ul>
+                                            <p className="text-[10px] text-gray-400 mt-2 italic">
+                                                * For special courier requests, contact support within 12 hours of purchase.
+                                            </p>
                                         </div>
                                     </div>
                                 )}

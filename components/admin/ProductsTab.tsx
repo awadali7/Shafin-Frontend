@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Edit2, Plus, Trash2, X, Image as ImageIcon, Video, Trash, Search } from "lucide-react";
+import { Edit2, Plus, Trash2, X, Image as ImageIcon, Video, Trash, Search, Eye } from "lucide-react";
 import { productsApi } from "@/lib/api/products";
 import { adminApi } from "@/lib/api/admin";
 import type { Product, ProductType, User, ProductVideo } from "@/lib/api/types";
@@ -116,7 +116,7 @@ export const ProductsTab: React.FC = () => {
             setCropTarget({ type, index });
             setCropModalOpen(true);
             // Clear input so same file can be selected again if cancelled
-            e.target.value = ''; 
+            e.target.value = '';
         }
     };
 
@@ -128,15 +128,15 @@ export const ProductsTab: React.FC = () => {
         if (cropTarget.type === 'cover') {
             setForm(p => ({ ...p, cover_image: file }));
         } else if (cropTarget.type === 'gallery' && typeof cropTarget.index === 'number') {
-             fileToDataURL(file).then(preview => {
-                 setForm(p => {
-                     const newImages = [...p.images];
-                     newImages[cropTarget.index!] = { file, preview };
-                     return { ...p, images: newImages };
-                 });
-             });
+            fileToDataURL(file).then(preview => {
+                setForm(p => {
+                    const newImages = [...p.images];
+                    newImages[cropTarget.index!] = { file, preview };
+                    return { ...p, images: newImages };
+                });
+            });
         }
-        
+
         setCropModalOpen(false);
         setCropImageSrc(null);
         setCropTarget(null);
@@ -155,7 +155,7 @@ export const ProductsTab: React.FC = () => {
             const resp = await productsApi.adminListAll();
             const productsList = Array.isArray(resp.data) ? resp.data : [];
             setProducts(productsList);
-            
+
             // Extract unique categories
             const categories = new Set<string>();
             productsList.forEach(p => {
@@ -222,7 +222,7 @@ export const ProductsTab: React.FC = () => {
             const imageFiles = form.images
                 .map(img => img.file)
                 .filter((file): file is File => file !== null);
-            
+
             const videos = form.videos
                 .filter(video => video.url && video.url.trim() !== "")
                 .map(video => ({
@@ -233,7 +233,7 @@ export const ProductsTab: React.FC = () => {
 
             // Filter out empty categories
             const filteredCategories = form.categories.filter(cat => cat && cat.trim());
-            
+
             // Filter and prepare tiered pricing
             const quantityPricing = form.quantity_pricing
                 .filter(tier => tier.min_qty && tier.price_per_item)
@@ -244,7 +244,7 @@ export const ProductsTab: React.FC = () => {
                     courier_charge: Number(tier.courier_charge) || 0
                 }))
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
-            
+
             if (!editing) {
                 await productsApi.adminCreate({
                     name: form.name,
@@ -412,22 +412,25 @@ export const ProductsTab: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                                Image
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Product
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Type
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Category
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Price
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Actions
                             </th>
                         </tr>
@@ -436,7 +439,7 @@ export const ProductsTab: React.FC = () => {
                         {loading ? (
                             <tr>
                                 <td
-                                    colSpan={6}
+                                    colSpan={7}
                                     className="px-6 py-10 text-center text-gray-500"
                                 >
                                     Loading...
@@ -445,7 +448,7 @@ export const ProductsTab: React.FC = () => {
                         ) : products.length === 0 ? (
                             <tr>
                                 <td
-                                    colSpan={6}
+                                    colSpan={7}
                                     className="px-6 py-10 text-center text-gray-500"
                                 >
                                     No products yet
@@ -454,7 +457,21 @@ export const ProductsTab: React.FC = () => {
                         ) : (
                             filteredProducts.map((p) => (
                                 <tr key={p.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4">
+                                    {/* Image thumbnail */}
+                                    <td className="px-4 py-3 whitespace-nowrap">
+                                        {p.cover_image ? (
+                                            <img
+                                                src={p.cover_image}
+                                                alt={p.name}
+                                                className="h-12 w-12 rounded-lg object-cover border border-gray-200"
+                                            />
+                                        ) : (
+                                            <div className="h-12 w-12 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
+                                                <ImageIcon className="w-5 h-5 text-gray-400" />
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3">
                                         <div className="text-sm font-medium text-slate-900">
                                             {p.name}
                                         </div>
@@ -468,48 +485,56 @@ export const ProductsTab: React.FC = () => {
                                                 </div>
                                             )}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
+                                    <td className="px-4 py-3 whitespace-nowrap">
                                         <span
-                                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${
-                                                p.type === "digital"
-                                                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                                                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                            }`}
+                                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${p.type === "digital"
+                                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                }`}
                                         >
                                             {p.type.toUpperCase()}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                                         {p.category || "-"}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-[#B00000]">
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-[#B00000]">
                                         ₹{Number(p.price).toFixed(2)}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                                         {p.is_active === false
                                             ? "Inactive"
                                             : "Active"}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end gap-2">
+                                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                        <div className="flex items-center justify-end gap-1.5">
                                             {p.type === "digital" && (
                                                 <button
                                                     onClick={() => openGrant(p)}
-                                                    className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700"
+                                                    className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-700"
                                                 >
                                                     Grant
                                                 </button>
                                             )}
+                                            <a
+                                                href={`/shop/${p.slug}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                title="View product"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </a>
                                             <button
                                                 onClick={() => openEdit(p)}
-                                                className="p-2 text-gray-500 hover:text-[#B00000] hover:bg-gray-100 rounded-lg transition-colors"
+                                                className="p-1.5 text-gray-500 hover:text-[#B00000] hover:bg-gray-100 rounded-lg transition-colors"
                                                 aria-label="Edit"
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => deleteProduct(p)}
-                                                className="p-2 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors"
                                                 aria-label="Delete"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -652,8 +677,8 @@ export const ProductsTab: React.FC = () => {
                                                 {index === 0 && showCategoryDropdown && existingCategories.length > 0 && (
                                                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                                                         {existingCategories
-                                                            .filter(cat => 
-                                                                !categoryInputValue || 
+                                                            .filter(cat =>
+                                                                !categoryInputValue ||
                                                                 cat.toLowerCase().includes(categoryInputValue.toLowerCase())
                                                             )
                                                             .map((cat) => (
@@ -711,7 +736,7 @@ export const ProductsTab: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">
                                         Multi-language Descriptions
                                     </h3>
-                                    
+
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             English Description
@@ -722,10 +747,10 @@ export const ProductsTab: React.FC = () => {
                                                 setForm((p) => ({
                                                     ...p,
                                                     english_description: e.target.value,
-                                            }))
-                                        }
-                                        rows={4}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                }))
+                                            }
+                                            rows={4}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                             placeholder="Enter product description in English..."
                                         />
                                     </div>
@@ -817,7 +842,7 @@ export const ProductsTab: React.FC = () => {
                                     <p className="text-xs text-gray-600 mb-3">
                                         Set price per item and courier charge based on quantity ranges.
                                     </p>
-                                    
+
                                     <div className="space-y-2">
                                         {form.quantity_pricing.map((tier, index) => {
                                             const minQty = Number(tier.min_qty) || 0;
@@ -828,53 +853,53 @@ export const ProductsTab: React.FC = () => {
                                             const savingsPercent = form.price > 0 ? Math.round((savingsPerItem / form.price) * 100) : 0;
                                             const exampleQty = minQty > 0 ? Math.max(minQty, 2) : 2;
                                             const exampleTotal = pricePerItem > 0 ? (pricePerItem * exampleQty) + courierCharge : 0;
-                                            
+
                                             return (
                                                 <div key={index} className="bg-white p-3 rounded border border-gray-200">
                                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
-                                                    <div className="flex items-center gap-1">
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            placeholder="Min"
-                                                            value={tier.min_qty}
-                                                            onChange={(e) => {
-                                                                const newPricing = [...form.quantity_pricing];
-                                                                newPricing[index] = { ...newPricing[index], min_qty: e.target.value };
-                                                                setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                            }}
-                                                            className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
-                                                        />
-                                                        <span className="text-gray-400 text-xs">to</span>
-                                                        <input
-                                                            type="number"
-                                                            min="1"
+                                                        <div className="flex items-center gap-1">
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                placeholder="Min"
+                                                                value={tier.min_qty}
+                                                                onChange={(e) => {
+                                                                    const newPricing = [...form.quantity_pricing];
+                                                                    newPricing[index] = { ...newPricing[index], min_qty: e.target.value };
+                                                                    setForm(p => ({ ...p, quantity_pricing: newPricing }));
+                                                                }}
+                                                                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
+                                                            />
+                                                            <span className="text-gray-400 text-xs">to</span>
+                                                            <input
+                                                                type="number"
+                                                                min="1"
                                                                 placeholder="Max"
-                                                            value={tier.max_qty || ""}
-                                                            onChange={(e) => {
-                                                                const newPricing = [...form.quantity_pricing];
-                                                                newPricing[index] = { ...newPricing[index], max_qty: e.target.value || null };
-                                                                setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                            }}
-                                                            className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
-                                                        />
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
+                                                                value={tier.max_qty || ""}
+                                                                onChange={(e) => {
+                                                                    const newPricing = [...form.quantity_pricing];
+                                                                    newPricing[index] = { ...newPricing[index], max_qty: e.target.value || null };
+                                                                    setForm(p => ({ ...p, quantity_pricing: newPricing }));
+                                                                }}
+                                                                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
+                                                            />
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
                                                             <span className="text-gray-500 text-xs">₹</span>
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            min="0"
+                                                            <input
+                                                                type="number"
+                                                                step="0.01"
+                                                                min="0"
                                                                 placeholder="Price/item"
-                                                            value={tier.price_per_item}
-                                                            onChange={(e) => {
-                                                                const newPricing = [...form.quantity_pricing];
-                                                                newPricing[index] = { ...newPricing[index], price_per_item: e.target.value };
-                                                                setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                            }}
-                                                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
-                                                        />
-                                                    </div>
+                                                                value={tier.price_per_item}
+                                                                onChange={(e) => {
+                                                                    const newPricing = [...form.quantity_pricing];
+                                                                    newPricing[index] = { ...newPricing[index], price_per_item: e.target.value };
+                                                                    setForm(p => ({ ...p, quantity_pricing: newPricing }));
+                                                                }}
+                                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
+                                                            />
+                                                        </div>
                                                         <div className="flex items-center gap-1">
                                                             <span className="text-gray-500 text-xs">🚚</span>
                                                             <input
@@ -899,23 +924,23 @@ export const ProductsTab: React.FC = () => {
                                                             )}
                                                             {exampleTotal > 0 && (
                                                                 <span className="text-blue-600">Ex: {exampleQty} items = ₹{exampleTotal.toFixed(0)}</span>
-                                                    )}
+                                                            )}
                                                         </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const newPricing = form.quantity_pricing.filter((_, i) => i !== index);
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newPricing = form.quantity_pricing.filter((_, i) => i !== index);
                                                                 setForm(p => ({ ...p, quantity_pricing: newPricing.length > 0 ? newPricing : [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }] }));
-                                                        }}
-                                                        className="p-1 text-red-500 hover:bg-red-50 rounded"
-                                                    >
-                                                        <Trash className="w-4 h-4" />
-                                                    </button>
+                                                            }}
+                                                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                        >
+                                                            <Trash className="w-4 h-4" />
+                                                        </button>
                                                     </div>
                                                 </div>
                                             );
                                         })}
-                                        
+
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -928,7 +953,7 @@ export const ProductsTab: React.FC = () => {
                                         >
                                             + Add Pricing Tier
                                         </button>
-                                        
+
                                         <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-800">
                                             <strong>Example:</strong> 1-1: ₹100, 2-5: ₹90, 6-10: ₹80, 11+: ₹70 (leave max empty for unlimited)
                                         </div>
@@ -945,8 +970,8 @@ export const ProductsTab: React.FC = () => {
                                     </label>
                                     {form.cover_image && (
                                         <div className="mb-3 relative inline-block">
-                                            <img 
-                                                src={URL.createObjectURL(form.cover_image)} 
+                                            <img
+                                                src={URL.createObjectURL(form.cover_image)}
                                                 alt="Cover preview"
                                                 className="w-40 h-24 object-cover rounded border border-gray-200"
                                             />
@@ -981,8 +1006,8 @@ export const ProductsTab: React.FC = () => {
                                         {form.images.map((img, index) => (
                                             <div key={index} className="flex gap-2 items-center">
                                                 {(img.preview || (img.file && URL.createObjectURL(img.file))) && (
-                                                    <img 
-                                                        src={img.preview || (img.file ? URL.createObjectURL(img.file) : "")} 
+                                                    <img
+                                                        src={img.preview || (img.file ? URL.createObjectURL(img.file) : "")}
                                                         alt={`Preview ${index + 1}`}
                                                         className="w-16 h-16 object-cover rounded border border-gray-200"
                                                     />
@@ -1087,12 +1112,12 @@ export const ProductsTab: React.FC = () => {
                                         <h4 className="text-sm font-medium text-blue-900 mb-2">
                                             Digital File Source
                                         </h4>
-                                        
+
                                         <div className="flex items-center space-x-4 mb-4">
                                             <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input 
-                                                    type="radio" 
-                                                    name="digital_source" 
+                                                <input
+                                                    type="radio"
+                                                    name="digital_source"
                                                     checked={!form.digital_file_name_input}
                                                     onChange={() => setForm(p => ({ ...p, digital_file_name_input: "" }))}
                                                     className="text-[#B00000] focus:ring-[#B00000]"
@@ -1100,9 +1125,9 @@ export const ProductsTab: React.FC = () => {
                                                 <span className="text-sm text-gray-700">Upload New File</span>
                                             </label>
                                             <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input 
-                                                    type="radio" 
-                                                    name="digital_source" 
+                                                <input
+                                                    type="radio"
+                                                    name="digital_source"
                                                     checked={!!form.digital_file_name_input}
                                                     onChange={() => setForm(p => ({ ...p, digital_file_name_input: " " }))} // Set dummy to switch mode
                                                     className="text-[#B00000] focus:ring-[#B00000]"
@@ -1134,7 +1159,7 @@ export const ProductsTab: React.FC = () => {
                                                 </p>
                                             </div>
                                         ) : (
-                                             <div>
+                                            <div>
                                                 <label className="block text-sm font-medium text-blue-900 mb-1">
                                                     Paste Filename from Library *
                                                 </label>
@@ -1260,8 +1285,8 @@ export const ProductsTab: React.FC = () => {
                                             {isSubmitting
                                                 ? "Saving..."
                                                 : editing
-                                                ? "Save"
-                                                : "Create"}
+                                                    ? "Save"
+                                                    : "Create"}
                                         </button>
                                     </div>
                                 </div>

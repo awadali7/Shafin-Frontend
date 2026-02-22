@@ -243,11 +243,11 @@ export default function CheckoutPage() {
                     phone: formData.phone,
                     ...(hasPhysicalItems
                         ? {
-                              address: formData.address,
-                              city: formData.city,
-                              state: formData.state,
-                              pincode: formData.pincode,
-                          }
+                            address: formData.address,
+                            city: formData.city,
+                            state: formData.state,
+                            pincode: formData.pincode,
+                        }
                         : {}),
                 },
             };
@@ -263,7 +263,7 @@ export default function CheckoutPage() {
                 clearCart();
                 alert(
                     "Order placed successfully! You will pay on delivery. Order ID: " +
-                        orderId
+                    orderId
                 );
                 router.push("/orders");
                 setIsProcessingPayment(false);
@@ -310,14 +310,14 @@ export default function CheckoutPage() {
                         // Payment verified successfully
                         clearCart();
                         setIsProcessingPayment(false);
-                        
+
                         // Redirect based on product type
                         if (hasPhysicalItems && !hasDigitalItems) {
                             // Only physical products -> My Orders
                             router.push("/orders");
                         } else if (hasDigitalItems && !hasPhysicalItems) {
                             // Only digital products -> My Downloads
-                        router.push("/downloads");
+                            router.push("/downloads");
                         } else {
                             // Mixed order -> My Orders (shows all orders)
                             router.push("/orders");
@@ -388,7 +388,7 @@ export default function CheckoutPage() {
                 // Redirect to Business KYC page with redirect path
                 alert(
                     errorResponse.message ||
-                        "Business KYC verification is required to complete this purchase."
+                    "Business KYC verification is required to complete this purchase."
                 );
                 router.push(`/kyc/product?redirect=/checkout`);
                 return;
@@ -404,7 +404,7 @@ export default function CheckoutPage() {
             if (errorResponse.single_quantity_required) {
                 alert(
                     errorResponse.message ||
-                        "Students can only purchase a single quantity of KYC-required products."
+                    "Students can only purchase a single quantity of KYC-required products."
                 );
                 return;
             }
@@ -456,11 +456,10 @@ export default function CheckoutPage() {
                                         name="firstName"
                                         value={formData.firstName}
                                         onChange={handleInputChange}
-                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${
-                                            errors.firstName
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.firstName
                                                 ? "border-red-300"
                                                 : "border-gray-300"
-                                        }`}
+                                            }`}
                                     />
                                     {errors.firstName && (
                                         <p className="text-xs text-red-600 mt-1">
@@ -477,11 +476,10 @@ export default function CheckoutPage() {
                                         name="lastName"
                                         value={formData.lastName}
                                         onChange={handleInputChange}
-                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${
-                                            errors.lastName
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.lastName
                                                 ? "border-red-300"
                                                 : "border-gray-300"
-                                        }`}
+                                            }`}
                                     />
                                     {errors.lastName && (
                                         <p className="text-xs text-red-600 mt-1">
@@ -499,11 +497,10 @@ export default function CheckoutPage() {
                                     name="email"
                                     value={formData.email}
                                     onChange={handleInputChange}
-                                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${
-                                        errors.email
+                                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.email
                                             ? "border-red-300"
                                             : "border-gray-300"
-                                    }`}
+                                        }`}
                                 />
                                 {errors.email && (
                                     <p className="text-xs text-red-600 mt-1">
@@ -520,11 +517,10 @@ export default function CheckoutPage() {
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleInputChange}
-                                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${
-                                        errors.phone
+                                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.phone
                                             ? "border-red-300"
                                             : "border-gray-300"
-                                    }`}
+                                        }`}
                                 />
                                 {errors.phone && (
                                     <p className="text-xs text-red-600 mt-1">
@@ -543,11 +539,10 @@ export default function CheckoutPage() {
                                             value={formData.address}
                                             onChange={handleInputChange}
                                             rows={3}
-                                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${
-                                                errors.address
+                                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.address
                                                     ? "border-red-300"
                                                     : "border-gray-300"
-                                            }`}
+                                                }`}
                                         />
                                         {errors.address && (
                                             <p className="text-xs text-red-600 mt-1">
@@ -565,11 +560,10 @@ export default function CheckoutPage() {
                                                 name="city"
                                                 value={formData.city}
                                                 onChange={handleInputChange}
-                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${
-                                                    errors.city
+                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.city
                                                         ? "border-red-300"
                                                         : "border-gray-300"
-                                                }`}
+                                                    }`}
                                             />
                                             {errors.city && (
                                                 <p className="text-xs text-red-600 mt-1">
@@ -586,11 +580,10 @@ export default function CheckoutPage() {
                                                 name="state"
                                                 value={formData.state}
                                                 onChange={handleInputChange}
-                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${
-                                                    errors.state
+                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.state
                                                         ? "border-red-300"
                                                         : "border-gray-300"
-                                                }`}
+                                                    }`}
                                             />
                                             {errors.state && (
                                                 <p className="text-xs text-red-600 mt-1">
@@ -607,11 +600,10 @@ export default function CheckoutPage() {
                                                 name="pincode"
                                                 value={formData.pincode}
                                                 onChange={handleInputChange}
-                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${
-                                                    errors.pincode
+                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.pincode
                                                         ? "border-red-300"
                                                         : "border-gray-300"
-                                                }`}
+                                                    }`}
                                             />
                                             {errors.pincode && (
                                                 <p className="text-xs text-red-600 mt-1">
@@ -749,9 +741,9 @@ export default function CheckoutPage() {
                                                                     Infinity;
                                                                 return (
                                                                     item.quantity >=
-                                                                        minQty &&
+                                                                    minQty &&
                                                                     item.quantity <=
-                                                                        maxQty
+                                                                    maxQty
                                                                 );
                                                             }
                                                         );
@@ -760,7 +752,7 @@ export default function CheckoutPage() {
                                                         const courierCharge = tier.courier_charge || 0;
                                                         return (
                                                             (tier.price_per_item *
-                                                            item.quantity) + courierCharge
+                                                                item.quantity) + courierCharge
                                                         ).toFixed(2);
                                                     }
                                                 }
@@ -797,6 +789,31 @@ export default function CheckoutPage() {
                                 </span>
                             </div>
                         </div>
+
+                        {/* Delivery Info Notice */}
+                        {hasPhysicalItems && (
+                            <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                                    <Package className="w-4 h-4 text-[#B00000]" />
+                                    Delivery Information
+                                </h3>
+                                <div className="space-y-1 text-xs text-slate-600">
+                                    <div className="flex justify-between">
+                                        <span>Within Kerala:</span>
+                                        <span className="font-medium">2–3 business days</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Outside Kerala:</span>
+                                        <span className="font-medium">3–10 business days</span>
+                                    </div>
+                                </div>
+                                <div className="mt-3 pt-3 border-t border-slate-200">
+                                    <p className="text-[11px] text-[#B00000] leading-relaxed">
+                                        <strong>Note:</strong> Contact support within <strong>12 hours</strong> of purchase for any special courier service requests.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

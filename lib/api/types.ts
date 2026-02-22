@@ -293,6 +293,26 @@ export interface UserDashboardData {
         created_at: string;
         reviewed_at?: string;
     }>;
+    orders: Array<{
+        id: string;
+        status: string;
+        total: number;
+        created_at: string;
+        tracking_number?: string;
+    }>;
+    downloads: Array<{
+        id: string;
+        product_name: string;
+        product_slug: string;
+        cover_image: string | null;
+        created_at: string;
+    }>;
+    kyc_status: {
+        status: string;
+        rejection_reason?: string;
+        verified_at?: string;
+        updated_at?: string;
+    } | null;
 }
 
 export interface AdminDashboardData {

@@ -15,6 +15,12 @@ import {
     Loader2,
     ExternalLink,
     Briefcase,
+    ShoppingBag,
+    Download,
+    Search,
+    Store,
+    CreditCard,
+    FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { authApi } from "@/lib/api/auth";
@@ -517,6 +523,46 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
+                    {/* Quick Actions */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <Link
+                            href="/courses"
+                            className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#B00000] transition-all group flex flex-col items-center text-center"
+                        >
+                            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#B00000]/10 transition-colors">
+                                <Search className="w-5 h-5 text-blue-600 group-hover:text-[#B00000]" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-900">Browse Courses</span>
+                        </Link>
+                        <Link
+                            href="/shop"
+                            className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#B00000] transition-all group flex flex-col items-center text-center"
+                        >
+                            <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#B00000]/10 transition-colors">
+                                <Store className="w-5 h-5 text-green-600 group-hover:text-[#B00000]" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-900">Shop</span>
+                        </Link>
+                        <Link
+                            href="/downloads"
+                            className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#B00000] transition-all group flex flex-col items-center text-center"
+                        >
+                            <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#B00000]/10 transition-colors">
+                                <Download className="w-5 h-5 text-purple-600 group-hover:text-[#B00000]" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-900">My Downloads</span>
+                        </Link>
+                        <Link
+                            href="/orders"
+                            className="bg-white p-4 rounded-xl border border-gray-200 hover:border-[#B00000] transition-all group flex flex-col items-center text-center"
+                        >
+                            <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center mb-3 group-hover:bg-[#B00000]/10 transition-colors">
+                                <ShoppingBag className="w-5 h-5 text-orange-600 group-hover:text-[#B00000]" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-900">My Orders</span>
+                        </Link>
+                    </div>
+
                     {/* Complete Profile Section (For Guests/New Users) */}
                     {!user?.user_type && (
                         <div className="mb-6 bg-white rounded-lg border border-gray-200 p-6">
@@ -607,6 +653,55 @@ export default function DashboardPage() {
                         </div>
                     )}
 
+                    {/* Business KYC Status Card */}
+                    {user?.user_type === "business_owner" && userDashboard.kyc_status && (
+                        <div className="mb-6 bg-white rounded-lg border border-gray-200 p-6">
+                            <h2 className="text-lg font-semibold text-slate-900 mb-4">
+                                Business Verification Status
+                            </h2>
+                            <div className={`p-4 rounded-lg border flex flex-col md:flex-row items-start md:items-center gap-4 ${userDashboard.kyc_status.status === 'verified'
+                                    ? 'bg-green-50 border-green-100'
+                                    : userDashboard.kyc_status.status === 'pending'
+                                        ? 'bg-yellow-50 border-yellow-100'
+                                        : 'bg-red-50 border-red-100'
+                                }`}>
+                                <div className={`p-3 rounded-full ${userDashboard.kyc_status.status === 'verified'
+                                        ? 'bg-green-100'
+                                        : userDashboard.kyc_status.status === 'pending'
+                                            ? 'bg-yellow-100'
+                                            : 'bg-red-100'
+                                    }`}>
+                                    {userDashboard.kyc_status.status === 'verified' && <CheckCircle className="w-6 h-6 text-green-600" />}
+                                    {userDashboard.kyc_status.status === 'pending' && <Loader2 className="w-6 h-6 text-yellow-600 animate-spin" />}
+                                    {userDashboard.kyc_status.status === 'rejected' && <AlertCircle className="w-6 h-6 text-red-600" />}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-slate-900 capitalize text-sm">
+                                        Status: {userDashboard.kyc_status.status}
+                                    </h3>
+                                    <p className="text-xs text-gray-600 mt-1">
+                                        {userDashboard.kyc_status.status === 'verified'
+                                            ? 'Your business verification is complete. You can now access all B2B features.'
+                                            : userDashboard.kyc_status.status === 'pending'
+                                                ? 'Your verification is currently under review by our team.'
+                                                : `Verification rejected: ${userDashboard.kyc_status.rejection_reason || 'Please contact support.'}`
+                                        }
+                                    </p>
+                                    {userDashboard.kyc_status.status === 'rejected' && (
+                                        <Link href="/kyc/product" className="inline-block mt-3 text-xs text-[#B00000] font-semibold hover:underline">
+                                            Resubmit KYC Documents →
+                                        </Link>
+                                    )}
+                                </div>
+                                {userDashboard.kyc_status.status === 'verified' && userDashboard.kyc_status.verified_at && (
+                                    <div className="text-xs text-gray-400">
+                                        Verified on: {new Date(userDashboard.kyc_status.verified_at).toLocaleDateString()}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Performance Stats */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                         <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
@@ -676,7 +771,7 @@ export default function DashboardPage() {
                     {/* Currently Watching & Notifications - Side by Side */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                         {/* Currently Watching Video */}
-                        {userDashboard.current_video && (
+                        {userDashboard.current_video ? (
                             <div className="bg-white rounded-lg border border-gray-200 p-4">
                                 <h2 className="text-sm font-semibold text-slate-900 mb-3 flex items-center">
                                     <Play className="w-4 h-4 mr-1.5" />
@@ -698,6 +793,24 @@ export default function DashboardPage() {
                                     >
                                         Continue{" "}
                                         <ExternalLink className="w-3 h-3 ml-1" />
+                                    </Link>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-lg border border-gray-200 p-4">
+                                <h2 className="text-sm font-semibold text-slate-900 mb-3 flex items-center">
+                                    <Play className="w-4 h-4 mr-1.5" />
+                                    Start Learning
+                                </h2>
+                                <div className="bg-gray-50 rounded p-3 flex flex-col items-center justify-center text-center py-6">
+                                    <p className="text-sm text-gray-600 mb-3">
+                                        You haven't started any videos yet.
+                                    </p>
+                                    <Link
+                                        href="/courses"
+                                        className="inline-flex items-center px-4 py-2 bg-[#B00000] text-white text-xs font-medium rounded hover:bg-red-800 transition-colors"
+                                    >
+                                        Browse Courses <ExternalLink className="w-3 h-3 ml-1.5" />
                                     </Link>
                                 </div>
                             </div>
@@ -733,51 +846,167 @@ export default function DashboardPage() {
                         )}
                     </div>
 
+                    {/* Recent Orders & My Downloads */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                        {/* Recent Orders */}
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-sm font-semibold text-slate-900 flex items-center">
+                                    <ShoppingBag className="w-4 h-4 mr-1.5" />
+                                    Recent Orders
+                                </h2>
+                                <Link href="/orders" className="text-xs text-[#B00000] hover:underline">View All</Link>
+                            </div>
+                            <div className="space-y-3">
+                                {userDashboard.orders && userDashboard.orders.length > 0 ? (
+                                    userDashboard.orders.map((order) => (
+                                        <Link
+                                            key={order.id}
+                                            href={`/orders`}
+                                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 flex items-center justify-center">
+                                                    <CreditCard className="w-5 h-5 text-gray-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-slate-900 uppercase">
+                                                        #{order.id.slice(0, 8)}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {new Date(order.created_at).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-bold text-slate-900">
+                                                    ₹{Number(order.total).toLocaleString()}
+                                                </p>
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase ${order.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                                    }`}>
+                                                    {order.status}
+                                                </span>
+                                            </div>
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-gray-500 text-center py-6 bg-gray-50 rounded-lg">
+                                        No recent orders.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* My Downloads */}
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-sm font-semibold text-slate-900 flex items-center">
+                                    <Download className="w-4 h-4 mr-1.5" />
+                                    Recent Downloads
+                                </h2>
+                                <Link href="/downloads" className="text-xs text-[#B00000] hover:underline">View All</Link>
+                            </div>
+                            <div className="space-y-3">
+                                {userDashboard.downloads && userDashboard.downloads.length > 0 ? (
+                                    userDashboard.downloads.map((download) => (
+                                        <Link
+                                            key={download.id}
+                                            href={`/downloads`}
+                                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-white rounded-lg border border-gray-200 overflow-hidden">
+                                                    {download.cover_image ? (
+                                                        <img src={download.cover_image} alt={download.product_name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <FileText className="w-5 h-5 text-gray-400 mx-auto mt-2.5" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-slate-900 truncate">
+                                                        {download.product_name}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        Added {new Date(download.created_at).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Download className="w-4 h-4 text-gray-400" />
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-gray-500 text-center py-6 bg-gray-50 rounded-lg">
+                                        No digital products yet.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                     {/* My Courses */}
                     <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-                        <h2 className="text-sm font-semibold text-slate-900 mb-3">
-                            My Courses
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-sm font-semibold text-slate-900">
+                                My Courses
+                            </h2>
+                            <Link href="/courses" className="text-xs text-[#B00000] hover:underline">Explore More</Link>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {userDashboard.courses.length > 0 ? (
                                 userDashboard.courses.map((course) => (
                                     <Link
                                         key={course.id}
                                         href={`/courses/${course.slug}`}
-                                        className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors"
+                                        className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-md transition-all group overflow-hidden"
                                     >
-                                        <h3 className="text-sm font-medium text-slate-900 mb-2 line-clamp-1">
-                                            {course.name}
-                                        </h3>
-                                        <div className="mb-2">
-                                            <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                                                <span>Progress</span>
-                                                <span className="font-semibold">
-                                                    {course.progress.percentage}
-                                                    %
-                                                </span>
+                                        <div className="flex gap-4">
+                                            <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                                                {course.cover_image ? (
+                                                    <img src={course.cover_image} alt={course.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                ) : (
+                                                    <BookOpen className="w-8 h-8 text-gray-300 mx-auto mt-4" />
+                                                )}
                                             </div>
-                                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-sm font-semibold text-slate-900 mb-1 line-clamp-2 leading-tight">
+                                                    {course.name}
+                                                </h3>
+                                                <div className="flex items-center gap-1.5">
+                                                    {course.progress.percentage === 100 ? (
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full uppercase">
+                                                            <CheckCircle className="w-3 h-3" /> Completed
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
+                                                            In Progress
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4">
+                                            <div className="flex items-center justify-between text-[10px] text-gray-600 mb-1.5 font-medium">
+                                                <span>{course.progress.watched} / {course.progress.total} Videos</span>
+                                                <span>{course.progress.percentage}%</span>
+                                            </div>
+                                            <div className="w-full bg-gray-100 rounded-full h-1.5">
                                                 <div
-                                                    className="bg-[#B00000] h-1.5 rounded-full transition-all"
+                                                    className={`h-1.5 rounded-full transition-all duration-1000 ${course.progress.percentage === 100 ? 'bg-green-500' : 'bg-[#B00000]'
+                                                        }`}
                                                     style={{
                                                         width: `${course.progress.percentage}%`,
                                                     }}
                                                 ></div>
                                             </div>
                                         </div>
-                                        <p className="text-xs text-gray-500">
-                                            {course.progress.watched} /{" "}
-                                            {course.progress.total} videos
-                                        </p>
                                     </Link>
                                 ))
                             ) : (
-                                <p className="text-xs text-gray-500 col-span-full text-center py-3">
+                                <p className="text-xs text-gray-500 col-span-full text-center py-8 bg-gray-50 rounded-lg">
                                     No courses enrolled.{" "}
                                     <Link
                                         href="/courses"
-                                        className="text-[#B00000] hover:underline"
+                                        className="text-[#B00000] font-semibold hover:underline"
                                     >
                                         Browse courses
                                     </Link>
@@ -789,7 +1018,7 @@ export default function DashboardPage() {
                     {/* Latest Videos */}
                     <div className="bg-white rounded-lg border border-gray-200 p-4">
                         <h2 className="text-sm font-semibold text-slate-900 mb-3">
-                            Latest Videos
+                            Recent Content
                         </h2>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
                             {userDashboard.latest_videos.length > 0 ? (
@@ -802,8 +1031,10 @@ export default function DashboardPage() {
                                             className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded hover:bg-gray-100 transition-colors text-sm"
                                         >
                                             <div className="flex items-center flex-1 min-w-0">
-                                                {video.is_watched && (
+                                                {video.is_watched ? (
                                                     <CheckCircle className="w-4 h-4 text-green-500 mr-2 shrink-0" />
+                                                ) : (
+                                                    <Play className="w-4 h-4 text-gray-300 mr-2 shrink-0" />
                                                 )}
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-medium text-slate-900 truncate">
@@ -814,12 +1045,15 @@ export default function DashboardPage() {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <ExternalLink className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
+                                            <div className="flex items-center gap-2">
+                                                {video.is_watched && <span className="text-[10px] text-green-600 font-bold uppercase">Watched</span>}
+                                                <ExternalLink className="w-4 h-4 text-gray-400 shrink-0" />
+                                            </div>
                                         </Link>
                                     ))
                             ) : (
-                                <p className="text-xs text-gray-500 text-center py-3">
-                                    No videos available
+                                <p className="text-xs text-gray-500 text-center py-6 bg-gray-50 rounded-lg">
+                                    No content available.
                                 </p>
                             )}
                         </div>

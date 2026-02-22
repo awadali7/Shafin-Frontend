@@ -334,10 +334,20 @@ export default function TermsPage() {
                             <h2 className="text-2xl font-bold text-slate-900 mb-6">
                                 7. PAYMENTS, DELIVERY & REFUND POLICY
                             </h2>
-                            <ul className="list-disc list-inside text-slate-700 space-y-2 ml-4">
+                            <ul className="list-disc list-inside text-slate-700 space-y-3 ml-4">
                                 <li>
                                     All payments must be completed before
                                     receiving access.
+                                </li>
+                                <li>
+                                    <span className="font-semibold text-slate-900">Delivery Timelines:</span>
+                                    <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
+                                        <li>Within Kerala: 2–3 business days</li>
+                                        <li>Outside Kerala: 3–10 business days (depending on the courier service)</li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <span className="font-semibold text-slate-900">Special Requests:</span> For any special courier service requests after purchase, please contact our support team within 12 hours of purchase.
                                 </li>
                                 <li>
                                     Digital products, activations, and courses
