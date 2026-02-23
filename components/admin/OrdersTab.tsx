@@ -192,7 +192,7 @@ export const OrdersTab: React.FC = () => {
 
             addText("DIASTOOLS", margin, yPosition, 24, true);
             yPosition += 8;
-            addText("Pezhakkppilly P.O, Muvattupezha, Kerala - 686673", margin, yPosition, 9);
+            addText("Ernakulam, Kerala - 686673", margin, yPosition, 9);
             yPosition += 5;
             addText("Phone: +91-8714388741 | Email: contact@diagtools.in", margin, yPosition, 9);
             yPosition += 3;
@@ -351,7 +351,7 @@ export const OrdersTab: React.FC = () => {
                     <div class="header">
                         <div class="logo-section">
                             <img src="/images/logo/header-logo.png" alt="DIAGTOOLS" style="height: 18px; width: auto; margin-bottom: 3px; filter: grayscale(100%);">
-                            <div class="company-info">Pezhakkppilly P.O, Muvattupezha, Kerala - 686673<br>Phone: +91-8714388741 | Email: contact@diagtools.in</div>
+                            <div class="company-info">Ernakulam, Kerala - 686673<br>Phone: +91-8714388741 | Email: contact@diagtools.in</div>
                         </div>
                         <div class="order-info">
                             <div class="order-number">Order #${orderNum}</div>
@@ -384,7 +384,7 @@ export const OrdersTab: React.FC = () => {
                             <div class="address-title">📤 Ship From</div>
                             <div class="address-content">
                                 <div class="address-name">DIAGTOOLS</div>
-                                Pezhakkppilly P.O<br>Muvattupezha, Kerala - 686673<br><br>
+                                Ernakulam, Kerala - 686673<br><br>
                                 📞 +91-8714388741<br>
                                 ✉️ contact@diagtools.in
                             </div>
@@ -444,7 +444,7 @@ export const OrdersTab: React.FC = () => {
                         <div class="lbl-header">
                             <div>
                                 <div class="co-name">DIAGTOOLS</div>
-                                <div class="co-sub">Pezhakkppilly P.O, Muvattupezha, Kerala - 686673</div>
+                                <div class="co-sub">Ernakulam, Kerala - 686673</div>
                                 <div class="co-sub">+91-8714388741 &bull; contact@diagtools.in</div>
                             </div>
                             <div class="order-meta">
@@ -465,8 +465,7 @@ export const OrdersTab: React.FC = () => {
                             <div class="addr-box">
                                 <div class="addr-title">&#128228; SHIP FROM</div>
                                 <div class="addr-name">DIAGTOOLS</div>
-                                <div>Pezhakkppilly P.O</div>
-                                <div>Muvattupezha, Kerala - 686673</div>
+                                <div>Ernakulam, Kerala - 686673</div>
                                 <div>&#128222; +91-8714388741</div>
                                 <div>&#9993; contact@diagtools.in</div>
                             </div>

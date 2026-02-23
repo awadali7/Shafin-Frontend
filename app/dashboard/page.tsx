@@ -567,14 +567,15 @@ export default function DashboardPage() {
                     {!user?.user_type && (
                         <div className="mb-6 bg-white rounded-lg border border-gray-200 p-6">
                             <h2 className="text-lg font-semibold text-slate-900 mb-4">
-                                Complete Your Profile
+                                Complete Your Profile KYC
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Link
                                     href="/kyc"
                                     className="flex items-center p-4 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors group"
                                 >
-                                    <div className="p-3 bg-blue-100 rounded-full mr-4 group-hover:bg-blue-200 transition-colors">
+                                    <div className="p-3 bg
+                                    -blue-100 rounded-full mr-4 group-hover:bg-blue-200 transition-colors">
                                         <BookOpen className="w-6 h-6 text-blue-600" />
                                     </div>
                                     <div>
