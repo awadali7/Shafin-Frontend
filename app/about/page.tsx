@@ -6,9 +6,18 @@ export default function AboutPage() {
     return (
         <div className="min-h-screen bg-white">
             {/* Hero Section */}
-            <section className="relative bg-gradient-to-br from-[#B00000] via-red-700 to-red-900 text-white py-24 lg:py-32 overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_50%)]"></div>
-                <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
+            <section className="relative text-white py-24 lg:py-32 overflow-hidden bg-gray-900">
+                <div 
+                    className="absolute inset-0 z-0 mix-blend-overlay opacity-60"
+                    style={{
+                        backgroundImage: "url('https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=1920&q=80')",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                    }}
+                ></div>
+                <div className="absolute inset-0 bg-linear-to-br from-[#B00000]/95 via-red-800/90 to-red-950/95 z-0"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_50%)] z-0"></div>
+                <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-8 leading-tight">
                         ABOUT US
                     </h1>
@@ -179,7 +188,7 @@ export default function AboutPage() {
                                     src={partner.src}
                                     alt={partner.alt}
                                     fill
-                                    className="object-contain grayscale hover:grayscale-0 transition-all duration-300 p-6 md:p-8"
+                                    className="object-contain grayscale hover:grayscale-0 transition-all duration-300 p-2 md:p-4"
                                     sizes="(max-width: 768px) 100vw, 33vw"
                                     loading="lazy"
                                 />

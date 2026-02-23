@@ -757,7 +757,7 @@ export default function LandingPage() {
                                         src={partner.src}
                                         alt={partner.alt}
                                         fill
-                                        className="object-contain grayscale hover:grayscale-0 transition-all duration-300 p-6 md:p-8"
+                                        className="object-contain grayscale hover:grayscale-0 transition-all duration-300 p-2 md:p-4"
                                         sizes="(max-width: 768px) 100vw, 33vw"
                                         loading="lazy"
                                     />
