@@ -32,10 +32,19 @@ export default function GalleryPage() {
         <div className="flex flex-col bg-gray-50">
             <main className="flex-1">
                 {/* Hero Section */}
-                <div className="bg-[#B00000] text-white py-16 md:py-24">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Gallery</h1>
-                        <p className="text-lg md:text-xl text-red-100 max-w-2xl mx-auto">
+                <div className="relative text-white py-24  overflow-hidden bg-gray-900">
+                    <div
+                        className="absolute inset-0 z-0"
+                        style={{
+                            backgroundImage: "url('https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&q=80&fit=crop')",
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                        }}
+                    ></div>
+                    <div className="absolute inset-0 bg-black/50 z-0"></div>
+                    <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
+                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-8 leading-tight">Our Gallery</h1>
+                        <p className="text-lg sm:text-xl lg:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
                             Explore moments, events, and memories from our community.
                         </p>
                     </div>

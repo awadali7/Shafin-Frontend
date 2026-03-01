@@ -6,7 +6,7 @@ export default function AboutPage() {
     return (
         <div className="min-h-screen bg-white">
             {/* Hero Section */}
-            <section className="relative text-white py-24 lg:py-48 overflow-hidden bg-gray-900">
+            <section className="relative text-white py-24 overflow-hidden bg-gray-900">
                 <div
                     className="absolute inset-0 z-0"
                     style={{

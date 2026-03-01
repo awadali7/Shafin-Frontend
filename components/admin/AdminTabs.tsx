@@ -31,11 +31,18 @@ interface AdminTabsProps {
             | "gallery"
             | "settings"
     ) => void;
+    // Notification counts
+    pendingOrdersCount?: number;
+    pendingCourseKycCount?: number;
+    pendingProductKycCount?: number;
 }
 
 export const AdminTabs: React.FC<AdminTabsProps> = ({
     activeTab,
     onTabChange,
+    pendingOrdersCount = 0,
+    pendingCourseKycCount = 0,
+    pendingProductKycCount = 0,
 }) => {
     const tabs = [
         { id: "dashboard" as const, label: "Dashboard" },
@@ -44,10 +51,10 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
         { id: "courses" as const, label: "Courses" },
         { id: "products" as const, label: "Products" },
         { id: "digital_files" as const, label: "Digital Files" },
-        { id: "orders" as const, label: "Orders" },
+        { id: "orders" as const, label: "Orders", count: pendingOrdersCount },
         { id: "blogs" as const, label: "Blogs" },
-        { id: "kyc" as const, label: "Course KYC" },
-        { id: "product_kyc" as const, label: "Product KYC" },
+        { id: "kyc" as const, label: "Course KYC", count: pendingCourseKycCount },
+        { id: "product_kyc" as const, label: "Product KYC", count: pendingProductKycCount },
         { id: "gallery" as const, label: "Gallery" },
         { id: "settings" as const, label: "Settings" },
     ];
@@ -65,7 +72,14 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
                                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                                 }`}
                         >
-                            {tab.label}
+                            <span className="flex items-center gap-2">
+                                {tab.label}
+                                {(tab as any).count > 0 && activeTab !== tab.id && (
+                                    <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                                        {(tab as any).count}
+                                    </span>
+                                )}
+                            </span>
                         </button>
                     ))}
                 </div>

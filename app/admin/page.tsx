@@ -319,11 +319,14 @@ function AdminPageContent() {
         setError(null);
 
         try {
+            // Fetch stats to keep notification badges up to date
+            const statsResponse = await adminApi.getDashboardStats();
+            if (statsResponse.success && statsResponse.data) {
+                setStats(statsResponse.data);
+            }
+
             if (activeTab === "dashboard") {
-                const statsResponse = await adminApi.getDashboardStats();
-                if (statsResponse.success && statsResponse.data) {
-                    setStats(statsResponse.data);
-                }
+                // Stats already fetched above
             } else if (activeTab === "users") {
                 const usersResponse = await adminApi.getAllUsers(1, 50);
                 if (usersResponse.success && usersResponse.data) {
@@ -1808,7 +1811,13 @@ function AdminPageContent() {
             </div>
 
             {/* Tabs */}
-            <AdminTabs activeTab={activeTab} onTabChange={handleTabChange} />
+            <AdminTabs
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                pendingOrdersCount={stats?.pending_orders || 0}
+                pendingCourseKycCount={stats?.kyc_pending || 0}
+                pendingProductKycCount={stats?.product_kyc_pending || 0}
+            />
 
             {/* Content */}
             <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
