@@ -136,6 +136,7 @@ export default function ProductDetailPage() {
         min_qty: number;
         max_qty: number | null;
         price_per_item: number;
+        courier_charge?: number;
     } | null>(null);
     const [copied, setCopied] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'ml' | 'hi'>('en');
@@ -192,7 +193,7 @@ export default function ProductDetailPage() {
         if (tier) {
             const courierCharge = tier.courier_charge || 0;
             setCalculatedPrice((tier.price_per_item * quantity) + courierCharge);
-            setAppliedTier(tier);
+            setAppliedTier({ ...tier, courier_charge: courierCharge });
         } else {
             setCalculatedPrice(product.price * quantity);
             setAppliedTier(null);
@@ -707,7 +708,7 @@ export default function ProductDetailPage() {
                                         This product requires direct contact. Our team will assist you with pricing, availability, and customization options.
                                     </p>
                                     <a
-                                        href="https://wa.me/919037313107"
+                                        href="https://wa.me/918714388741"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
@@ -761,8 +762,31 @@ export default function ProductDetailPage() {
 
                                         {/* Total Price with Discount Display */}
                                         <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                            <div className="flex justify-between items-center text-sm text-gray-600 mb-1">
+                                                <span>Subtotal:</span>
+                                                <span className="font-medium text-slate-800">
+                                                    ₹
+                                                    {((appliedTier ? appliedTier.price_per_item : product.price) * quantity).toLocaleString(
+                                                        "en-IN"
+                                                    )}
+                                                </span>
+                                            </div>
+                                            {(appliedTier?.courier_charge ?? 0) > 0 && (
+                                                <div className="flex justify-between items-center text-sm text-gray-600 mb-2 pb-2 border-b border-gray-200">
+                                                    <span>Courier Charge:</span>
+                                                    <span className="font-medium text-slate-800">
+                                                        ₹
+                                                        {appliedTier?.courier_charge?.toLocaleString("en-IN")}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {/* fallback border if no courier charge */}
+                                            {(!appliedTier || !appliedTier.courier_charge || appliedTier.courier_charge <= 0) && (
+                                                <div className="mb-2 pb-2 border-b border-gray-200" />
+                                            )}
+
                                             <div className="flex justify-between items-center">
-                                                <span className="text-xs text-gray-600">
+                                                <span className="text-sm font-semibold text-gray-800">
                                                     Total:
                                                 </span>
                                                 <span className="text-xl font-bold text-[#B00000]">
@@ -772,16 +796,16 @@ export default function ProductDetailPage() {
                                                     )}
                                                 </span>
                                             </div>
-                                            {appliedTier && (
-                                                <div className="text-xs text-green-600 mt-1.5 flex items-center gap-1">
+
+                                            {appliedTier && (product.price * quantity) - (appliedTier.price_per_item * quantity) > 0 && (
+                                                <div className="text-xs text-green-600 mt-2 flex items-center gap-1 bg-green-50 p-1.5 rounded-md border border-green-100">
                                                     <span className="font-semibold">
                                                         Discount applied
                                                     </span>
                                                     <span>
                                                         • Save ₹
                                                         {(
-                                                            product.price * quantity -
-                                                            calculatedPrice
+                                                            (product.price * quantity) - (appliedTier.price_per_item * quantity)
                                                         ).toLocaleString("en-IN")}
                                                     </span>
                                                 </div>
@@ -805,7 +829,7 @@ export default function ProductDetailPage() {
                                                 </li>
                                             </ul>
                                             <p className="text-[10px] text-gray-400 mt-2 italic">
-                                                * For special courier requests, contact support within 12 hours of purchase.
+                                                * For any courier-related queries (Road or Air), please contact us via WhatsApp within 12 hours of placing your order.
                                             </p>
                                         </div>
                                     </div>

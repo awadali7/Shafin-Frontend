@@ -428,6 +428,9 @@ export const ProductsTab: React.FC = () => {
                                 Price
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Stock
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
                             </th>
                             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -439,7 +442,7 @@ export const ProductsTab: React.FC = () => {
                         {loading ? (
                             <tr>
                                 <td
-                                    colSpan={7}
+                                    colSpan={8}
                                     className="px-6 py-10 text-center text-gray-500"
                                 >
                                     Loading...
@@ -448,7 +451,7 @@ export const ProductsTab: React.FC = () => {
                         ) : products.length === 0 ? (
                             <tr>
                                 <td
-                                    colSpan={7}
+                                    colSpan={8}
                                     className="px-6 py-10 text-center text-gray-500"
                                 >
                                     No products yet
@@ -501,6 +504,15 @@ export const ProductsTab: React.FC = () => {
                                     <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-[#B00000]">
                                         ₹{Number(p.price).toFixed(2)}
                                     </td>
+                                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                        {p.type === "physical" ? (
+                                            <span className={(p.stock_quantity ?? 0) < 3 ? "text-red-600 font-semibold" : "text-gray-600"}>
+                                                {p.stock_quantity ?? 0}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-600">—</span>
+                                        )}
+                                    </td>
                                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                                         {p.is_active === false
                                             ? "Inactive"
@@ -532,13 +544,13 @@ export const ProductsTab: React.FC = () => {
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
-                                            <button
+                                            {/* <button
                                                 onClick={() => deleteProduct(p)}
                                                 className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors"
                                                 aria-label="Delete"
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            </button> */}
                                         </div>
                                     </td>
                                 </tr>

@@ -167,6 +167,18 @@ export default function Header() {
                             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B00000]"></span>
                         )}
                     </Link>
+                    <Link
+                        href="/gallery"
+                        className={`font-medium transition-all duration-200 relative pb-1 ${pathname === "/gallery"
+                            ? "text-[#B00000]"
+                            : "text-gray-700 hover:text-[#B00000]"
+                            }`}
+                    >
+                        Gallery
+                        {pathname === "/gallery" && (
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B00000]"></span>
+                        )}
+                    </Link>
                 </nav>
 
                 {/* Right Section - Auth Buttons or User Profile */}
@@ -527,6 +539,18 @@ export default function Header() {
                                             }`}
                                     >
                                         Blog
+                                    </Link>
+                                    <Link
+                                        href="/gallery"
+                                        onClick={() =>
+                                            setIsMobileMenuOpen(false)
+                                        }
+                                        className={`block px-6 py-3 text-base font-medium transition-colors ${pathname === "/gallery"
+                                            ? "text-[#B00000] bg-red-50"
+                                            : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
+                                            }`}
+                                    >
+                                        Gallery
                                     </Link>
 
                                     {/* User Links (if authenticated) */}

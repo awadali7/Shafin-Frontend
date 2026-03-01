@@ -6,17 +6,16 @@ export default function AboutPage() {
     return (
         <div className="min-h-screen bg-white">
             {/* Hero Section */}
-            <section className="relative text-white py-24 lg:py-32 overflow-hidden bg-gray-900">
-                <div 
-                    className="absolute inset-0 z-0 mix-blend-overlay opacity-60"
+            <section className="relative text-white py-24 lg:py-48 overflow-hidden bg-gray-900">
+                <div
+                    className="absolute inset-0 z-0"
                     style={{
-                        backgroundImage: "url('https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=1920&q=80')",
+                        backgroundImage: "url('/images/about-hero.png')",
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }}
                 ></div>
-                <div className="absolute inset-0 bg-linear-to-br from-[#B00000]/95 via-red-800/90 to-red-950/95 z-0"></div>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent_50%)] z-0"></div>
+                <div className="absolute inset-0 bg-black/40 z-0"></div>
                 <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
                     <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-8 leading-tight">
                         ABOUT US

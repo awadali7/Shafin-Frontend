@@ -73,6 +73,17 @@ function hasDigitalItems(order: Order): boolean {
     return order.items?.some(item => item.product_type === 'digital') || false;
 }
 
+function getEstimatedDeliveryDate(order: Order): string | null {
+    if (!hasPhysicalItems(order)) return null;
+    if (order.status === 'delivered' || order.delivered_at) return null; // Already delivered
+    if (order.estimated_delivery_date) return order.estimated_delivery_date;
+
+    // Default estimate: 7 days from order placement
+    const date = new Date(order.created_at);
+    date.setDate(date.getDate() + 7);
+    return date.toISOString();
+}
+
 export default function OrdersPage() {
     const { isAuth, user, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -287,12 +298,22 @@ export default function OrdersPage() {
                     )}
 
                     {/* Tracked Shipments */}
-                    {orders.some(o => o.status === 'paid' && hasPhysicalItems(o) && o.tracking_number && !o.delivered_at) && (
+                    {orders.some(o => (o.status === 'paid' || o.status === 'shipped' || o.status === 'dispatched') && hasPhysicalItems(o) && o.tracking_number && !o.delivered_at) && (
                         <NotificationBanner
                             variant="blue"
                             icon={Truck}
-                            title={`${orders.filter(o => o.status === 'paid' && hasPhysicalItems(o) && o.tracking_number && !o.delivered_at).length} Shipment(s) In Transit`}
+                            title={`${orders.filter(o => (o.status === 'paid' || o.status === 'shipped' || o.status === 'dispatched') && hasPhysicalItems(o) && o.tracking_number && !o.delivered_at).length} Shipment(s) In Transit`}
                             description="Track your orders to see estimated delivery times"
+                        />
+                    )}
+
+                    {/* Recently Delivered */}
+                    {orders.some(o => o.status === 'delivered' || o.delivered_at) && (
+                        <NotificationBanner
+                            variant="success"
+                            icon={CheckCircle}
+                            title={`${orders.filter(o => o.status === 'delivered' || o.delivered_at).length} Order(s) Delivered`}
+                            description="Your packages have successfully arrived"
                         />
                     )}
                 </>
@@ -314,6 +335,7 @@ export default function OrdersPage() {
                     {orders.map((order) => {
                         const isExpanded = expandedOrders.has(order.id);
                         const itemCount = order.items?.length || 0;
+                        const estimatedDate = getEstimatedDeliveryDate(order);
 
                         return (
                             <div
@@ -349,10 +371,16 @@ export default function OrdersPage() {
                                             </p>
 
                                             {/* Quick Info - Estimated Delivery */}
-                                            {order.status === 'paid' && order.estimated_delivery_date && !isExpanded && (
+                                            {['paid', 'processing', 'shipped', 'dispatched'].includes(order.status) && estimatedDate && !isExpanded && (
                                                 <p className="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1">
                                                     <Calendar className="w-3 h-3" />
-                                                    ETA: {formatShortDate(order.estimated_delivery_date)}
+                                                    ETA: {formatShortDate(estimatedDate)}
+                                                </p>
+                                            )}
+                                            {order.status === 'delivered' && !isExpanded && order.delivered_at && (
+                                                <p className="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                                                    <CheckCircle className="w-3 h-3" />
+                                                    Delivered on {formatShortDate(order.delivered_at)}
                                                 </p>
                                             )}
                                         </div>
@@ -402,7 +430,7 @@ export default function OrdersPage() {
                                 </div>
 
                                 {/* Tracking Information - Priority 2 - Only show when expanded */}
-                                {order.status === 'paid' && hasPhysicalItems(order) && (order.tracking_number || order.estimated_delivery_date) && (
+                                {['paid', 'processing', 'shipped', 'dispatched', 'delivered'].includes(order.status) && hasPhysicalItems(order) && (order.tracking_number || estimatedDate || order.delivered_at) && (
                                     <div
                                         className={`border-t border-gray-200 bg-gradient-to-br from-blue-50 to-indigo-50 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
                                             }`}
@@ -438,14 +466,14 @@ export default function OrdersPage() {
                                                 )}
 
                                                 {/* Estimated Delivery */}
-                                                {order.estimated_delivery_date && (
+                                                {estimatedDate && (
                                                     <div className="mb-4">
                                                         <div className="flex items-center gap-2">
                                                             <Calendar className="w-4 h-4 text-green-600" />
                                                             <p className="text-xs text-gray-600">Estimated Delivery</p>
                                                         </div>
                                                         <p className="text-sm font-semibold text-slate-900 mt-1 ml-6">
-                                                            {formatShortDate(order.estimated_delivery_date)}
+                                                            {formatShortDate(estimatedDate)}
                                                         </p>
                                                     </div>
                                                 )}
@@ -461,7 +489,7 @@ export default function OrdersPage() {
                                                             description={formatDate(order.created_at)}
                                                         />
 
-                                                        {order.status === 'paid' && (
+                                                        {['paid', 'processing', 'shipped', 'dispatched', 'delivered'].includes(order.status) && (
                                                             <TimelineStep
                                                                 icon={CheckCircle}
                                                                 status="complete"
@@ -499,8 +527,8 @@ export default function OrdersPage() {
                                                                 status="active"
                                                                 title="In Transit"
                                                                 description={
-                                                                    order.estimated_delivery_date
-                                                                        ? `Expected: ${formatShortDate(order.estimated_delivery_date)}`
+                                                                    estimatedDate
+                                                                        ? `Expected: ${formatShortDate(estimatedDate)}`
                                                                         : 'On the way to you'
                                                                 }
                                                                 animated

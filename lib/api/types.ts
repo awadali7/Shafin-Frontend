@@ -383,6 +383,7 @@ export interface BlogPost {
     published_at?: string;
     created_at?: string;
     updated_at?: string;
+    pdfs?: { name: string; url: string }[];
 }
 
 export interface BlogPostListResponse {
@@ -400,6 +401,7 @@ export interface CreateBlogPostRequest {
     content: string;
     cover_image?: string;
     is_published?: boolean;
+    pdfs?: { name: string; url: string }[];
 }
 
 export interface UpdateBlogPostRequest {
@@ -407,6 +409,7 @@ export interface UpdateBlogPostRequest {
     content?: string;
     cover_image?: string;
     is_published?: boolean;
+    pdfs?: { name: string; url: string }[];
 }
 
 // KYC Types (Course KYC)
@@ -521,7 +524,7 @@ export interface Product {
     }>;
 }
 
-export type OrderStatus = "pending" | "paid" | "cancelled" | "refunded";
+export type OrderStatus = "pending" | "paid" | "shipped" | "dispatched" | "delivered" | "cancelled" | "refunded";
 
 export interface CreateOrderItem {
     product_id: string;
@@ -572,6 +575,7 @@ export interface AdminOrderSummary extends Order {
 }
 
 export interface UpdateTrackingRequest {
+    status?: OrderStatus;
     tracking_number?: string;
     tracking_url?: string;
     estimated_delivery_date?: string;

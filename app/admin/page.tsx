@@ -29,6 +29,7 @@ import {
     Calendar,
     FileText,
     Upload,
+    File as FileIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import "easymde/dist/easymde.min.css";
@@ -57,11 +58,13 @@ import { OrdersTab } from "@/components/admin/OrdersTab";
 import { KYCModal } from "@/components/admin/KYCModal";
 import { ProductKYCModal } from "@/components/admin/ProductKYCModal";
 import { DigitalFilesTab } from "@/components/admin/DigitalFilesTab";
+import { GalleryTab } from "@/components/admin/GalleryTab";
 import { GrantAccessModal } from "@/components/admin/GrantAccessModal";
 import { SettingsTab } from "@/components/admin/SettingsTab";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { formatDate, generateSlug } from "@/components/admin/utils";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { ImageCropper } from "@/components/ui/ImageCropper";
 import type {
     DashboardStats,
     User,
@@ -84,12 +87,22 @@ type AdminTab =
     | "products"
     | "orders"
     | "digital_files"
+    | "gallery"
     | "settings";
 
 const VALID_TABS: AdminTab[] = [
     "dashboard", "users", "requests", "courses", "blogs",
-    "kyc", "product_kyc", "products", "orders", "digital_files", "settings",
+    "kyc", "product_kyc", "products", "orders", "digital_files", "gallery", "settings",
 ];
+
+const fileToDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
 
 function AdminPageContent() {
     const router = useRouter();
@@ -174,6 +187,10 @@ function AdminPageContent() {
         null
     );
 
+    // Cropper State
+    const [cropModalOpen, setCropModalOpen] = useState(false);
+    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+
     // Blog modal states
     const [isBlogModalOpen, setIsBlogModalOpen] = useState(false);
     const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
@@ -182,6 +199,7 @@ function AdminPageContent() {
         content: "",
         cover_image: "",
         is_published: false,
+        pdfs: [] as { name: string; url: string }[],
     });
     const [isSubmittingBlog, setIsSubmittingBlog] = useState(false);
     const [blogFormSuccess, setBlogFormSuccess] = useState<string | null>(null);
@@ -194,6 +212,7 @@ function AdminPageContent() {
     const [uploadingDocument, setUploadingDocument] = useState(false);
     const [blogCoverFile, setBlogCoverFile] = useState<File | null>(null);
     const [blogCoverPreview, setBlogCoverPreview] = useState<string | null>(null);
+    const [blogPdfFiles, setBlogPdfFiles] = useState<File[]>([]);
 
     // Course delete confirmation modal states
     const [isDeleteCourseModalOpen, setIsDeleteCourseModalOpen] =
@@ -889,6 +908,32 @@ function AdminPageContent() {
     };
 
     // Course management handlers
+    const onFileSelectCourse = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            const src = await fileToDataURL(file);
+            setCropImageSrc(src);
+            setCropModalOpen(true);
+            e.target.value = '';
+        }
+    };
+
+    const onCropCompleteCourse = async (croppedBlob: Blob) => {
+        const croppedFile = new File([croppedBlob], 'course-cover.jpg', { type: 'image/jpeg' });
+
+        setCourseFormData(prev => ({ ...prev, cover_image: croppedFile }));
+        const preview = await fileToDataURL(croppedFile);
+        setCoverImagePreview(preview);
+
+        setCropModalOpen(false);
+        setCropImageSrc(null);
+    };
+
+    const onCropCancelCourse = () => {
+        setCropModalOpen(false);
+        setCropImageSrc(null);
+    };
+
     const generateSlug = (name: string) => {
         return name
             .toLowerCase()
@@ -1094,9 +1139,11 @@ function AdminPageContent() {
             content: "",
             cover_image: "",
             is_published: false,
+            pdfs: [],
         });
         setBlogCoverFile(null);
         setBlogCoverPreview(null);
+        setBlogPdfFiles([]);
         setError(null);
         setBlogFormSuccess(null);
         setIsBlogModalOpen(true);
@@ -1146,9 +1193,11 @@ function AdminPageContent() {
             content: content,
             cover_image: blog.cover_image || "",
             is_published: blog.is_published || false,
+            pdfs: blog.pdfs || [],
         });
         setBlogCoverFile(null);
         setBlogCoverPreview(blog.cover_image || null);
+        setBlogPdfFiles([]);
         setError(null);
         setBlogFormSuccess(null);
         setIsBlogModalOpen(true);
@@ -1200,6 +1249,25 @@ function AdminPageContent() {
                 }
             }
 
+            // Upload PDF files if any
+            if (blogPdfFiles.length > 0) {
+                try {
+                    const uploadedPdfs = await handleMultipleDocumentUpload(
+                        blogPdfFiles,
+                        "blog"
+                    );
+                    const newPdfs = uploadedPdfs.map((url, index) => ({
+                        name: blogPdfFiles[index].name,
+                        url: url,
+                    }));
+                    finalBlogData.pdfs = [...(finalBlogData.pdfs || []), ...newPdfs];
+                } catch (uploadError) {
+                    toast.error("Failed to upload PDF files. Please try again.");
+                    setIsSubmittingBlog(false);
+                    return;
+                }
+            }
+
             if (editingBlog) {
                 // Update existing blog post
                 const response = await blogsApi.update(
@@ -1215,9 +1283,11 @@ function AdminPageContent() {
                         content: "",
                         cover_image: "",
                         is_published: false,
+                        pdfs: [],
                     });
                     setBlogCoverFile(null);
                     setBlogCoverPreview(null);
+                    setBlogPdfFiles([]);
                 } else {
                     toast.error(response.message || "Failed to update blog post");
                 }
@@ -1233,9 +1303,11 @@ function AdminPageContent() {
                         content: "",
                         cover_image: "",
                         is_published: false,
+                        pdfs: [],
                     });
                     setBlogCoverFile(null);
                     setBlogCoverPreview(null);
+                    setBlogPdfFiles([]);
                 } else {
                     toast.error(response.message || "Failed to create blog post");
                 }
@@ -1269,64 +1341,10 @@ function AdminPageContent() {
         }
     };
 
-    // Handle multiple image uploads
-    const handleMultipleImageUpload = async (
-        files: File[]
-    ): Promise<string[]> => {
-        try {
-            setUploadingImage(true);
-
-            // Verify all files are valid File objects
-            const validFiles = files.filter((file) => file instanceof File);
-            if (validFiles.length !== files.length) {
-                throw new Error("Some files are invalid");
-            }
-
-            // Verify files have content
-            for (const file of validFiles) {
-                if (file.size === 0) {
-                    throw new Error(`File ${file.name} is empty`);
-                }
-            }
-
-            const response = await uploadsApi.uploadMultiple(
-                validFiles,
-                "blog"
-            );
-            if (response.success && response.data) {
-                return response.data.map((file) => file.url);
-            }
-            throw new Error("Failed to upload images");
-        } catch (error: any) {
-            console.error("Image upload error:", error);
-            setError(error.message || "Failed to upload images");
-            throw error;
-        } finally {
-            setUploadingImage(false);
-        }
-    };
-
-    // Handle document upload (single)
-    const handleDocumentUpload = async (file: File): Promise<string> => {
-        try {
-            setUploadingDocument(true);
-            const response = await uploadsApi.uploadSingle(file, "documents");
-            if (response.success && response.data) {
-                return response.data.url;
-            }
-            throw new Error("Failed to upload document");
-        } catch (error: any) {
-            console.error("Document upload error:", error);
-            setError(error.message || "Failed to upload document");
-            throw error;
-        } finally {
-            setUploadingDocument(false);
-        }
-    };
-
     // Handle multiple document uploads
     const handleMultipleDocumentUpload = async (
-        files: File[]
+        files: File[],
+        type: "blog" | "documents" | "images" = "documents"
     ): Promise<string[]> => {
         try {
             setUploadingDocument(true);
@@ -1344,12 +1362,9 @@ function AdminPageContent() {
                 }
             }
 
-            const response = await uploadsApi.uploadMultiple(
-                validFiles,
-                "documents"
-            );
+            const response = await uploadsApi.uploadMultiple(validFiles, type);
             if (response.success && response.data) {
-                return response.data.map((file) => file.url);
+                return response.data.map((file: any) => file.url);
             }
             throw new Error("Failed to upload documents");
         } catch (error: any) {
@@ -1870,6 +1885,8 @@ function AdminPageContent() {
                 {activeTab === "digital_files" && <DigitalFilesTab />}
 
                 {activeTab === "orders" && <OrdersTab />}
+
+                {activeTab === "gallery" && <GalleryTab />}
 
                 {activeTab === "settings" && <SettingsTab />}
 
@@ -2710,41 +2727,39 @@ function AdminPageContent() {
                                 </div>
 
                                 {/* Cover Image Upload */}
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-slate-900 mb-1">
                                         Cover Image
+                                        <span className="block text-xs font-normal text-gray-500 mt-0.5">
+                                            Recommended: 1280x720px (16:9)
+                                        </span>
                                     </label>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                                setCourseFormData({
-                                                    ...courseFormData,
-                                                    cover_image: file,
-                                                });
-                                                // Create preview
-                                                const reader = new FileReader();
-                                                reader.onloadend = () => {
-                                                    setCoverImagePreview(
-                                                        reader.result as string
-                                                    );
-                                                };
-                                                reader.readAsDataURL(file);
-                                            }
-                                        }}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
-                                    />
                                     {coverImagePreview && (
-                                        <div className="mt-4">
+                                        <div className="mb-3 relative inline-block">
                                             <img
                                                 src={coverImagePreview}
                                                 alt="Cover preview"
-                                                className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                                                className="w-40 h-24 object-cover rounded border border-gray-200"
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setCourseFormData(p => ({ ...p, cover_image: null }));
+                                                    setCoverImagePreview(null);
+                                                }}
+                                                className="absolute -top-2 -right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                                                title="Remove cover image"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
                                         </div>
                                     )}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={onFileSelectCourse}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#B00000] file:text-white hover:file:bg-red-800 file:cursor-pointer"
+                                    />
                                 </div>
 
                                 {/* Featured Checkbox */}
@@ -2802,6 +2817,16 @@ function AdminPageContent() {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Image Cropper Modal */}
+            {cropModalOpen && cropImageSrc && (
+                <ImageCropper
+                    imageSrc={cropImageSrc}
+                    onCropComplete={onCropCompleteCourse}
+                    onCancel={onCropCancelCourse}
+                    aspectRatio={16 / 9}
+                />
             )}
 
             {/* Course Delete Confirmation Modal */}
@@ -3127,6 +3152,90 @@ function AdminPageContent() {
                                         }}
                                         placeholder="Write your blog post content here..."
                                     />
+                                </div>
+
+                                {/* PDF Attachments */}
+                                <div className="space-y-4">
+                                    <label className="block text-sm font-medium text-slate-900 border-t border-gray-100 pt-4">
+                                        PDF Attachments
+                                    </label>
+
+                                    {/* Existing PDFs */}
+                                    {blogFormData.pdfs && blogFormData.pdfs.length > 0 && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {blogFormData.pdfs.map((pdf, index) => (
+                                                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg group">
+                                                    <div className="flex items-center space-x-3 truncate">
+                                                        <FileText className="w-5 h-5 text-red-600 shrink-0" />
+                                                        <span className="text-sm font-medium text-slate-700 truncate">
+                                                            {pdf.name}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const updatedPdfs = [...blogFormData.pdfs];
+                                                            updatedPdfs.splice(index, 1);
+                                                            setBlogFormData({ ...blogFormData, pdfs: updatedPdfs });
+                                                        }}
+                                                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* New PDFs to upload */}
+                                    {blogPdfFiles.length > 0 && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {blogPdfFiles.map((file, index) => (
+                                                <div key={index} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                                                    <div className="flex items-center space-x-3 truncate">
+                                                        <FileIcon className="w-5 h-5 text-blue-600 shrink-0" />
+                                                        <div className="truncate">
+                                                            <p className="text-sm font-medium text-blue-900 truncate">{file.name}</p>
+                                                            <p className="text-xs text-blue-600">Pending upload</p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const updatedFiles = [...blogPdfFiles];
+                                                            updatedFiles.splice(index, 1);
+                                                            setBlogPdfFiles(updatedFiles);
+                                                        }}
+                                                        className="p-1 text-blue-400 hover:text-red-600 rounded transition-colors"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Upload Trigger */}
+                                    <div className="flex items-center justify-center w-full">
+                                        <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                                                <p className="text-xs text-gray-500">
+                                                    <span className="font-semibold text-[#B00000]">Click to add</span> or drag and drop PDFs
+                                                </p>
+                                            </div>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept="application/pdf"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const files = Array.from(e.target.files || []);
+                                                    setBlogPdfFiles([...blogPdfFiles, ...files]);
+                                                }}
+                                            />
+                                        </label>
+                                    </div>
                                 </div>
 
                                 {/* Published Status */}

@@ -76,7 +76,7 @@ const RichTextEditor = ({
             }),
             Image.configure({
                 HTMLAttributes: {
-                    class: "rounded-lg max-w-full h-auto mx-auto my-4 shadow-md",
+                    class: " max-w-full h-auto mx-auto my-4",
                 },
             }),
             Placeholder.configure({

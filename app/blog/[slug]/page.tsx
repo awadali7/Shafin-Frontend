@@ -10,7 +10,7 @@ import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import { blogsApi } from "@/lib/api";
 import type { BlogPost } from "@/lib/api/types";
-import { Calendar, User, Eye, Clock, Share2, Bookmark, MessageCircle } from "lucide-react";
+import { Calendar, User, Eye, Clock, Share2, Bookmark, MessageCircle, FileText, Download } from "lucide-react";
 
 export default function BlogPostPage() {
     const params = useParams();
@@ -161,7 +161,7 @@ export default function BlogPostPage() {
     return (
         <div className="bg-white min-h-screen pb-32">
             {/* Top Navigation */}
-            <nav className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 <Link
                     href="/blog"
                     className="group inline-flex items-center text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
@@ -171,7 +171,7 @@ export default function BlogPostPage() {
                 </Link>
             </nav>
 
-            <article className="max-w-5xl mx-auto px-4 sm:px-6">
+            <article className="max-w-6xl mx-auto px-4 sm:px-6">
                 {/* Header */}
                 <header className="mb-16">
                     <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-8">
@@ -246,6 +246,41 @@ export default function BlogPostPage() {
                         </ReactMarkdown>
                     )}
                 </div>
+
+                {/* Attachments Section */}
+                {post.pdfs && post.pdfs.length > 0 && (
+                    <div className="mt-20 pt-16 border-t border-gray-100">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-10">
+                            Attachments
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {post.pdfs.map((pdf, index) => (
+                                <a
+                                    key={index}
+                                    href={pdf.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="group flex items-center justify-between p-6 bg-gray-50 hover:bg-white transition-all duration-300 border border-gray-100 hover:border-gray-900 rounded-sm"
+                                >
+                                    <div className="flex items-center gap-4 min-w-0">
+                                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 group-hover:border-gray-200 transition-colors">
+                                            <FileText className="w-6 h-6 text-[#B00000]" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <span className="block text-sm font-bold text-gray-900 truncate">
+                                                {pdf.name}
+                                            </span>
+                                            <span className="block text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-1">
+                                                PDF Document
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <Download className="w-5 h-5 text-gray-300 group-hover:text-gray-900 transition-colors" />
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Detailed Footer */}
                 <footer className="mt-32 pt-16 border-t border-gray-100">
