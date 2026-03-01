@@ -171,6 +171,18 @@ export default function Header() {
 
                 {/* Right Section - Auth Buttons or User Profile */}
                 <div className="flex items-center space-x-4">
+                    {/* Country Indicator */}
+                    <div className="flex items-center space-x-1.5 px-2 py-1 bg-gray-50 rounded-md border border-gray-100 cursor-default group/flag">
+                        <div className="relative w-5 h-3.5 overflow-hidden rounded-sm shadow-sm border border-gray-200">
+                            <Image
+                                src="/images/indian-flag.svg"
+                                alt="India"
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-500 tracking-tight group-hover/flag:text-[#B00000] transition-colors">IND</span>
+                    </div>
                     {/* Shopping Cart */}
                     <button
                         onClick={() => setIsOpen(true)}
@@ -424,9 +436,22 @@ export default function Header() {
                             <div className="flex flex-col h-full">
                                 {/* Header */}
                                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
-                                    <h2 className="text-lg font-semibold text-slate-900">
-                                        Menu
-                                    </h2>
+                                    <div className="flex items-center space-x-3">
+                                        <h2 className="text-lg font-semibold text-slate-900">
+                                            Menu
+                                        </h2>
+                                        <div className="flex items-center space-x-1.5 px-2 py-1 bg-gray-50 rounded border border-gray-100">
+                                            <div className="relative w-4 h-2.5 overflow-hidden rounded-sm border border-gray-200">
+                                                <Image
+                                                    src="/images/indian-flag.svg"
+                                                    alt="India"
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            </div>
+                                            <span className="text-[10px] font-bold text-gray-500 tracking-tight">IND</span>
+                                        </div>
+                                    </div>
                                     <button
                                         onClick={() =>
                                             setIsMobileMenuOpen(false)

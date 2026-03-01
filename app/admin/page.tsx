@@ -59,6 +59,7 @@ import { ProductKYCModal } from "@/components/admin/ProductKYCModal";
 import { DigitalFilesTab } from "@/components/admin/DigitalFilesTab";
 import { GrantAccessModal } from "@/components/admin/GrantAccessModal";
 import { SettingsTab } from "@/components/admin/SettingsTab";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 import { formatDate, generateSlug } from "@/components/admin/utils";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import type {
@@ -191,6 +192,8 @@ function AdminPageContent() {
     const [isDeletingBlog, setIsDeletingBlog] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
     const [uploadingDocument, setUploadingDocument] = useState(false);
+    const [blogCoverFile, setBlogCoverFile] = useState<File | null>(null);
+    const [blogCoverPreview, setBlogCoverPreview] = useState<string | null>(null);
 
     // Course delete confirmation modal states
     const [isDeleteCourseModalOpen, setIsDeleteCourseModalOpen] =
@@ -1092,6 +1095,8 @@ function AdminPageContent() {
             cover_image: "",
             is_published: false,
         });
+        setBlogCoverFile(null);
+        setBlogCoverPreview(null);
         setError(null);
         setBlogFormSuccess(null);
         setIsBlogModalOpen(true);
@@ -1142,6 +1147,8 @@ function AdminPageContent() {
             cover_image: blog.cover_image || "",
             is_published: blog.is_published || false,
         });
+        setBlogCoverFile(null);
+        setBlogCoverPreview(blog.cover_image || null);
         setError(null);
         setBlogFormSuccess(null);
         setIsBlogModalOpen(true);
@@ -1179,11 +1186,25 @@ function AdminPageContent() {
         setBlogFormSuccess(null);
 
         try {
+            let finalBlogData = { ...blogFormData };
+
+            // Upload cover image if a new file is selected
+            if (blogCoverFile) {
+                try {
+                    const uploadedUrl = await handleImageUpload(blogCoverFile);
+                    finalBlogData.cover_image = uploadedUrl;
+                } catch (uploadError) {
+                    toast.error("Failed to upload cover image. Please try again.");
+                    setIsSubmittingBlog(false);
+                    return;
+                }
+            }
+
             if (editingBlog) {
                 // Update existing blog post
                 const response = await blogsApi.update(
                     editingBlog.id,
-                    blogFormData
+                    finalBlogData
                 );
                 if (response.success) {
                     toast.success("Blog post updated successfully!");
@@ -1195,12 +1216,14 @@ function AdminPageContent() {
                         cover_image: "",
                         is_published: false,
                     });
+                    setBlogCoverFile(null);
+                    setBlogCoverPreview(null);
                 } else {
                     toast.error(response.message || "Failed to update blog post");
                 }
             } else {
                 // Create new blog post
-                const response = await blogsApi.create(blogFormData);
+                const response = await blogsApi.create(finalBlogData);
                 if (response.success) {
                     toast.success("Blog post created successfully!");
                     await fetchData();
@@ -1211,6 +1234,8 @@ function AdminPageContent() {
                         cover_image: "",
                         is_published: false,
                     });
+                    setBlogCoverFile(null);
+                    setBlogCoverPreview(null);
                 } else {
                     toast.error(response.message || "Failed to create blog post");
                 }
@@ -3022,281 +3047,86 @@ function AdminPageContent() {
                                     />
                                 </div>
 
+                                {/* Cover Image */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                                        Cover Image
+                                    </label>
+                                    <div className="flex items-center space-x-4">
+                                        {blogCoverPreview && (
+                                            <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
+                                                <img
+                                                    src={blogCoverPreview}
+                                                    alt="Cover preview"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setBlogCoverFile(null);
+                                                        setBlogCoverPreview(null);
+                                                    }}
+                                                    className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <div className="flex-1">
+                                            <label className="relative cursor-pointer bg-white rounded-lg border-2 border-dashed border-gray-300 px-6 py-4 flex flex-col items-center justify-center hover:border-[#B00000] transition-colors">
+                                                <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                                                <span className="text-sm font-medium text-gray-600">
+                                                    Click to upload cover image
+                                                </span>
+                                                <span className="text-xs text-gray-400 mt-1">
+                                                    PNG, JPG up to 5MB
+                                                </span>
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            setBlogCoverFile(file);
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                setBlogCoverPreview(reader.result as string);
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
 
                                 {/* Content */}
                                 <div>
                                     <label className="block text-sm font-medium text-slate-900 mb-2">
                                         Content *
                                     </label>
-                                    <div
-                                        data-color-mode="light"
-                                        className="markdown-editor-wrapper"
-                                    >
-                                        <SimpleMDE
-                                            key={
-                                                editingBlog
-                                                    ? editingBlog.id
-                                                    : "new-blog"
+                                    <RichTextEditor
+                                        content={blogFormData.content}
+                                        onChange={(html) =>
+                                            setBlogFormData({
+                                                ...blogFormData,
+                                                content: html,
+                                            })
+                                        }
+                                        onImageUpload={async (file) => {
+                                            try {
+                                                const imageUrl = await handleImageUpload(file);
+                                                return imageUrl;
+                                            } catch (error) {
+                                                toast.error("Failed to upload image");
+                                                throw error;
                                             }
-                                            value={blogFormData.content}
-                                            onChange={(value) =>
-                                                setBlogFormData({
-                                                    ...blogFormData,
-                                                    content: value,
-                                                })
-                                            }
-                                            options={{
-                                                spellChecker: false,
-                                                placeholder:
-                                                    "Write your blog post content here...",
-                                                maxHeight: "500px",
-                                                toolbar: [
-                                                    "bold",
-                                                    "italic",
-                                                    "strikethrough",
-                                                    "|",
-                                                    "heading-1",
-                                                    "heading-2",
-                                                    "heading-3",
-                                                    "|",
-                                                    "code",
-                                                    "quote",
-                                                    "unordered-list",
-                                                    "ordered-list",
-                                                    "|",
-                                                    "link",
-                                                    "image",
-                                                    "table",
-                                                    "|",
-                                                    "preview",
-                                                    "side-by-side",
-                                                    "fullscreen",
-                                                    "|",
-                                                    "guide",
-                                                ],
-                                            }}
-                                        />
-                                        <div className="mt-2 space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-xs text-gray-500">
-                                                    Write your blog post content
-                                                    using markdown. Use the
-                                                    toolbar buttons for
-                                                    formatting (bold, italic,
-                                                    headers, lists, links,
-                                                    etc.).
-                                                </p>
-                                                <div className="flex items-center space-x-2">
-                                                    <label className="cursor-pointer inline-flex items-center space-x-2 px-3 py-1.5 text-xs font-medium text-white bg-[#B00000] rounded-lg hover:bg-red-800 transition-colors">
-                                                        <span>📷 Image</span>
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            multiple
-                                                            className="hidden"
-                                                            onChange={async (
-                                                                e
-                                                            ) => {
-                                                                const files =
-                                                                    Array.from(
-                                                                        e.target
-                                                                            .files ||
-                                                                        []
-                                                                    );
-                                                                if (
-                                                                    files.length >
-                                                                    0
-                                                                ) {
-                                                                    try {
-                                                                        let imageUrls: string[] =
-                                                                            [];
-                                                                        if (
-                                                                            files.length ===
-                                                                            1
-                                                                        ) {
-                                                                            // Single image upload
-                                                                            const imageUrl =
-                                                                                await handleImageUpload(
-                                                                                    files[0]
-                                                                                );
-                                                                            imageUrls =
-                                                                                [
-                                                                                    imageUrl,
-                                                                                ];
-                                                                        } else {
-                                                                            // Multiple images upload
-                                                                            imageUrls =
-                                                                                await handleMultipleImageUpload(
-                                                                                    files
-                                                                                );
-                                                                        }
-                                                                        // Insert image markdown
-                                                                        const currentContent =
-                                                                            blogFormData.content ||
-                                                                            "";
-                                                                        const imageMarkdown =
-                                                                            imageUrls
-                                                                                .map(
-                                                                                    (
-                                                                                        url,
-                                                                                        index
-                                                                                    ) =>
-                                                                                        `\n![${files[
-                                                                                            index
-                                                                                        ]
-                                                                                            .name
-                                                                                        }](${encodeURI(
-                                                                                            url
-                                                                                        )})`
-                                                                                )
-                                                                                .join(
-                                                                                    "\n"
-                                                                                ) +
-                                                                            "\n";
-                                                                        setBlogFormData(
-                                                                            {
-                                                                                ...blogFormData,
-                                                                                content:
-                                                                                    imageMarkdown +
-                                                                                    currentContent,
-                                                                            }
-                                                                        );
-                                                                    } catch (error) {
-                                                                        // Error already handled in upload functions
-                                                                    }
-                                                                }
-                                                            }}
-                                                        />
-                                                    </label>
-                                                    <label className="cursor-pointer inline-flex items-center space-x-2 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-                                                        <span>📄 Document</span>
-                                                        <input
-                                                            type="file"
-                                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
-                                                            multiple
-                                                            className="hidden"
-                                                            onChange={async (
-                                                                e
-                                                            ) => {
-                                                                const files =
-                                                                    Array.from(
-                                                                        e.target
-                                                                            .files ||
-                                                                        []
-                                                                    );
-                                                                if (
-                                                                    files.length >
-                                                                    0
-                                                                ) {
-                                                                    try {
-                                                                        let docUrls: string[] =
-                                                                            [];
-                                                                        if (
-                                                                            files.length ===
-                                                                            1
-                                                                        ) {
-                                                                            // Single file upload
-                                                                            const docUrl =
-                                                                                await handleDocumentUpload(
-                                                                                    files[0]
-                                                                                );
-                                                                            docUrls =
-                                                                                [
-                                                                                    docUrl,
-                                                                                ];
-                                                                        } else {
-                                                                            // Multiple files upload
-                                                                            docUrls =
-                                                                                await handleMultipleDocumentUpload(
-                                                                                    files
-                                                                                );
-                                                                        }
-                                                                        // Insert document links markdown
-                                                                        const currentContent =
-                                                                            blogFormData.content ||
-                                                                            "";
-                                                                        const docMarkdown =
-                                                                            docUrls
-                                                                                .map(
-                                                                                    (
-                                                                                        url,
-                                                                                        index
-                                                                                    ) =>
-                                                                                        `\n[${files[index].name}](${url})`
-                                                                                )
-                                                                                .join(
-                                                                                    "\n"
-                                                                                ) +
-                                                                            "\n";
-                                                                        setBlogFormData(
-                                                                            {
-                                                                                ...blogFormData,
-                                                                                content:
-                                                                                    currentContent +
-                                                                                    docMarkdown,
-                                                                            }
-                                                                        );
-                                                                    } catch (error) {
-                                                                        // Error already handled in upload functions
-                                                                    }
-                                                                }
-                                                            }}
-                                                        />
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
-                                                <p className="font-medium mb-1">
-                                                    💡 Tips:
-                                                </p>
-                                                <ul className="list-disc list-inside space-y-1 text-gray-600">
-                                                    <li>
-                                                        <strong>Iframe:</strong>{" "}
-                                                        Use HTML:{" "}
-                                                        <code className="bg-gray-200 px-1 rounded">
-                                                            &lt;iframe
-                                                            src="URL"&gt;&lt;/iframe&gt;
-                                                        </code>
-                                                    </li>
-                                                    <li>
-                                                        <strong>
-                                                            Documents:
-                                                        </strong>{" "}
-                                                        Upload via API, then
-                                                        link:{" "}
-                                                        <code className="bg-gray-200 px-1 rounded">
-                                                            [Document Name](URL)
-                                                        </code>
-                                                    </li>
-                                                    <li>
-                                                        <strong>Images:</strong>{" "}
-                                                        Click "Upload Image"
-                                                        button or use:{" "}
-                                                        <code className="bg-gray-200 px-1 rounded">
-                                                            ![alt](URL)
-                                                        </code>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        {(uploadingImage ||
-                                            uploadingDocument) && (
-                                                <div className="mt-2 text-sm text-blue-600 flex items-center space-x-2">
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                    <span>
-                                                        {uploadingImage
-                                                            ? "Uploading image..."
-                                                            : "Uploading document..."}
-                                                    </span>
-                                                </div>
-                                            )}
-                                    </div>
-                                    <p className="mt-2 text-xs text-gray-500">
-                                        Write your blog post content using
-                                        markdown. Use the toolbar buttons for
-                                        formatting (bold, italic, headers,
-                                        lists, links, etc.).
-                                    </p>
+                                        }}
+                                        placeholder="Write your blog post content here..."
+                                    />
                                 </div>
 
                                 {/* Published Status */}
@@ -3361,475 +3191,408 @@ function AdminPageContent() {
             )}
 
             {/* Blog Delete Confirmation Modal */}
-            {blogDeleteModal.isOpen && blogDeleteModal.blog && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
-                        onClick={() => {
-                            if (!isDeletingBlog) {
-                                setBlogDeleteModal({
-                                    isOpen: false,
-                                    blog: null,
-                                });
-                            }
-                        }}
-                    ></div>
+            {
+                blogDeleteModal.isOpen && blogDeleteModal.blog && (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
+                            onClick={() => {
+                                if (!isDeletingBlog) {
+                                    setBlogDeleteModal({
+                                        isOpen: false,
+                                        blog: null,
+                                    });
+                                }
+                            }}
+                        ></div>
 
-                    {/* Modal */}
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                <div className="flex items-center space-x-3">
-                                    <div className="p-2 bg-red-100 rounded-lg">
-                                        <AlertCircle className="w-6 h-6 text-red-600" />
+                        {/* Modal */}
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                                {/* Header */}
+                                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="p-2 bg-red-100 rounded-lg">
+                                            <AlertCircle className="w-6 h-6 text-red-600" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-slate-900">
+                                            Delete Blog Post
+                                        </h2>
                                     </div>
-                                    <h2 className="text-xl font-bold text-slate-900">
-                                        Delete Blog Post
-                                    </h2>
+                                    {!isDeletingBlog && (
+                                        <button
+                                            onClick={() => {
+                                                setBlogDeleteModal({
+                                                    isOpen: false,
+                                                    blog: null,
+                                                });
+                                            }}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                            aria-label="Close modal"
+                                        >
+                                            <X className="w-5 h-5 text-gray-600" />
+                                        </button>
+                                    )}
                                 </div>
-                                {!isDeletingBlog && (
+
+                                {/* Content */}
+                                <div className="p-6">
+                                    {/* Error Message */}
+                                    {error && (
+                                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+                                            <XCircle className="w-5 h-5 text-red-600 shrink-0" />
+                                            <p className="text-sm text-red-600 font-medium">
+                                                {error}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <p className="text-gray-700 mb-4">
+                                        Are you sure you want to delete this blog
+                                        post? This action cannot be undone.
+                                    </p>
+
+                                    <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                                        <div className="flex items-center space-x-3">
+                                            {blogDeleteModal.blog.cover_image && (
+                                                <img
+                                                    src={
+                                                        blogDeleteModal.blog
+                                                            .cover_image
+                                                    }
+                                                    alt={blogDeleteModal.blog.title}
+                                                    className="w-12 h-12 rounded-lg object-cover"
+                                                />
+                                            )}
+                                            <div>
+                                                <p className="font-medium text-slate-900">
+                                                    {blogDeleteModal.blog.title}
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    {blogDeleteModal.blog.slug}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex items-center justify-end space-x-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setBlogDeleteModal({
+                                                    isOpen: false,
+                                                    blog: null,
+                                                });
+                                            }}
+                                            disabled={isDeletingBlog}
+                                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={confirmDeleteBlog}
+                                            disabled={isDeletingBlog}
+                                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                                        >
+                                            {isDeletingBlog ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    <span>Deleting...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Trash2 className="w-4 h-4" />
+                                                    <span>Delete Blog Post</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )
+            }
+
+            {/* Video Management Modal */}
+            {
+                isVideoModalOpen && selectedCourse && (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
+                            onClick={() => {
+                                setIsVideoModalOpen(false);
+                                setSelectedCourse(null);
+                                setVideos([]);
+                            }}
+                        ></div>
+
+                        {/* Modal */}
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                                {/* Header */}
+                                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-slate-900">
+                                            Manage Videos - {selectedCourse.name}
+                                        </h2>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            Add, edit, or delete videos for this
+                                            course
+                                        </p>
+                                    </div>
                                     <button
                                         onClick={() => {
-                                            setBlogDeleteModal({
-                                                isOpen: false,
-                                                blog: null,
-                                            });
+                                            setIsVideoModalOpen(false);
+                                            setSelectedCourse(null);
+                                            setVideos([]);
+                                            setEditingVideo(null);
                                         }}
                                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                         aria-label="Close modal"
                                     >
                                         <X className="w-5 h-5 text-gray-600" />
                                     </button>
-                                )}
-                            </div>
+                                </div>
 
-                            {/* Content */}
-                            <div className="p-6">
-                                {/* Error Message */}
-                                {error && (
-                                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-                                        <XCircle className="w-5 h-5 text-red-600 shrink-0" />
-                                        <p className="text-sm text-red-600 font-medium">
-                                            {error}
-                                        </p>
-                                    </div>
-                                )}
-
-                                <p className="text-gray-700 mb-4">
-                                    Are you sure you want to delete this blog
-                                    post? This action cannot be undone.
-                                </p>
-
-                                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                                    <div className="flex items-center space-x-3">
-                                        {blogDeleteModal.blog.cover_image && (
-                                            <img
-                                                src={
-                                                    blogDeleteModal.blog
-                                                        .cover_image
-                                                }
-                                                alt={blogDeleteModal.blog.title}
-                                                className="w-12 h-12 rounded-lg object-cover"
-                                            />
-                                        )}
-                                        <div>
-                                            <p className="font-medium text-slate-900">
-                                                {blogDeleteModal.blog.title}
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                {blogDeleteModal.blog.slug}
+                                {/* Content */}
+                                <div className="flex-1 overflow-y-auto p-6">
+                                    {/* Success Message */}
+                                    {videoFormSuccess && (
+                                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
+                                            <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                                            <p className="text-sm text-green-600 font-medium">
+                                                {videoFormSuccess}
                                             </p>
                                         </div>
-                                    </div>
-                                </div>
+                                    )}
 
-                                {/* Actions */}
-                                <div className="flex items-center justify-end space-x-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setBlogDeleteModal({
-                                                isOpen: false,
-                                                blog: null,
-                                            });
-                                        }}
-                                        disabled={isDeletingBlog}
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={confirmDeleteBlog}
-                                        disabled={isDeletingBlog}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                                    >
-                                        {isDeletingBlog ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                <span>Deleting...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Trash2 className="w-4 h-4" />
-                                                <span>Delete Blog Post</span>
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
+                                    {/* Error Message */}
+                                    {error && (
+                                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+                                            <XCircle className="w-5 h-5 text-red-600 shrink-0" />
+                                            <p className="text-sm text-red-600 font-medium">
+                                                {error}
+                                            </p>
+                                        </div>
+                                    )}
 
-            {/* Video Management Modal */}
-            {isVideoModalOpen && selectedCourse && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
-                        onClick={() => {
-                            setIsVideoModalOpen(false);
-                            setSelectedCourse(null);
-                            setVideos([]);
-                        }}
-                    ></div>
+                                    {/* Add/Edit Video Form */}
+                                    <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                                        <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                                            {editingVideo
+                                                ? "Edit Video"
+                                                : "Add New Video"}
+                                        </h3>
+                                        <form
+                                            onSubmit={handleVideoFormSubmit}
+                                            className="space-y-4"
+                                        >
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {/* Title */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                                                        Title *
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={videoFormData.title}
+                                                        onChange={(e) =>
+                                                            setVideoFormData({
+                                                                ...videoFormData,
+                                                                title: e.target
+                                                                    .value,
+                                                            })
+                                                        }
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                        placeholder="Video title"
+                                                    />
+                                                </div>
 
-                    {/* Modal */}
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900">
-                                        Manage Videos - {selectedCourse.name}
-                                    </h2>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                        Add, edit, or delete videos for this
-                                        course
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        setIsVideoModalOpen(false);
-                                        setSelectedCourse(null);
-                                        setVideos([]);
-                                        setEditingVideo(null);
-                                    }}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                    aria-label="Close modal"
-                                >
-                                    <X className="w-5 h-5 text-gray-600" />
-                                </button>
-                            </div>
+                                                {/* Order Index */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-900 mb-2">
+                                                        Order Index *
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        required
+                                                        min="0"
+                                                        value={
+                                                            videoFormData.order_index
+                                                        }
+                                                        onChange={(e) =>
+                                                            setVideoFormData({
+                                                                ...videoFormData,
+                                                                order_index:
+                                                                    parseInt(
+                                                                        e.target
+                                                                            .value
+                                                                    ) || 0,
+                                                            })
+                                                        }
+                                                        className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${!editingVideo
+                                                            ? "bg-gray-50 cursor-not-allowed"
+                                                            : ""
+                                                            }`}
+                                                        placeholder="Auto-generated"
+                                                        readOnly={!editingVideo}
+                                                    />
+                                                    {!editingVideo && (
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            Automatically set to
+                                                            next available index
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
 
-                            {/* Content */}
-                            <div className="flex-1 overflow-y-auto p-6">
-                                {/* Success Message */}
-                                {videoFormSuccess && (
-                                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
-                                        <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                                        <p className="text-sm text-green-600 font-medium">
-                                            {videoFormSuccess}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Error Message */}
-                                {error && (
-                                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-                                        <XCircle className="w-5 h-5 text-red-600 shrink-0" />
-                                        <p className="text-sm text-red-600 font-medium">
-                                            {error}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Add/Edit Video Form */}
-                                <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                                        {editingVideo
-                                            ? "Edit Video"
-                                            : "Add New Video"}
-                                    </h3>
-                                    <form
-                                        onSubmit={handleVideoFormSubmit}
-                                        className="space-y-4"
-                                    >
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {/* Title */}
+                                            {/* Video URL */}
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-900 mb-2">
-                                                    Title *
+                                                    Video URL (YouTube or Vimeo) *
                                                 </label>
                                                 <input
-                                                    type="text"
+                                                    type="url"
                                                     required
-                                                    value={videoFormData.title}
+                                                    value={videoFormData.video_url}
                                                     onChange={(e) =>
                                                         setVideoFormData({
                                                             ...videoFormData,
-                                                            title: e.target
-                                                                .value,
+                                                            video_url:
+                                                                e.target.value,
                                                         })
                                                     }
                                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                                    placeholder="Video title"
+                                                    placeholder="YouTube or Vimeo URL (e.g., youtube.com/watch?v=... or vimeo.com/...)"
                                                 />
                                             </div>
 
-                                            {/* Order Index */}
+                                            {/* Description */}
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-900 mb-2">
-                                                    Order Index *
+                                                    Description
                                                 </label>
-                                                <input
-                                                    type="number"
-                                                    required
-                                                    min="0"
+                                                <textarea
                                                     value={
-                                                        videoFormData.order_index
+                                                        videoFormData.description
                                                     }
                                                     onChange={(e) =>
                                                         setVideoFormData({
                                                             ...videoFormData,
-                                                            order_index:
-                                                                parseInt(
-                                                                    e.target
-                                                                        .value
-                                                                ) || 0,
+                                                            description:
+                                                                e.target.value,
                                                         })
                                                     }
-                                                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${!editingVideo
-                                                        ? "bg-gray-50 cursor-not-allowed"
-                                                        : ""
-                                                        }`}
-                                                    placeholder="Auto-generated"
-                                                    readOnly={!editingVideo}
+                                                    rows={3}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                    placeholder="Video description..."
                                                 />
-                                                {!editingVideo && (
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        Automatically set to
-                                                        next available index
-                                                    </p>
-                                                )}
                                             </div>
-                                        </div>
 
-                                        {/* Video URL */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-900 mb-2">
-                                                Video URL (YouTube or Vimeo) *
-                                            </label>
-                                            <input
-                                                type="url"
-                                                required
-                                                value={videoFormData.video_url}
-                                                onChange={(e) =>
-                                                    setVideoFormData({
-                                                        ...videoFormData,
-                                                        video_url:
-                                                            e.target.value,
-                                                    })
-                                                }
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                                placeholder="YouTube or Vimeo URL (e.g., youtube.com/watch?v=... or vimeo.com/...)"
-                                            />
-                                        </div>
+                                            {/* PDF Upload */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-900 mb-2">
+                                                    PDF Attachments
+                                                </label>
+                                                <div className="space-y-3">
+                                                    {/* Hidden file input */}
+                                                    <input
+                                                        type="file"
+                                                        id="pdf-upload-input"
+                                                        accept=".pdf"
+                                                        multiple
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const files =
+                                                                Array.from(
+                                                                    e.target
+                                                                        .files || []
+                                                                );
+                                                            // Add new files to existing ones
+                                                            setPdfFiles([
+                                                                ...pdfFiles,
+                                                                ...files,
+                                                            ]);
+                                                            // Reset input to allow selecting same file again
+                                                            e.target.value = "";
+                                                        }}
+                                                    />
 
-                                        {/* Description */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-900 mb-2">
-                                                Description
-                                            </label>
-                                            <textarea
-                                                value={
-                                                    videoFormData.description
-                                                }
-                                                onChange={(e) =>
-                                                    setVideoFormData({
-                                                        ...videoFormData,
-                                                        description:
-                                                            e.target.value,
-                                                    })
-                                                }
-                                                rows={3}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                                placeholder="Video description..."
-                                            />
-                                        </div>
-
-                                        {/* PDF Upload */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-900 mb-2">
-                                                PDF Attachments
-                                            </label>
-                                            <div className="space-y-3">
-                                                {/* Hidden file input */}
-                                                <input
-                                                    type="file"
-                                                    id="pdf-upload-input"
-                                                    accept=".pdf"
-                                                    multiple
-                                                    className="hidden"
-                                                    onChange={(e) => {
-                                                        const files =
-                                                            Array.from(
-                                                                e.target
-                                                                    .files || []
-                                                            );
-                                                        // Add new files to existing ones
-                                                        setPdfFiles([
-                                                            ...pdfFiles,
-                                                            ...files,
-                                                        ]);
-                                                        // Reset input to allow selecting same file again
-                                                        e.target.value = "";
-                                                    }}
-                                                />
-
-                                                {/* Add PDF Button */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        document
-                                                            .getElementById(
-                                                                "pdf-upload-input"
-                                                            )
-                                                            ?.click();
-                                                    }}
-                                                    className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-[#B00000] rounded-lg hover:bg-red-800 transition-colors"
-                                                >
-                                                    <Upload className="w-4 h-4" />
-                                                    <span>Add PDF Files</span>
-                                                </button>
-
-                                                {/* Selected Files List */}
-                                                {pdfFiles.length > 0 && (
-                                                    <div className="mt-3 space-y-2">
-                                                        <p className="text-xs font-medium text-gray-700">
-                                                            Selected Files (
-                                                            {pdfFiles.length}):
-                                                        </p>
-                                                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                                                            {pdfFiles.map(
-                                                                (
-                                                                    file,
-                                                                    index
-                                                                ) => (
-                                                                    <div
-                                                                        key={
-                                                                            index
-                                                                        }
-                                                                        className="flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
-                                                                    >
-                                                                        <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                                                            <FileText className="w-4 h-4 text-gray-500 shrink-0" />
-                                                                            <span className="text-gray-700 truncate">
-                                                                                {
-                                                                                    file.name
-                                                                                }
-                                                                            </span>
-                                                                            <span className="text-xs text-gray-500 shrink-0">
-                                                                                (
-                                                                                {(
-                                                                                    file.size /
-                                                                                    1024
-                                                                                ).toFixed(
-                                                                                    1
-                                                                                )}{" "}
-                                                                                KB)
-                                                                            </span>
-                                                                        </div>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                setPdfFiles(
-                                                                                    pdfFiles.filter(
-                                                                                        (
-                                                                                            _,
-                                                                                            i
-                                                                                        ) =>
-                                                                                            i !==
-                                                                                            index
-                                                                                    )
-                                                                                );
-                                                                            }}
-                                                                            className="ml-2 text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors shrink-0"
-                                                                            title="Remove file"
-                                                                        >
-                                                                            <X className="w-4 h-4" />
-                                                                        </button>
-                                                                    </div>
+                                                    {/* Add PDF Button */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            document
+                                                                .getElementById(
+                                                                    "pdf-upload-input"
                                                                 )
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                                ?.click();
+                                                        }}
+                                                        className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-[#B00000] rounded-lg hover:bg-red-800 transition-colors"
+                                                    >
+                                                        <Upload className="w-4 h-4" />
+                                                        <span>Add PDF Files</span>
+                                                    </button>
 
-                                                {/* Existing PDFs from Database */}
-                                                {videoFormData.pdfs &&
-                                                    videoFormData.pdfs.length >
-                                                    0 && (
+                                                    {/* Selected Files List */}
+                                                    {pdfFiles.length > 0 && (
                                                         <div className="mt-3 space-y-2">
                                                             <p className="text-xs font-medium text-gray-700">
-                                                                Existing PDFs (
-                                                                {
-                                                                    videoFormData
-                                                                        .pdfs
-                                                                        .length
-                                                                }
-                                                                ):
+                                                                Selected Files (
+                                                                {pdfFiles.length}):
                                                             </p>
-                                                            <div className="space-y-2">
-                                                                {videoFormData.pdfs.map(
+                                                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                                                                {pdfFiles.map(
                                                                     (
-                                                                        pdf,
+                                                                        file,
                                                                         index
                                                                     ) => (
                                                                         <div
                                                                             key={
                                                                                 index
                                                                             }
-                                                                            className="flex items-center justify-between px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm"
+                                                                            className="flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
                                                                         >
                                                                             <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                                                                <FileText className="w-4 h-4 text-blue-600 shrink-0" />
-                                                                                <a
-                                                                                    href={
-                                                                                        pdf.url
-                                                                                    }
-                                                                                    target="_blank"
-                                                                                    rel="noopener noreferrer"
-                                                                                    className="text-blue-600 hover:underline truncate"
-                                                                                >
+                                                                                <FileText className="w-4 h-4 text-gray-500 shrink-0" />
+                                                                                <span className="text-gray-700 truncate">
                                                                                     {
-                                                                                        pdf.name
+                                                                                        file.name
                                                                                     }
-                                                                                </a>
+                                                                                </span>
+                                                                                <span className="text-xs text-gray-500 shrink-0">
+                                                                                    (
+                                                                                    {(
+                                                                                        file.size /
+                                                                                        1024
+                                                                                    ).toFixed(
+                                                                                        1
+                                                                                    )}{" "}
+                                                                                    KB)
+                                                                                </span>
                                                                             </div>
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => {
-                                                                                    setVideoFormData(
-                                                                                        {
-                                                                                            ...videoFormData,
-                                                                                            pdfs: videoFormData.pdfs.filter(
-                                                                                                (
-                                                                                                    _,
-                                                                                                    i
-                                                                                                ) =>
-                                                                                                    i !==
-                                                                                                    index
-                                                                                            ),
-                                                                                        }
+                                                                                    setPdfFiles(
+                                                                                        pdfFiles.filter(
+                                                                                            (
+                                                                                                _,
+                                                                                                i
+                                                                                            ) =>
+                                                                                                i !==
+                                                                                                index
+                                                                                        )
                                                                                     );
                                                                                 }}
                                                                                 className="ml-2 text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors shrink-0"
-                                                                                title="Remove PDF"
+                                                                                title="Remove file"
                                                                             >
                                                                                 <X className="w-4 h-4" />
                                                                             </button>
@@ -3839,626 +3602,740 @@ function AdminPageContent() {
                                                             </div>
                                                         </div>
                                                     )}
+
+                                                    {/* Existing PDFs from Database */}
+                                                    {videoFormData.pdfs &&
+                                                        videoFormData.pdfs.length >
+                                                        0 && (
+                                                            <div className="mt-3 space-y-2">
+                                                                <p className="text-xs font-medium text-gray-700">
+                                                                    Existing PDFs (
+                                                                    {
+                                                                        videoFormData
+                                                                            .pdfs
+                                                                            .length
+                                                                    }
+                                                                    ):
+                                                                </p>
+                                                                <div className="space-y-2">
+                                                                    {videoFormData.pdfs.map(
+                                                                        (
+                                                                            pdf,
+                                                                            index
+                                                                        ) => (
+                                                                            <div
+                                                                                key={
+                                                                                    index
+                                                                                }
+                                                                                className="flex items-center justify-between px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm"
+                                                                            >
+                                                                                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                                                                    <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                                                                                    <a
+                                                                                        href={
+                                                                                            pdf.url
+                                                                                        }
+                                                                                        target="_blank"
+                                                                                        rel="noopener noreferrer"
+                                                                                        className="text-blue-600 hover:underline truncate"
+                                                                                    >
+                                                                                        {
+                                                                                            pdf.name
+                                                                                        }
+                                                                                    </a>
+                                                                                </div>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        setVideoFormData(
+                                                                                            {
+                                                                                                ...videoFormData,
+                                                                                                pdfs: videoFormData.pdfs.filter(
+                                                                                                    (
+                                                                                                        _,
+                                                                                                        i
+                                                                                                    ) =>
+                                                                                                        i !==
+                                                                                                        index
+                                                                                                ),
+                                                                                            }
+                                                                                        );
+                                                                                    }}
+                                                                                    className="ml-2 text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors shrink-0"
+                                                                                    title="Remove PDF"
+                                                                                >
+                                                                                    <X className="w-4 h-4" />
+                                                                                </button>
+                                                                            </div>
+                                                                        )
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                </div>
+                                            </div>
+
+                                            {/* Markdown */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-900 mb-2">
+                                                    Markdown Content
+                                                </label>
+
+                                                {/* Markdown Editor */}
+                                                <div data-color-mode="light">
+                                                    <SimpleMDE
+                                                        key={
+                                                            editingVideo
+                                                                ? editingVideo.id
+                                                                : "new-video"
+                                                        }
+                                                        value={
+                                                            videoFormData.markdown
+                                                        }
+                                                        onChange={(value) =>
+                                                            setVideoFormData({
+                                                                ...videoFormData,
+                                                                markdown: value,
+                                                            })
+                                                        }
+                                                        options={{
+                                                            spellChecker: false,
+                                                            placeholder:
+                                                                "Write video description...",
+                                                            maxHeight: "450px",
+                                                            toolbar: [
+                                                                "bold",
+                                                                "italic",
+                                                                "strikethrough",
+                                                                "|",
+                                                                "heading-1",
+                                                                "heading-2",
+                                                                "heading-3",
+                                                                "|",
+                                                                "code",
+                                                                "quote",
+                                                                "unordered-list",
+                                                                "ordered-list",
+                                                                "|",
+                                                                "link",
+                                                                "image",
+                                                                "table",
+                                                                "|",
+                                                                "preview",
+                                                                "side-by-side",
+                                                                "fullscreen",
+                                                                "|",
+                                                                "guide",
+                                                            ],
+                                                        }}
+                                                    />
+                                                </div>
+
+                                                {/* Helper Buttons */}
+                                                <div className="mt-2 flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current =
+                                                                videoFormData.markdown ||
+                                                                "";
+                                                            setVideoFormData({
+                                                                ...videoFormData,
+                                                                markdown:
+                                                                    current +
+                                                                    "\n\n## Heading\n\n",
+                                                            });
+                                                        }}
+                                                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                                                    >
+                                                        + H2 Heading
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current =
+                                                                videoFormData.markdown ||
+                                                                "";
+                                                            setVideoFormData({
+                                                                ...videoFormData,
+                                                                markdown:
+                                                                    current +
+                                                                    "\n\n[Link Text](https://example.com)\n\n",
+                                                            });
+                                                        }}
+                                                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                                                    >
+                                                        + Link
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current =
+                                                                videoFormData.markdown ||
+                                                                "";
+                                                            setVideoFormData({
+                                                                ...videoFormData,
+                                                                markdown:
+                                                                    current +
+                                                                    '\n\n<iframe src="https://example.com" width="600" height="400" frameborder="0" allowfullscreen></iframe>\n\n',
+                                                            });
+                                                        }}
+                                                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                                                    >
+                                                        + Iframe
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current =
+                                                                videoFormData.markdown ||
+                                                                "";
+                                                            setVideoFormData({
+                                                                ...videoFormData,
+                                                                markdown:
+                                                                    current +
+                                                                    "\n\n---\n\n",
+                                                            });
+                                                        }}
+                                                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                                                    >
+                                                        + Divider
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Buttons */}
+                                            <div className="flex items-center justify-end space-x-3 pt-2">
+                                                {editingVideo && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAddVideo}
+                                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                                    >
+                                                        Cancel Edit
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmittingVideo}
+                                                    className="px-4 py-2 text-sm font-medium text-white bg-[#B00000] rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                                                >
+                                                    {isSubmittingVideo ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            <span>Saving...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Save className="w-4 h-4" />
+                                                            <span>
+                                                                {editingVideo
+                                                                    ? "Update"
+                                                                    : "Add"}{" "}
+                                                                Video
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+
+                                    {/* Videos List */}
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                                            Videos ({videos.length})
+                                        </h3>
+                                        {loadingVideos ? (
+                                            <div className="flex items-center justify-center py-8">
+                                                <Loader2 className="w-6 h-6 animate-spin text-[#B00000]" />
+                                            </div>
+                                        ) : videos.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {videos
+                                                    .sort(
+                                                        (a, b) =>
+                                                            (a.order_index || 0) -
+                                                            (b.order_index || 0)
+                                                    )
+                                                    .map((video) => (
+                                                        <div
+                                                            key={video.id}
+                                                            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex-1">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
+                                                                            #
+                                                                            {
+                                                                                video.order_index
+                                                                            }
+                                                                        </span>
+                                                                        <h4 className="font-medium text-slate-900">
+                                                                            {
+                                                                                video.title
+                                                                            }
+                                                                        </h4>
+                                                                    </div>
+                                                                    {video.description && (
+                                                                        <p className="text-sm text-gray-600 mt-1 ml-12">
+                                                                            {
+                                                                                video.description
+                                                                            }
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center space-x-2">
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            handleEditVideo(
+                                                                                video
+                                                                            )
+                                                                        }
+                                                                        className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                        title="Edit Video"
+                                                                    >
+                                                                        <Edit2 className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            handleDeleteVideo(
+                                                                                video
+                                                                            )
+                                                                        }
+                                                                        className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                                                        title="Delete Video"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-8 bg-gray-50 rounded-lg">
+                                                <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                                <p className="text-gray-600">
+                                                    No videos yet
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    Add your first video above
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )
+            }
+
+            {/* Video Delete Confirmation Modal */}
+            {
+                isDeleteVideoModalOpen && videoToDelete && selectedCourse && (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
+                            onClick={() => {
+                                if (!isDeletingVideo) {
+                                    setIsDeleteVideoModalOpen(false);
+                                    setVideoToDelete(null);
+                                }
+                            }}
+                        ></div>
+
+                        {/* Modal */}
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                                {/* Header */}
+                                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="p-2 bg-red-100 rounded-lg">
+                                            <AlertCircle className="w-6 h-6 text-red-600" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-slate-900">
+                                            Delete Video
+                                        </h2>
+                                    </div>
+                                    {!isDeletingVideo && !deleteVideoSuccess && (
+                                        <button
+                                            onClick={() => {
+                                                setIsDeleteVideoModalOpen(false);
+                                                setVideoToDelete(null);
+                                                setDeleteVideoError(null);
+                                                setDeleteVideoSuccess(null);
+                                            }}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                            aria-label="Close modal"
+                                        >
+                                            <X className="w-5 h-5 text-gray-600" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Content */}
+                                <div className="p-6">
+                                    {/* Success Message */}
+                                    {deleteVideoSuccess && (
+                                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
+                                            <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                                            <p className="text-sm text-green-600 font-medium">
+                                                {deleteVideoSuccess}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Error Message */}
+                                    {deleteVideoError && (
+                                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+                                            <XCircle className="w-5 h-5 text-red-600 shrink-0" />
+                                            <p className="text-sm text-red-600 font-medium">
+                                                {deleteVideoError}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {!deleteVideoSuccess && (
+                                        <p className="text-gray-700 mb-4">
+                                            Are you sure you want to delete this
+                                            video? This action cannot be undone.
+                                        </p>
+                                    )}
+
+                                    {!deleteVideoSuccess && (
+                                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                                            <div>
+                                                <p className="font-medium text-slate-900">
+                                                    {videoToDelete.title}
+                                                </p>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    Order: #
+                                                    {videoToDelete.order_index}
+                                                </p>
+                                                {videoToDelete.description && (
+                                                    <p className="text-sm text-gray-600 mt-1">
+                                                        {videoToDelete.description}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
+                                    )}
 
-                                        {/* Markdown */}
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-900 mb-2">
-                                                Markdown Content
-                                            </label>
-
-                                            {/* Markdown Editor */}
-                                            <div data-color-mode="light">
-                                                <SimpleMDE
-                                                    key={
-                                                        editingVideo
-                                                            ? editingVideo.id
-                                                            : "new-video"
-                                                    }
-                                                    value={
-                                                        videoFormData.markdown
-                                                    }
-                                                    onChange={(value) =>
-                                                        setVideoFormData({
-                                                            ...videoFormData,
-                                                            markdown: value,
-                                                        })
-                                                    }
-                                                    options={{
-                                                        spellChecker: false,
-                                                        placeholder:
-                                                            "Write video description...",
-                                                        maxHeight: "450px",
-                                                        toolbar: [
-                                                            "bold",
-                                                            "italic",
-                                                            "strikethrough",
-                                                            "|",
-                                                            "heading-1",
-                                                            "heading-2",
-                                                            "heading-3",
-                                                            "|",
-                                                            "code",
-                                                            "quote",
-                                                            "unordered-list",
-                                                            "ordered-list",
-                                                            "|",
-                                                            "link",
-                                                            "image",
-                                                            "table",
-                                                            "|",
-                                                            "preview",
-                                                            "side-by-side",
-                                                            "fullscreen",
-                                                            "|",
-                                                            "guide",
-                                                        ],
-                                                    }}
-                                                />
-                                            </div>
-
-                                            {/* Helper Buttons */}
-                                            <div className="mt-2 flex flex-wrap gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const current =
-                                                            videoFormData.markdown ||
-                                                            "";
-                                                        setVideoFormData({
-                                                            ...videoFormData,
-                                                            markdown:
-                                                                current +
-                                                                "\n\n## Heading\n\n",
-                                                        });
-                                                    }}
-                                                    className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                                                >
-                                                    + H2 Heading
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const current =
-                                                            videoFormData.markdown ||
-                                                            "";
-                                                        setVideoFormData({
-                                                            ...videoFormData,
-                                                            markdown:
-                                                                current +
-                                                                "\n\n[Link Text](https://example.com)\n\n",
-                                                        });
-                                                    }}
-                                                    className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                                                >
-                                                    + Link
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const current =
-                                                            videoFormData.markdown ||
-                                                            "";
-                                                        setVideoFormData({
-                                                            ...videoFormData,
-                                                            markdown:
-                                                                current +
-                                                                '\n\n<iframe src="https://example.com" width="600" height="400" frameborder="0" allowfullscreen></iframe>\n\n',
-                                                        });
-                                                    }}
-                                                    className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                                                >
-                                                    + Iframe
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const current =
-                                                            videoFormData.markdown ||
-                                                            "";
-                                                        setVideoFormData({
-                                                            ...videoFormData,
-                                                            markdown:
-                                                                current +
-                                                                "\n\n---\n\n",
-                                                        });
-                                                    }}
-                                                    className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                                                >
-                                                    + Divider
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* Buttons */}
-                                        <div className="flex items-center justify-end space-x-3 pt-2">
-                                            {editingVideo && (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleAddVideo}
-                                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                                                >
-                                                    Cancel Edit
-                                                </button>
-                                            )}
+                                    <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                                        {!deleteVideoSuccess && (
                                             <button
-                                                type="submit"
-                                                disabled={isSubmittingVideo}
-                                                className="px-4 py-2 text-sm font-medium text-white bg-[#B00000] rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsDeleteVideoModalOpen(
+                                                        false
+                                                    );
+                                                    setVideoToDelete(null);
+                                                    setDeleteVideoError(null);
+                                                    setDeleteVideoSuccess(null);
+                                                }}
+                                                disabled={isDeletingVideo}
+                                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                {isSubmittingVideo ? (
+                                                Cancel
+                                            </button>
+                                        )}
+                                        {!deleteVideoSuccess && (
+                                            <button
+                                                type="button"
+                                                onClick={confirmDeleteVideo}
+                                                disabled={isDeletingVideo}
+                                                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                                            >
+                                                {isDeletingVideo ? (
                                                     <>
                                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                                        <span>Saving...</span>
+                                                        <span>Deleting...</span>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Save className="w-4 h-4" />
-                                                        <span>
-                                                            {editingVideo
-                                                                ? "Update"
-                                                                : "Add"}{" "}
-                                                            Video
-                                                        </span>
+                                                        <Trash2 className="w-4 h-4" />
+                                                        <span>Delete Video</span>
                                                     </>
                                                 )}
                                             </button>
-                                        </div>
-                                    </form>
-                                </div>
-
-                                {/* Videos List */}
-                                <div>
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                                        Videos ({videos.length})
-                                    </h3>
-                                    {loadingVideos ? (
-                                        <div className="flex items-center justify-center py-8">
-                                            <Loader2 className="w-6 h-6 animate-spin text-[#B00000]" />
-                                        </div>
-                                    ) : videos.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {videos
-                                                .sort(
-                                                    (a, b) =>
-                                                        (a.order_index || 0) -
-                                                        (b.order_index || 0)
-                                                )
-                                                .map((video) => (
-                                                    <div
-                                                        key={video.id}
-                                                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                                                    >
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex-1">
-                                                                <div className="flex items-center space-x-3">
-                                                                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-medium">
-                                                                        #
-                                                                        {
-                                                                            video.order_index
-                                                                        }
-                                                                    </span>
-                                                                    <h4 className="font-medium text-slate-900">
-                                                                        {
-                                                                            video.title
-                                                                        }
-                                                                    </h4>
-                                                                </div>
-                                                                {video.description && (
-                                                                    <p className="text-sm text-gray-600 mt-1 ml-12">
-                                                                        {
-                                                                            video.description
-                                                                        }
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center space-x-2">
-                                                                <button
-                                                                    onClick={() =>
-                                                                        handleEditVideo(
-                                                                            video
-                                                                        )
-                                                                    }
-                                                                    className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                                                                    title="Edit Video"
-                                                                >
-                                                                    <Edit2 className="w-4 h-4" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        handleDeleteVideo(
-                                                                            video
-                                                                        )
-                                                                    }
-                                                                    className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                                                    title="Delete Video"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-8 bg-gray-50 rounded-lg">
-                                            <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                                            <p className="text-gray-600">
-                                                No videos yet
-                                            </p>
-                                            <p className="text-sm text-gray-500">
-                                                Add your first video above
-                                            </p>
-                                        </div>
-                                    )}
+                                        )}
+                                        {deleteVideoSuccess && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsDeleteVideoModalOpen(
+                                                        false
+                                                    );
+                                                    setVideoToDelete(null);
+                                                    setDeleteVideoError(null);
+                                                    setDeleteVideoSuccess(null);
+                                                }}
+                                                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                                            >
+                                                Close
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </>
-            )}
-
-            {/* Video Delete Confirmation Modal */}
-            {isDeleteVideoModalOpen && videoToDelete && selectedCourse && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
-                        onClick={() => {
-                            if (!isDeletingVideo) {
-                                setIsDeleteVideoModalOpen(false);
-                                setVideoToDelete(null);
-                            }
-                        }}
-                    ></div>
-
-                    {/* Modal */}
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                <div className="flex items-center space-x-3">
-                                    <div className="p-2 bg-red-100 rounded-lg">
-                                        <AlertCircle className="w-6 h-6 text-red-600" />
-                                    </div>
-                                    <h2 className="text-xl font-bold text-slate-900">
-                                        Delete Video
-                                    </h2>
-                                </div>
-                                {!isDeletingVideo && !deleteVideoSuccess && (
-                                    <button
-                                        onClick={() => {
-                                            setIsDeleteVideoModalOpen(false);
-                                            setVideoToDelete(null);
-                                            setDeleteVideoError(null);
-                                            setDeleteVideoSuccess(null);
-                                        }}
-                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                        aria-label="Close modal"
-                                    >
-                                        <X className="w-5 h-5 text-gray-600" />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-6">
-                                {/* Success Message */}
-                                {deleteVideoSuccess && (
-                                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
-                                        <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                                        <p className="text-sm text-green-600 font-medium">
-                                            {deleteVideoSuccess}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Error Message */}
-                                {deleteVideoError && (
-                                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-                                        <XCircle className="w-5 h-5 text-red-600 shrink-0" />
-                                        <p className="text-sm text-red-600 font-medium">
-                                            {deleteVideoError}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {!deleteVideoSuccess && (
-                                    <p className="text-gray-700 mb-4">
-                                        Are you sure you want to delete this
-                                        video? This action cannot be undone.
-                                    </p>
-                                )}
-
-                                {!deleteVideoSuccess && (
-                                    <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                                        <div>
-                                            <p className="font-medium text-slate-900">
-                                                {videoToDelete.title}
-                                            </p>
-                                            <p className="text-sm text-gray-600 mt-1">
-                                                Order: #
-                                                {videoToDelete.order_index}
-                                            </p>
-                                            {videoToDelete.description && (
-                                                <p className="text-sm text-gray-600 mt-1">
-                                                    {videoToDelete.description}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                                    {!deleteVideoSuccess && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setIsDeleteVideoModalOpen(
-                                                    false
-                                                );
-                                                setVideoToDelete(null);
-                                                setDeleteVideoError(null);
-                                                setDeleteVideoSuccess(null);
-                                            }}
-                                            disabled={isDeletingVideo}
-                                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            Cancel
-                                        </button>
-                                    )}
-                                    {!deleteVideoSuccess && (
-                                        <button
-                                            type="button"
-                                            onClick={confirmDeleteVideo}
-                                            disabled={isDeletingVideo}
-                                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                                        >
-                                            {isDeletingVideo ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                    <span>Deleting...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Trash2 className="w-4 h-4" />
-                                                    <span>Delete Video</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    )}
-                                    {deleteVideoSuccess && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setIsDeleteVideoModalOpen(
-                                                    false
-                                                );
-                                                setVideoToDelete(null);
-                                                setDeleteVideoError(null);
-                                                setDeleteVideoSuccess(null);
-                                            }}
-                                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                                        >
-                                            Close
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
+                    </>
+                )
+            }
 
             {/* Approve Request Confirmation Modal */}
-            {showApproveModal && selectedRequest && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
-                        onClick={() => {
-                            if (!isProcessingRequest) {
-                                setShowApproveModal(false);
-                                setSelectedRequest(null);
-                            }
-                        }}
-                    ></div>
+            {
+                showApproveModal && selectedRequest && (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
+                            onClick={() => {
+                                if (!isProcessingRequest) {
+                                    setShowApproveModal(false);
+                                    setSelectedRequest(null);
+                                }
+                            }}
+                        ></div>
 
-                    {/* Modal */}
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                <div className="flex items-center space-x-3">
-                                    <div className="p-2 bg-green-100 rounded-lg">
-                                        <CheckCircle className="w-6 h-6 text-green-600" />
-                                    </div>
-                                    <h2 className="text-xl font-bold text-slate-900">
-                                        Approve Request
-                                    </h2>
-                                </div>
-                                {!isProcessingRequest && !requestSuccess && (
-                                    <button
-                                        onClick={() => {
-                                            setShowApproveModal(false);
-                                            setSelectedRequest(null);
-                                            setRequestError(null);
-                                            setRequestSuccess(null);
-                                        }}
-                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                        aria-label="Close modal"
-                                    >
-                                        <X className="w-5 h-5 text-gray-600" />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-6">
-                                {/* Success Message */}
-                                {requestSuccess && (
-                                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
-                                        <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                                        <p className="text-sm text-green-600 font-medium">
-                                            {requestSuccess}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Error Message */}
-                                {requestError && (
-                                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-                                        <XCircle className="w-5 h-5 text-red-600 shrink-0" />
-                                        <p className="text-sm text-red-600 font-medium">
-                                            {requestError}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {!requestSuccess && (
-                                    <>
-                                        <p className="text-gray-700 mb-4">
-                                            Are you sure you want to approve
-                                            this course access request?
-                                        </p>
-                                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                                            <div className="space-y-2">
-                                                <div>
-                                                    <span className="text-sm font-medium text-gray-600">
-                                                        User:{" "}
-                                                    </span>
-                                                    <span className="text-sm text-slate-900">
-                                                        {selectedRequest.user
-                                                            ?.first_name ||
-                                                            ""}{" "}
-                                                        {selectedRequest.user
-                                                            ?.last_name || ""}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-sm font-medium text-gray-600">
-                                                        Course:{" "}
-                                                    </span>
-                                                    <span className="text-sm text-slate-900">
-                                                        {selectedRequest.course
-                                                            ?.name ||
-                                                            "Unknown Course"}
-                                                    </span>
-                                                </div>
-                                                {selectedRequest.request_message && (
-                                                    <div>
-                                                        <span className="text-sm font-medium text-gray-600">
-                                                            Message:{" "}
-                                                        </span>
-                                                        <span className="text-sm text-slate-900">
-                                                            {
-                                                                selectedRequest.request_message
-                                                            }
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
+                        {/* Modal */}
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                                {/* Header */}
+                                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="p-2 bg-green-100 rounded-lg">
+                                            <CheckCircle className="w-6 h-6 text-green-600" />
                                         </div>
-                                        {/* Date Selection Fields */}
-                                        <div className="space-y-4 mb-6">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Access Start Date *
-                                                    </label>
-                                                    <input
-                                                        type="date"
-                                                        value={
-                                                            accessStartDate
-                                                                ? new Date(
-                                                                    accessStartDate
-                                                                )
-                                                                    .toISOString()
-                                                                    .split(
-                                                                        "T"
-                                                                    )[0]
-                                                                : ""
-                                                        }
-                                                        onChange={(e) => {
-                                                            const dateValue =
-                                                                e.target.value;
-                                                            if (dateValue) {
-                                                                // Set time to start of day
-                                                                const isoDate =
-                                                                    new Date(
-                                                                        dateValue +
-                                                                        "T00:00:00.000Z"
-                                                                    ).toISOString();
-                                                                setAccessStartDate(
-                                                                    isoDate
-                                                                );
-                                                            }
-                                                        }}
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                                        required
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        Access End Date *
-                                                    </label>
-                                                    <input
-                                                        type="date"
-                                                        value={
-                                                            accessEndDate
-                                                                ? new Date(
-                                                                    accessEndDate
-                                                                )
-                                                                    .toISOString()
-                                                                    .split(
-                                                                        "T"
-                                                                    )[0]
-                                                                : ""
-                                                        }
-                                                        onChange={(e) => {
-                                                            const dateValue =
-                                                                e.target.value;
-                                                            if (dateValue) {
-                                                                // Set time to end of day
-                                                                const isoDate =
-                                                                    new Date(
-                                                                        dateValue +
-                                                                        "T23:59:59.999Z"
-                                                                    ).toISOString();
-                                                                setAccessEndDate(
-                                                                    isoDate
-                                                                );
-                                                            }
-                                                        }}
-                                                        min={
-                                                            accessStartDate
-                                                                ? new Date(
-                                                                    accessStartDate
-                                                                )
-                                                                    .toISOString()
-                                                                    .split(
-                                                                        "T"
-                                                                    )[0]
-                                                                : ""
-                                                        }
-                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-gray-500">
-                                                Default: 6 months access period.
-                                                You can modify these dates as
-                                                needed.
+                                        <h2 className="text-xl font-bold text-slate-900">
+                                            Approve Request
+                                        </h2>
+                                    </div>
+                                    {!isProcessingRequest && !requestSuccess && (
+                                        <button
+                                            onClick={() => {
+                                                setShowApproveModal(false);
+                                                setSelectedRequest(null);
+                                                setRequestError(null);
+                                                setRequestSuccess(null);
+                                            }}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                            aria-label="Close modal"
+                                        >
+                                            <X className="w-5 h-5 text-gray-600" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Content */}
+                                <div className="p-6">
+                                    {/* Success Message */}
+                                    {requestSuccess && (
+                                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
+                                            <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                                            <p className="text-sm text-green-600 font-medium">
+                                                {requestSuccess}
                                             </p>
                                         </div>
-                                    </>
-                                )}
+                                    )}
 
-                                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                                    {/* Error Message */}
+                                    {requestError && (
+                                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+                                            <XCircle className="w-5 h-5 text-red-600 shrink-0" />
+                                            <p className="text-sm text-red-600 font-medium">
+                                                {requestError}
+                                            </p>
+                                        </div>
+                                    )}
+
                                     {!requestSuccess && (
                                         <>
+                                            <p className="text-gray-700 mb-4">
+                                                Are you sure you want to approve
+                                                this course access request?
+                                            </p>
+                                            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                                                <div className="space-y-2">
+                                                    <div>
+                                                        <span className="text-sm font-medium text-gray-600">
+                                                            User:{" "}
+                                                        </span>
+                                                        <span className="text-sm text-slate-900">
+                                                            {selectedRequest.user
+                                                                ?.first_name ||
+                                                                ""}{" "}
+                                                            {selectedRequest.user
+                                                                ?.last_name || ""}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-sm font-medium text-gray-600">
+                                                            Course:{" "}
+                                                        </span>
+                                                        <span className="text-sm text-slate-900">
+                                                            {selectedRequest.course
+                                                                ?.name ||
+                                                                "Unknown Course"}
+                                                        </span>
+                                                    </div>
+                                                    {selectedRequest.request_message && (
+                                                        <div>
+                                                            <span className="text-sm font-medium text-gray-600">
+                                                                Message:{" "}
+                                                            </span>
+                                                            <span className="text-sm text-slate-900">
+                                                                {
+                                                                    selectedRequest.request_message
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {/* Date Selection Fields */}
+                                            <div className="space-y-4 mb-6">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            Access Start Date *
+                                                        </label>
+                                                        <input
+                                                            type="date"
+                                                            value={
+                                                                accessStartDate
+                                                                    ? new Date(
+                                                                        accessStartDate
+                                                                    )
+                                                                        .toISOString()
+                                                                        .split(
+                                                                            "T"
+                                                                        )[0]
+                                                                    : ""
+                                                            }
+                                                            onChange={(e) => {
+                                                                const dateValue =
+                                                                    e.target.value;
+                                                                if (dateValue) {
+                                                                    // Set time to start of day
+                                                                    const isoDate =
+                                                                        new Date(
+                                                                            dateValue +
+                                                                            "T00:00:00.000Z"
+                                                                        ).toISOString();
+                                                                    setAccessStartDate(
+                                                                        isoDate
+                                                                    );
+                                                                }
+                                                            }}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                            Access End Date *
+                                                        </label>
+                                                        <input
+                                                            type="date"
+                                                            value={
+                                                                accessEndDate
+                                                                    ? new Date(
+                                                                        accessEndDate
+                                                                    )
+                                                                        .toISOString()
+                                                                        .split(
+                                                                            "T"
+                                                                        )[0]
+                                                                    : ""
+                                                            }
+                                                            onChange={(e) => {
+                                                                const dateValue =
+                                                                    e.target.value;
+                                                                if (dateValue) {
+                                                                    // Set time to end of day
+                                                                    const isoDate =
+                                                                        new Date(
+                                                                            dateValue +
+                                                                            "T23:59:59.999Z"
+                                                                        ).toISOString();
+                                                                    setAccessEndDate(
+                                                                        isoDate
+                                                                    );
+                                                                }
+                                                            }}
+                                                            min={
+                                                                accessStartDate
+                                                                    ? new Date(
+                                                                        accessStartDate
+                                                                    )
+                                                                        .toISOString()
+                                                                        .split(
+                                                                            "T"
+                                                                        )[0]
+                                                                    : ""
+                                                            }
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <p className="text-xs text-gray-500">
+                                                    Default: 6 months access period.
+                                                    You can modify these dates as
+                                                    needed.
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                                        {!requestSuccess && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowApproveModal(false);
+                                                        setSelectedRequest(null);
+                                                        setRequestError(null);
+                                                        setRequestSuccess(null);
+                                                        setAccessStartDate("");
+                                                        setAccessEndDate("");
+                                                    }}
+                                                    disabled={isProcessingRequest}
+                                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleApproveRequest}
+                                                    disabled={isProcessingRequest}
+                                                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                                                >
+                                                    {isProcessingRequest ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            <span>
+                                                                Approving...
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <CheckCircle className="w-4 h-4" />
+                                                            <span>
+                                                                Confirm Approve
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </>
+                                        )}
+                                        {requestSuccess && (
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -4466,179 +4343,179 @@ function AdminPageContent() {
                                                     setSelectedRequest(null);
                                                     setRequestError(null);
                                                     setRequestSuccess(null);
-                                                    setAccessStartDate("");
-                                                    setAccessEndDate("");
                                                 }}
-                                                disabled={isProcessingRequest}
-                                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
                                             >
-                                                Cancel
+                                                Close
                                             </button>
-                                            <button
-                                                type="button"
-                                                onClick={handleApproveRequest}
-                                                disabled={isProcessingRequest}
-                                                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                                            >
-                                                {isProcessingRequest ? (
-                                                    <>
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                        <span>
-                                                            Approving...
-                                                        </span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle className="w-4 h-4" />
-                                                        <span>
-                                                            Confirm Approve
-                                                        </span>
-                                                    </>
-                                                )}
-                                            </button>
-                                        </>
-                                    )}
-                                    {requestSuccess && (
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )
+            }
+
+            {/* Reject Request Confirmation Modal */}
+            {
+                showRejectModal && selectedRequest && (
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
+                            onClick={() => {
+                                if (!isProcessingRequest) {
+                                    setShowRejectModal(false);
+                                    setSelectedRequest(null);
+                                }
+                            }}
+                        ></div>
+
+                        {/* Modal */}
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                                {/* Header */}
+                                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="p-2 bg-red-100 rounded-lg">
+                                            <AlertCircle className="w-6 h-6 text-red-600" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-slate-900">
+                                            Reject Request
+                                        </h2>
+                                    </div>
+                                    {!isProcessingRequest && !requestSuccess && (
                                         <button
-                                            type="button"
                                             onClick={() => {
-                                                setShowApproveModal(false);
+                                                setShowRejectModal(false);
                                                 setSelectedRequest(null);
                                                 setRequestError(null);
                                                 setRequestSuccess(null);
                                             }}
-                                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                            aria-label="Close modal"
                                         >
-                                            Close
+                                            <X className="w-5 h-5 text-gray-600" />
                                         </button>
                                     )}
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </>
-            )}
 
-            {/* Reject Request Confirmation Modal */}
-            {showRejectModal && selectedRequest && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
-                        onClick={() => {
-                            if (!isProcessingRequest) {
-                                setShowRejectModal(false);
-                                setSelectedRequest(null);
-                            }
-                        }}
-                    ></div>
-
-                    {/* Modal */}
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                <div className="flex items-center space-x-3">
-                                    <div className="p-2 bg-red-100 rounded-lg">
-                                        <AlertCircle className="w-6 h-6 text-red-600" />
-                                    </div>
-                                    <h2 className="text-xl font-bold text-slate-900">
-                                        Reject Request
-                                    </h2>
-                                </div>
-                                {!isProcessingRequest && !requestSuccess && (
-                                    <button
-                                        onClick={() => {
-                                            setShowRejectModal(false);
-                                            setSelectedRequest(null);
-                                            setRequestError(null);
-                                            setRequestSuccess(null);
-                                        }}
-                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                        aria-label="Close modal"
-                                    >
-                                        <X className="w-5 h-5 text-gray-600" />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Content */}
-                            <div className="p-6">
-                                {/* Success Message */}
-                                {requestSuccess && (
-                                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
-                                        <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                                        <p className="text-sm text-green-600 font-medium">
-                                            {requestSuccess}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Error Message */}
-                                {requestError && (
-                                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-                                        <XCircle className="w-5 h-5 text-red-600 shrink-0" />
-                                        <p className="text-sm text-red-600 font-medium">
-                                            {requestError}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {!requestSuccess && (
-                                    <>
-                                        <p className="text-gray-700 mb-4">
-                                            Are you sure you want to reject this
-                                            course access request?
-                                        </p>
-                                        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                                            <div className="space-y-2">
-                                                <div>
-                                                    <span className="text-sm font-medium text-gray-600">
-                                                        User:{" "}
-                                                    </span>
-                                                    <span className="text-sm text-slate-900">
-                                                        {selectedRequest.user
-                                                            ?.first_name ||
-                                                            ""}{" "}
-                                                        {selectedRequest.user
-                                                            ?.last_name || ""}
-                                                    </span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-sm font-medium text-gray-600">
-                                                        Course:{" "}
-                                                    </span>
-                                                    <span className="text-sm text-slate-900">
-                                                        {selectedRequest.course
-                                                            ?.name ||
-                                                            "Unknown Course"}
-                                                    </span>
-                                                </div>
-                                                {selectedRequest.request_message && (
-                                                    <div>
-                                                        <span className="text-sm font-medium text-gray-600">
-                                                            Message:{" "}
-                                                        </span>
-                                                        <span className="text-sm text-slate-900">
-                                                            {
-                                                                selectedRequest.request_message
-                                                            }
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
+                                {/* Content */}
+                                <div className="p-6">
+                                    {/* Success Message */}
+                                    {requestSuccess && (
+                                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
+                                            <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+                                            <p className="text-sm text-green-600 font-medium">
+                                                {requestSuccess}
+                                            </p>
                                         </div>
-                                        <p className="text-sm text-red-600 mb-6">
-                                            This action cannot be undone. The
-                                            user will not be granted access to
-                                            this course.
-                                        </p>
-                                    </>
-                                )}
+                                    )}
 
-                                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                                    {/* Error Message */}
+                                    {requestError && (
+                                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+                                            <XCircle className="w-5 h-5 text-red-600 shrink-0" />
+                                            <p className="text-sm text-red-600 font-medium">
+                                                {requestError}
+                                            </p>
+                                        </div>
+                                    )}
+
                                     {!requestSuccess && (
                                         <>
+                                            <p className="text-gray-700 mb-4">
+                                                Are you sure you want to reject this
+                                                course access request?
+                                            </p>
+                                            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                                                <div className="space-y-2">
+                                                    <div>
+                                                        <span className="text-sm font-medium text-gray-600">
+                                                            User:{" "}
+                                                        </span>
+                                                        <span className="text-sm text-slate-900">
+                                                            {selectedRequest.user
+                                                                ?.first_name ||
+                                                                ""}{" "}
+                                                            {selectedRequest.user
+                                                                ?.last_name || ""}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-sm font-medium text-gray-600">
+                                                            Course:{" "}
+                                                        </span>
+                                                        <span className="text-sm text-slate-900">
+                                                            {selectedRequest.course
+                                                                ?.name ||
+                                                                "Unknown Course"}
+                                                        </span>
+                                                    </div>
+                                                    {selectedRequest.request_message && (
+                                                        <div>
+                                                            <span className="text-sm font-medium text-gray-600">
+                                                                Message:{" "}
+                                                            </span>
+                                                            <span className="text-sm text-slate-900">
+                                                                {
+                                                                    selectedRequest.request_message
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-red-600 mb-6">
+                                                This action cannot be undone. The
+                                                user will not be granted access to
+                                                this course.
+                                            </p>
+                                        </>
+                                    )}
+
+                                    <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                                        {!requestSuccess && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowRejectModal(false);
+                                                        setSelectedRequest(null);
+                                                        setRequestError(null);
+                                                        setRequestSuccess(null);
+                                                    }}
+                                                    disabled={isProcessingRequest}
+                                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRejectRequest}
+                                                    disabled={isProcessingRequest}
+                                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                                                >
+                                                    {isProcessingRequest ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            <span>
+                                                                Rejecting...
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <XCircle className="w-4 h-4" />
+                                                            <span>
+                                                                Confirm Reject
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </>
+                                        )}
+                                        {requestSuccess && (
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -4647,55 +4524,18 @@ function AdminPageContent() {
                                                     setRequestError(null);
                                                     setRequestSuccess(null);
                                                 }}
-                                                disabled={isProcessingRequest}
-                                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
                                             >
-                                                Cancel
+                                                Close
                                             </button>
-                                            <button
-                                                type="button"
-                                                onClick={handleRejectRequest}
-                                                disabled={isProcessingRequest}
-                                                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                                            >
-                                                {isProcessingRequest ? (
-                                                    <>
-                                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                                        <span>
-                                                            Rejecting...
-                                                        </span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <XCircle className="w-4 h-4" />
-                                                        <span>
-                                                            Confirm Reject
-                                                        </span>
-                                                    </>
-                                                )}
-                                            </button>
-                                        </>
-                                    )}
-                                    {requestSuccess && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setShowRejectModal(false);
-                                                setSelectedRequest(null);
-                                                setRequestError(null);
-                                                setRequestSuccess(null);
-                                            }}
-                                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                                        >
-                                            Close
-                                        </button>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </>
-            )}
+                    </>
+                )
+            }
 
             {/* KYC Detail Modal */}
             <KYCModal
@@ -4762,7 +4602,7 @@ function AdminPageContent() {
                     setProductKycError(null);
                 }}
             />
-        </div>
+        </div >
     );
 }
 

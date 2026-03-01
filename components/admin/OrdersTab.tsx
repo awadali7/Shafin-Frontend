@@ -653,7 +653,7 @@ ${pages}
                                 <React.Fragment key={order.id}>
                                     <tr className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
-                                            <div className="text-sm font-mono font-medium text-slate-900">#{orders.length - orders.findIndex(o => o.id === order.id)}</div>
+                                            <div className="text-sm font-mono font-medium text-slate-900">#{order.order_number || order.id.slice(0, 8)}</div>
                                             {/* Stacked item images */}
                                             {itemImagesMap[order.id] && itemImagesMap[order.id].length > 0 ? (
                                                 <div className="flex items-center mt-2">

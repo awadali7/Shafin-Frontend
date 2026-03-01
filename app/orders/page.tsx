@@ -285,7 +285,7 @@ export default function OrdersPage() {
                             }
                         />
                     )}
-                    
+
                     {/* Tracked Shipments */}
                     {orders.some(o => o.status === 'paid' && hasPhysicalItems(o) && o.tracking_number && !o.delivered_at) && (
                         <NotificationBanner
@@ -314,24 +314,24 @@ export default function OrdersPage() {
                     {orders.map((order) => {
                         const isExpanded = expandedOrders.has(order.id);
                         const itemCount = order.items?.length || 0;
-                        
-                                        return (
-                                            <div
-                                                key={order.id}
-                                                className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md"
-                                            >
+
+                        return (
+                            <div
+                                key={order.id}
+                                className="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md"
+                            >
                                 {/* Order Header */}
                                 <div className="p-4 md:p-6">
                                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <h3 className="text-lg font-semibold text-slate-900">
-                                                    #{order.id.slice(0, 8)}
+                                                    #{order.order_number || order.id.slice(0, 8)}
                                                 </h3>
                                                 <Badge variant={order.status as any}>
                                                     {order.status.toUpperCase()}
                                                 </Badge>
-                                                
+
                                                 {/* Quick Indicators */}
                                                 {order.status === 'paid' && hasPhysicalItems(order) && order.tracking_number && (
                                                     <Badge variant="tracked" icon={Truck}>
@@ -347,7 +347,7 @@ export default function OrdersPage() {
                                             <p className="text-sm text-gray-500">
                                                 {formatDate(order.created_at)}
                                             </p>
-                                            
+
                                             {/* Quick Info - Estimated Delivery */}
                                             {order.status === 'paid' && order.estimated_delivery_date && !isExpanded && (
                                                 <p className="text-xs text-blue-600 font-medium mt-1 flex items-center gap-1">
@@ -356,7 +356,7 @@ export default function OrdersPage() {
                                                 </p>
                                             )}
                                         </div>
-                                        
+
                                         <div className="flex items-center gap-4 justify-end md:justify-start">
                                             <div className="text-right">
                                                 <p className="text-sm text-gray-600">Total</p>
@@ -364,7 +364,7 @@ export default function OrdersPage() {
                                                     ₹{Number(order.total).toFixed(2)}
                                                 </p>
                                             </div>
-                                            
+
                                             {order.status === "pending" && Number(order.total) > 0 && (
                                                 <button
                                                     onClick={() => handleContinuePayment(order.id, Number(order.total))}
@@ -384,17 +384,16 @@ export default function OrdersPage() {
                                                     )}
                                                 </button>
                                             )}
-                                            
+
                                             {itemCount > 0 && (
                                                 <button
                                                     onClick={() => toggleOrderExpansion(order.id)}
                                                     className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 flex-shrink-0"
                                                     aria-label={isExpanded ? "Collapse" : "Expand"}
                                                 >
-                                                    <ChevronDown 
-                                                        className={`w-5 h-5 text-gray-600 transition-transform duration-300 ease-in-out ${
-                                                            isExpanded ? 'rotate-180' : 'rotate-0'
-                                                        }`}
+                                                    <ChevronDown
+                                                        className={`w-5 h-5 text-gray-600 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180' : 'rotate-0'
+                                                            }`}
                                                     />
                                                 </button>
                                             )}
@@ -404,17 +403,16 @@ export default function OrdersPage() {
 
                                 {/* Tracking Information - Priority 2 - Only show when expanded */}
                                 {order.status === 'paid' && hasPhysicalItems(order) && (order.tracking_number || order.estimated_delivery_date) && (
-                                    <div 
-                                        className={`border-t border-gray-200 bg-gradient-to-br from-blue-50 to-indigo-50 transition-all duration-300 ease-in-out overflow-hidden ${
-                                            isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                                        }`}
+                                    <div
+                                        className={`border-t border-gray-200 bg-gradient-to-br from-blue-50 to-indigo-50 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                                            }`}
                                     >
                                         <div className="p-4 md:p-6">
                                             <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
                                                 <Truck className="w-5 h-5 text-blue-600" />
                                                 Shipment Tracking
                                             </h4>
-                                            
+
                                             <div className="bg-white rounded-lg p-4 shadow-sm">
                                                 {/* Tracking Number & Link */}
                                                 {order.tracking_number && (
@@ -438,7 +436,7 @@ export default function OrdersPage() {
                                                         </div>
                                                     </div>
                                                 )}
-                                                
+
                                                 {/* Estimated Delivery */}
                                                 {order.estimated_delivery_date && (
                                                     <div className="mb-4">
@@ -451,7 +449,7 @@ export default function OrdersPage() {
                                                         </p>
                                                     </div>
                                                 )}
-                                                
+
                                                 {/* Shipment Timeline */}
                                                 <div className="mt-4 pt-4 border-t border-gray-200">
                                                     <p className="text-xs font-medium text-gray-700 mb-3">Shipment Progress</p>
@@ -462,7 +460,7 @@ export default function OrdersPage() {
                                                             title="Order Placed"
                                                             description={formatDate(order.created_at)}
                                                         />
-                                                        
+
                                                         {order.status === 'paid' && (
                                                             <TimelineStep
                                                                 icon={CheckCircle}
@@ -471,7 +469,7 @@ export default function OrdersPage() {
                                                                 description="Order is being processed"
                                                             />
                                                         )}
-                                                        
+
                                                         {order.shipped_at ? (
                                                             <TimelineStep
                                                                 icon={CheckCircle}
@@ -487,7 +485,7 @@ export default function OrdersPage() {
                                                                 description="Your order is being prepared"
                                                             />
                                                         )}
-                                                        
+
                                                         {order.delivered_at ? (
                                                             <TimelineStep
                                                                 icon={CheckCircle}
@@ -501,7 +499,7 @@ export default function OrdersPage() {
                                                                 status="active"
                                                                 title="In Transit"
                                                                 description={
-                                                                    order.estimated_delivery_date 
+                                                                    order.estimated_delivery_date
                                                                         ? `Expected: ${formatShortDate(order.estimated_delivery_date)}`
                                                                         : 'On the way to you'
                                                                 }
@@ -524,10 +522,9 @@ export default function OrdersPage() {
 
                                 {/* Order Items - Priority 4 - Enhanced with Downloads */}
                                 {order.items && order.items.length > 0 && (
-                                    <div 
-                                        className={`border-t border-gray-200 bg-gray-50 transition-all duration-300 ease-in-out overflow-hidden ${
-                                            isExpanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'
-                                        }`}
+                                    <div
+                                        className={`border-t border-gray-200 bg-gray-50 transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'
+                                            }`}
                                     >
                                         <div className="p-4 md:p-6">
                                             <h4 className="text-sm font-semibold text-gray-700 mb-3">
@@ -549,7 +546,7 @@ export default function OrdersPage() {
                                                     />
                                                 ))}
                                             </div>
-                                            
+
                                             {/* Order Summary */}
                                             <div className="mt-4 pt-4 border-t border-gray-200 bg-white rounded-lg p-4">
                                                 <div className="space-y-2">
@@ -559,7 +556,7 @@ export default function OrdersPage() {
                                                     />
                                                     <SummaryRow
                                                         label="Shipping"
-                                                        value={Number(order.shipping_cost) > 0 
+                                                        value={Number(order.shipping_cost) > 0
                                                             ? `₹${Number(order.shipping_cost).toFixed(2)}`
                                                             : 'Free'}
                                                     />

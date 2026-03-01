@@ -352,19 +352,19 @@ export default function LandingPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {[
                                 {
-                                    image: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&h=400&fit=crop",
+                                    image: "/images/industry-expertise.png",
                                     title: "Industry-Specialized Expertise",
                                     description:
                                         "Focused exclusively on automotive diagnostics, programming, and electronic systems.",
                                 },
                                 {
-                                    image: "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=600&h=400&fit=crop",
+                                    image: "/images/professional-products.png",
                                     title: "Professional-Grade Products",
                                     description:
                                         "Reliable diagnostic tools, programmers, and workshop solutions trusted by professionals.",
                                 },
                                 {
-                                    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&h=400&fit=crop",
+                                    image: "/images/technical-training.png",
                                     title: "Expert-Led Technical Training",
                                     description:
                                         "Practical online training designed for real-world diagnostic and repair challenges.",

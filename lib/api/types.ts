@@ -544,6 +544,7 @@ export interface CreateOrderRequest {
 
 export interface Order {
     id: string;
+    order_number?: number;
     status: OrderStatus;
     subtotal: number;
     shipping_cost: number;

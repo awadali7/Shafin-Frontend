@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { blogsApi } from "@/lib/api";
 import type { BlogPost } from "@/lib/api/types";
+import { Search, Calendar, User, ArrowRight, Eye, Clock } from "lucide-react";
 
 export default function BlogPage() {
     const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -39,7 +40,6 @@ export default function BlogPage() {
             });
 
             if (response.success && response.data) {
-                // Handle response structure - data can be an object with data/pagination or array directly
                 let postsData: BlogPost[] = [];
                 let paginationData = {
                     total: 0,
@@ -48,9 +48,7 @@ export default function BlogPage() {
                     hasMore: false,
                 };
 
-                // Check if response.data is an array (old format) or object (new format)
                 if (Array.isArray(response.data)) {
-                    // Old format: data is array directly
                     postsData = response.data;
                     paginationData = {
                         total: postsData.length,
@@ -62,16 +60,13 @@ export default function BlogPage() {
                     response.data.data &&
                     Array.isArray(response.data.data)
                 ) {
-                    // New format: data.data is array, data.pagination exists
                     postsData = response.data.data;
                     paginationData = response.data.pagination || paginationData;
                 }
 
                 if (pagination.offset === 0) {
-                    // First load - replace posts
                     setPosts(postsData);
                 } else {
-                    // Load more - append posts
                     setPosts((prev) => [...prev, ...postsData]);
                 }
                 setPagination(paginationData);
@@ -89,149 +84,149 @@ export default function BlogPage() {
     const formatDate = (dateString?: string) => {
         if (!dateString) return "";
         const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
+        return date.toLocaleDateString("en-GB", {
             day: "numeric",
+            month: "long",
+            year: "numeric",
         });
+    };
+
+    const getReadingTime = (content: string = "") => {
+        const wordsPerMinute = 200;
+        const text = content.replace(/<[^>]*>/g, "");
+        const words = text.trim().split(/\s+/).length;
+        const time = Math.ceil(words / wordsPerMinute);
+        return `${time} min read`;
     };
 
     return (
         <div className="bg-white min-h-screen">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-slate-900 mb-2">Blog</h1>
-                <p className="text-slate-600">
-                    Latest articles, tips, and insights from our experts
-                </p>
-            </div>
-
-            {/* Search Bar */}
-            <div className="mb-8">
-                <div className="max-w-md">
-                    <input
-                        type="text"
-                        placeholder="Search blog posts..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent bg-white"
-                    />
-                </div>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-600">{error}</p>
-                </div>
-            )}
-
-            {/* Loading State */}
-            {loading && (
-                <div className="bg-white rounded-lg border border-gray-200 p-12">
-                    <div className="flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#B00000]"></div>
-                    </div>
-                </div>
-            )}
-
-            {/* Empty State */}
-            {!loading && !error && posts.length === 0 && (
-                <div className="bg-white rounded-lg border border-gray-200 p-12">
-                    <div className="text-center">
-                        <p className="text-slate-600">
-                            No blog posts available yet. Check back soon!
-                        </p>
-                    </div>
-                </div>
-            )}
-
-            {/* Blog Posts Grid */}
-            {!loading && !error && posts.length > 0 && (
-                <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {posts.map((post) => {
-                            return (
-                                <Link
-                                    key={post.id}
-                                    href={`/blog/${post.slug}`}
-                                    className="group flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200"
-                                >
-                                    {/* Cover Image */}
-                                    {post.cover_image ? (
-                                        <div className="h-40 w-full overflow-hidden bg-gray-100">
-                                            <img
-                                                src={post.cover_image}
-                                                alt={post.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="h-40 bg-gradient-to-br from-[#B00000] to-red-800"></div>
-                                    )}
-
-                                    {/* Content */}
-                                    <div className="flex flex-col grow p-5">
-                                        {/* Meta Info */}
-                                        <div className="flex items-center space-x-2 text-xs text-gray-500 mb-3">
-                                            <span>
-                                                {formatDate(
-                                                    post.published_at ||
-                                                        post.created_at
-                                                )}
-                                            </span>
-                                            {post.views > 0 && (
-                                                <>
-                                                    <span>•</span>
-                                                    <span>
-                                                        {post.views} views
-                                                    </span>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {/* Title */}
-                                        <h2 className="text-lg font-semibold text-slate-900 mb-2 line-clamp-2 min-h-14 group-hover:text-[#B00000] transition-colors">
-                                            {post.title}
-                                        </h2>
-
-                                        {/* Footer */}
-                                        <div className="mt-auto pt-4 border-t border-gray-100">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs text-gray-500">
-                                                    {post.author_name}
-                                                </span>
-                                                <span className="text-[#B00000] text-sm font-medium group-hover:underline">
-                                                    Read More →
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                    </div>
-
-                    {/* Pagination */}
-                    {pagination.hasMore && (
-                        <div className="flex justify-center mt-8">
-                            <button
-                                onClick={() => {
-                                    setPagination((prev) => ({
-                                        ...prev,
-                                        offset: prev.offset + prev.limit,
-                                    }));
-                                }}
-                                disabled={loading}
-                                className="px-6 py-2.5 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                            >
-                                {loading ? "Loading..." : "Load More"}
-                            </button>
+            {/* Minimal Header Section */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-4">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-12">
+                    <div className="max-w-xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-8 h-[1px] bg-[#B00000]"></div>
+                            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400">Updates & Insights</span>
                         </div>
-                    )}
-                </>
-            )}
+                        <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+                            BLOG
+                        </h1>
+                    </div>
+
+                    {/* Minimal Search Bar */}
+                    <div className="relative w-full max-w-[240px]">
+                        <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none">
+                            <Search className="h-3.5 w-3.5 text-gray-300" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search articles..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="block w-full pl-6 pr-4 py-2 text-xs border-b border-gray-50 focus:border-gray-900 text-gray-900 placeholder-gray-400 focus:outline-none transition-all duration-300"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+                {error && (
+                    <div className="mb-12 p-4 bg-gray-50 border border-gray-100 rounded text-sm text-gray-600">
+                        {error}
+                    </div>
+                )}
+
+                {/* Loading State */}
+                {loading && posts.length === 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="space-y-6">
+                                <div className="aspect-[16/10] bg-gray-50 rounded-sm animate-pulse"></div>
+                                <div className="space-y-3">
+                                    <div className="h-4 bg-gray-50 rounded w-1/4 animate-pulse"></div>
+                                    <div className="h-7 bg-gray-50 rounded w-3/4 animate-pulse"></div>
+                                    <div className="h-4 bg-gray-50 rounded w-full animate-pulse"></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {!loading && !error && posts.length === 0 && (
+                    <div className="py-20 text-center">
+                        <h3 className="text-xl font-medium text-gray-900 mb-2">No articles found</h3>
+                        <p className="text-gray-500">Try adjusting your filter or search terms.</p>
+                    </div>
+                )}
+
+                {/* Blog Posts Grid */}
+                {!error && posts.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
+                        {posts.map((post) => (
+                            <Link
+                                key={post.id}
+                                href={`/blog/${post.slug}`}
+                                className="group flex flex-col h-full"
+                            >
+                                {/* Image Container */}
+                                <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-50 rounded-sm mb-8 transition-opacity group-hover:opacity-90">
+                                    {post.cover_image ? (
+                                        <img
+                                            src={post.cover_image}
+                                            alt={post.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full border border-gray-100 flex items-center justify-center">
+                                            <span className="text-gray-200 text-sm font-medium tracking-widest uppercase">Shafin</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Meta */}
+                                <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-4">
+                                    <span>{formatDate(post.published_at || post.created_at)}</span>
+                                    <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
+                                    <span>{getReadingTime(post.content)}</span>
+                                </div>
+
+                                {/* Title */}
+                                <h2 className="text-2xl font-bold text-gray-900 mb-4 leading-tight group-hover:text-gray-600 transition-colors">
+                                    {post.title}
+                                </h2>
+
+                                {/* Excerpt */}
+                                <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed mb-6">
+                                    {(post.content || "").replace(/<[^>]*>/g, "")}
+                                </p>
+
+                                <div className="mt-auto flex items-center text-xs font-bold uppercase tracking-widest text-gray-900 transform translate-x-0 group-hover:translate-x-1 transition-transform">
+                                    Read more <ArrowRight className="w-3.5 h-3.5 ml-2" />
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+
+                {/* Minimal Pagination */}
+                {pagination.hasMore && (
+                    <div className="flex justify-center mt-24">
+                        <button
+                            onClick={() => {
+                                setPagination((prev) => ({
+                                    ...prev,
+                                    offset: prev.offset + prev.limit,
+                                }));
+                            }}
+                            disabled={loading}
+                            className="px-10 py-4 border border-gray-200 text-sm font-bold uppercase tracking-widest text-gray-900 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        >
+                            {loading ? "Loading..." : "Load more entries"}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
