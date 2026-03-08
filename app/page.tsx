@@ -750,14 +750,14 @@ export default function LandingPage() {
                             ].map((partner, index) => (
                                 <div
                                     key={index}
-                                    className="relative w-full h-48 md:h-56 lg:h-64 flex items-center justify-center group"
+                                    className="relative w-full h-56 md:h-72 lg:h-80 flex items-center justify-center group"
                                 >
                                     <div className="absolute inset-0 bg-linear-to-br from-gray-50 to-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                     <Image
                                         src={partner.src}
                                         alt={partner.alt}
                                         fill
-                                        className="object-contain grayscale hover:grayscale-0 transition-all duration-300 p-2 md:p-4"
+                                        className="object-contain grayscale hover:grayscale-0 transition-all duration-300 p-1"
                                         sizes="(max-width: 768px) 100vw, 33vw"
                                         loading="lazy"
                                     />
