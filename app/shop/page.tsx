@@ -15,7 +15,9 @@ import {
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { productsApi, PaginationInfo } from "@/lib/api/products";
-import type { Product } from "@/lib/api/types";
+import { authApi } from "@/lib/api/auth";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Product, UserDashboardData } from "@/lib/api/types";
 import MultiLevelCategoryMenu from "@/components/shop/MultiLevelCategoryMenu";
 import Pagination from "@/components/ui/Pagination";
 
@@ -79,6 +81,8 @@ function mapApiProductToShopProduct(p: Product): ShopProduct {
 }
 
 export default function ShopPage() {
+    const { user, isAuth } = useAuth();
+    const [userKycStatus, setUserKycStatus] = useState<UserDashboardData["kyc_status"] | null>(null);
     const [products, setProducts] = useState<ShopProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -145,6 +149,28 @@ export default function ShopPage() {
             mounted = false;
         };
     }, [debouncedSearch, selectedCategoryPath, currentPage, itemsPerPage]);
+
+    // Fetch user KYC status if authenticated
+    useEffect(() => {
+        let mounted = true;
+        if (isAuth && user) {
+            (async () => {
+                try {
+                    const resp = await authApi.getUserDashboard();
+                    if (mounted && resp.success && resp.data) {
+                        setUserKycStatus(resp.data.kyc_status);
+                    }
+                } catch (e) {
+                    console.error("Failed to load user KYC status:", e);
+                }
+            })();
+        } else {
+            setUserKycStatus(null);
+        }
+        return () => {
+            mounted = false;
+        };
+    }, [isAuth, user]);
 
     const filteredProducts = useMemo(() => {
         // Backend now handles category filtering, we only need to sort client-side
@@ -363,53 +389,80 @@ export default function ShopPage() {
                                         className={`flex items-center justify-between pt-3 border-t border-gray-200 ${viewMode === "list" ? "mt-auto" : ""
                                             }`}
                                     >
-                                        {product.is_contact_only ? (
-                                            // Contact Only Product
-                                            <>
-                                                <div>
-                                                    <p className="text-lg font-bold text-[#B00000]">
-                                                        ₹{product.price.toLocaleString()}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {product.type === "digital" ? "Digital" : "Physical"}
-                                                    </p>
-                                                </div>
-                                                <a
-                                                    href="https://wa.me/918714388741"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                                                >
-                                                    WhatsApp
-                                                </a>
-                                            </>
-                                        ) : (
-                                            // Normal Product
-                                            <>
-                                                <div>
-                                                    <p className="text-lg font-bold text-[#B00000]">
-                                                        ₹{product.price.toLocaleString()}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {product.type === "digital"
-                                                            ? "Digital"
-                                                            : product.inStock
-                                                                ? "In Stock"
-                                                                : "Out of Stock"}
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleAddToCart(product)}
-                                                    disabled={
-                                                        product.isComingSoon ||
-                                                        (product.type === "physical" && !product.inStock)
-                                                    }
-                                                    className="px-4 py-2 bg-[#B00000] text-white text-sm rounded hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                >
-                                                    {product.isComingSoon ? "Soon" : "Add to Cart"}
-                                                </button>
-                                            </>
-                                        )}
+                                        {/* Verify KYC conditions */}
+                                        {(() => {
+                                            const showPriceAndAddToCart = !product.requiresKyc || (
+                                                user?.user_type === "business_owner" &&
+                                                userKycStatus?.status === "verified"
+                                            );
+
+                                            if (!showPriceAndAddToCart) {
+                                                return (
+                                                    <div className="flex flex-col w-full gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <ShieldCheck className="w-4 h-4 text-amber-600" />
+                                                            <p className="text-xs text-amber-700 font-medium">Business KYC Required</p>
+                                                        </div>
+                                                        <Link
+                                                            href="/kyc/product"
+                                                            className="w-full text-center px-4 py-2 bg-amber-600 text-white text-sm rounded hover:bg-amber-700 transition-colors"
+                                                        >
+                                                            Update Business KYC
+                                                        </Link>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (product.is_contact_only) {
+                                                return (
+                                                    <>
+                                                        <div>
+                                                            <p className="text-lg font-bold text-[#B00000]">
+                                                                ₹{product.price.toLocaleString()}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500">
+                                                                {product.type === "digital" ? "Digital" : "Physical"}
+                                                            </p>
+                                                        </div>
+                                                        <a
+                                                            href="https://wa.me/918714388741"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                                                        >
+                                                            WhatsApp
+                                                        </a>
+                                                    </>
+                                                );
+                                            }
+
+                                            return (
+                                                <>
+                                                    <div>
+                                                        <p className="text-lg font-bold text-[#B00000]">
+                                                            ₹{product.price.toLocaleString()}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {product.type === "digital"
+                                                                ? "Digital"
+                                                                : product.inStock
+                                                                    ? "In Stock"
+                                                                    : "Out of Stock"}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleAddToCart(product)}
+                                                        disabled={
+                                                            product.isComingSoon ||
+                                                            (product.type === "physical" && !product.inStock)
+                                                        }
+                                                        className="px-4 py-2 bg-[#B00000] text-white text-sm rounded hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                    >
+                                                        {product.isComingSoon ? "Soon" : "Add to Cart"}
+                                                    </button>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 </div>
                             </article>
