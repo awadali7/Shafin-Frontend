@@ -91,32 +91,66 @@ export default function CheckoutPage() {
     );
 
     // Calculate courier charges and items subtotal separately (must be before early return)
-    const { itemsSubtotal, courierCharges } = useMemo(() => {
+    const { itemsSubtotal, totalWeight } = useMemo(() => {
         let itemsTotal = 0;
-        let courierTotal = 0;
+        let weightTotal = 0;
 
-        items.forEach(item => {
+        items.forEach((item: any) => {
+            const qty = Number(item.quantity) || 1;
+            const weight = Number(item.weight) || 1000;
+            if (item.type === 'physical') {
+                weightTotal += weight * qty;
+            }
+
             if (item.quantity_pricing && item.quantity_pricing.length > 0) {
-                const tier = item.quantity_pricing.find(t => {
-                    const minQty = t.min_qty || 1;
-                    const maxQty = t.max_qty || Infinity;
-                    return item.quantity >= minQty && item.quantity <= maxQty;
+                const tier = item.quantity_pricing.find((t: any) => {
+                    const minQty = Number(t.min_qty) || 1;
+                    const maxQty = t.max_qty && String(t.max_qty) !== "" ? Number(t.max_qty) : Infinity;
+                    return qty >= minQty && qty <= maxQty;
                 });
-
                 if (tier) {
-                    itemsTotal += tier.price_per_item * item.quantity;
-                    courierTotal += tier.courier_charge || 0;
+                    itemsTotal += Number(tier.price_per_item) * qty;
                 } else {
-                    itemsTotal += item.price * item.quantity;
+                    itemsTotal += Number(item.price) * qty;
                 }
             } else {
-                itemsTotal += item.price * item.quantity;
+                itemsTotal += Number(item.price) * qty;
             }
         });
 
-        return { itemsSubtotal: itemsTotal, courierCharges: courierTotal };
+        return { itemsSubtotal: itemsTotal, totalWeight: weightTotal };
     }, [items]);
 
+    const estimatedCourierCharges = useMemo(() => {
+        if (!hasPhysicalItems || totalWeight === 0) return 0;
+        
+        // Simple zone estimation for UI preview. Actual calculation happens on backend
+        // We will default to national rates for preview if address is not filled,
+        // or try to match Local/Regional if they match origin.
+        const originCity = "Ernakulam";
+        const originState = "Kerala";
+        
+        let zone = "national";
+        if (formData.city?.trim().toLowerCase() === originCity.toLowerCase()) {
+            zone = "local";
+        } else if (formData.state?.trim().toLowerCase() === originState.toLowerCase()) {
+            zone = "regional";
+        }
+
+        let baseWeight = 1000, baseRate = 100, addWeight = 1000, addRate = 90;
+        if (zone === 'local') {
+            baseRate = 50; addRate = 40;
+        } else if (zone === 'regional') {
+            baseRate = 70; addRate = 60;
+        }
+
+        if (totalWeight <= baseWeight) return baseRate;
+        const extraWeight = totalWeight - baseWeight;
+        const slabs = Math.ceil(extraWeight / addWeight);
+        return baseRate + (slabs * addRate);
+    }, [hasPhysicalItems, totalWeight, formData.city, formData.state]);
+
+    const courierCharges = estimatedCourierCharges;
     const subtotal = itemsSubtotal + courierCharges;
     const total = subtotal; // No additional charges
 
@@ -749,10 +783,8 @@ export default function CheckoutPage() {
                                                         );
 
                                                     if (tier) {
-                                                        const courierCharge = tier.courier_charge || 0;
                                                         return (
-                                                            (tier.price_per_item *
-                                                                item.quantity) + courierCharge
+                                                            (tier.price_per_item * item.quantity)
                                                         ).toFixed(2);
                                                     }
                                                 }

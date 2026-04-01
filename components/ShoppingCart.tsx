@@ -34,8 +34,7 @@ function calculateItemPrice(item: CartItem): {
     });
     
     if (tier) {
-        const courierCharge = tier.courier_charge || 0;
-        const finalPrice = (tier.price_per_item * item.quantity) + courierCharge;
+        const finalPrice = (tier.price_per_item * item.quantity);
         return {
             finalPrice,
             regularPrice,

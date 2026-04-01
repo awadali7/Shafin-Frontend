@@ -15,6 +15,7 @@ interface AdminTabsProps {
     | "orders"
     | "digital_files"
     | "gallery"
+    | "product_extra_info"
     | "settings";
     onTabChange: (
         tab:
@@ -29,6 +30,7 @@ interface AdminTabsProps {
             | "orders"
             | "digital_files"
             | "gallery"
+            | "product_extra_info"
             | "settings"
     ) => void;
     // Notification counts
@@ -55,6 +57,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
         { id: "blogs" as const, label: "Blogs" },
         { id: "kyc" as const, label: "Course KYC", count: pendingCourseKycCount },
         { id: "product_kyc" as const, label: "Product KYC", count: pendingProductKycCount },
+        { id: "product_extra_info" as const, label: "Product Extra Info" },
         { id: "gallery" as const, label: "Gallery" },
         { id: "settings" as const, label: "Settings" },
     ];

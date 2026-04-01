@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { CheckCircle, Loader2, Eye, Package, Download, MapPin, Phone, Mail, ChevronDown, ChevronUp, Printer, FileText, Truck, Calendar, Save, ExternalLink, Search } from "lucide-react";
+import { CheckCircle, Loader2, Eye, Package, Download, MapPin, Phone, Mail, ChevronDown, ChevronUp, Printer, FileText, Truck, Calendar, Save, ExternalLink, Search, X } from "lucide-react";
 import { ordersApi } from "@/lib/api/orders";
 import type { AdminOrderSummary } from "@/lib/api/types";
 import { toast } from "sonner";
@@ -48,6 +48,10 @@ export const OrdersTab: React.FC = () => {
         tracking_number: "",
         tracking_url: "",
         estimated_delivery_date: "",
+        origin_city: "",
+        destination_city: "",
+        courier_service_type: "",
+        tracking_history: [] as any[],
     });
     const [search, setSearch] = useState("");
 
@@ -111,7 +115,15 @@ export const OrdersTab: React.FC = () => {
         if (expandedOrderId === orderId) {
             setExpandedOrderId(null);
             setOrderDetails(null);
-            setTrackingForm({ tracking_number: "", tracking_url: "", estimated_delivery_date: "" });
+            setTrackingForm({ 
+                tracking_number: "", 
+                tracking_url: "", 
+                estimated_delivery_date: "",
+                origin_city: "",
+                destination_city: "",
+                courier_service_type: "",
+                tracking_history: [],
+            });
             return;
         }
 
@@ -138,6 +150,10 @@ export const OrdersTab: React.FC = () => {
                 estimated_delivery_date: order?.estimated_delivery_date
                     ? new Date(order.estimated_delivery_date).toISOString().split('T')[0]
                     : "",
+                origin_city: order?.origin_city || "",
+                destination_city: order?.destination_city || "",
+                courier_service_type: order?.courier_service_type || "",
+                tracking_history: order?.tracking_history || [],
             });
         } catch (e: any) {
             alert(e?.message || "Failed to load order details");
@@ -154,6 +170,10 @@ export const OrdersTab: React.FC = () => {
                 tracking_number: trackingForm.tracking_number || null,
                 tracking_url: trackingForm.tracking_url || null,
                 estimated_delivery_date: trackingForm.estimated_delivery_date || null,
+                origin_city: trackingForm.origin_city || null,
+                destination_city: trackingForm.destination_city || null,
+                courier_service_type: trackingForm.courier_service_type || null,
+                tracking_history: (trackingForm.tracking_history || []).filter(h => h.status.trim() !== "" || h.location.trim() !== ""),
             };
 
             if (newStatus) {
@@ -871,14 +891,163 @@ ${pages}
                                                                 placeholder="https://tracking.courierwebsite.com/track?id=..."
                                                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                                             />
-                                                            <p className="text-xs text-gray-500 mt-1">Add external courier tracking URL for easy access</p>
-                                                            {orderDetails?.order?.tracking_url && (
-                                                                <a href={orderDetails.order.tracking_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline">
-                                                                    <ExternalLink className="w-3 h-3" /> View Current Tracking Link
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                        {(orderDetails.order?.shipped_at || orderDetails.order?.delivered_at) && (
+                                                                <p className="text-xs text-gray-500 mt-1">Add external courier tracking URL for easy access</p>
+                                                                {orderDetails?.order?.tracking_url && (
+                                                                    <a href={orderDetails.order.tracking_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:underline">
+                                                                        <ExternalLink className="w-3 h-3" /> View Current Tracking Link
+                                                                    </a>
+                                                                )}
+                                                            </div>
+
+                                                            {/* New DTDC-style fields */}
+                                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-700 mb-1">Origin City</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={trackingForm.origin_city}
+                                                                        onChange={(e) => setTrackingForm({ ...trackingForm, origin_city: e.target.value })}
+                                                                        placeholder="e.g. Mumbai"
+                                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-700 mb-1">Destination City</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={trackingForm.destination_city}
+                                                                        onChange={(e) => setTrackingForm({ ...trackingForm, destination_city: e.target.value })}
+                                                                        placeholder="e.g. Ernakulam"
+                                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-gray-700 mb-1">Service Type</label>
+                                                                    <select
+                                                                        value={trackingForm.courier_service_type}
+                                                                        onChange={(e) => setTrackingForm({ ...trackingForm, courier_service_type: e.target.value })}
+                                                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                                    >
+                                                                        <option value="">Select Service</option>
+                                                                        <option value="DTDC Express">DTDC Express</option>
+                                                                        <option value="DTDC Lite">DTDC Lite</option>
+                                                                        <option value="Standard Ground">Standard Ground</option>
+                                                                        <option value="Priority Overnight">Priority Overnight</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Status History Editor */}
+                                                            <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                                                <div className="flex items-center justify-between mb-4">
+                                                                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                                                                        <Truck className="w-3.5 h-3.5" /> Status History Timeline
+                                                                    </h4>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const newEntry = {
+                                                                                status: "In Transit",
+                                                                                location: "",
+                                                                                timestamp: new Date().toISOString(),
+                                                                                description: ""
+                                                                            };
+                                                                            setTrackingForm({
+                                                                                ...trackingForm,
+                                                                                tracking_history: [...trackingForm.tracking_history, newEntry]
+                                                                            });
+                                                                        }}
+                                                                        className="text-[10px] font-bold bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700 uppercase"
+                                                                    >
+                                                                        + Add Event
+                                                                    </button>
+                                                                </div>
+
+                                                                <div className="space-y-3">
+                                                                    {trackingForm.tracking_history.length === 0 ? (
+                                                                        <p className="text-center py-4 text-xs text-slate-400 italic">No tracking events added yet.</p>
+                                                                    ) : (
+                                                                        trackingForm.tracking_history.map((entry, idx) => (
+                                                                            <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                                                                                <div>
+                                                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
+                                                                                    <select
+                                                                                        value={entry.status}
+                                                                                        onChange={(e) => {
+                                                                                            const next = [...trackingForm.tracking_history];
+                                                                                            next[idx].status = e.target.value;
+                                                                                            setTrackingForm({ ...trackingForm, tracking_history: next });
+                                                                                        }}
+                                                                                        className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500"
+                                                                                    >
+                                                                                        <option value="Booked">Booked</option>
+                                                                                        <option value="Picked Up">Picked Up</option>
+                                                                                        <option value="In Transit">In Transit</option>
+                                                                                        <option value="Arrived at Hub">Arrived at Hub</option>
+                                                                                        <option value="Dispatched from Hub">Dispatched from Hub</option>
+                                                                                        <option value="Out for Delivery">Out for Delivery</option>
+                                                                                        <option value="Delivered">Delivered</option>
+                                                                                        <option value="RTO">RTO (Returned)</option>
+                                                                                    </select>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Location</label>
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        value={entry.location}
+                                                                                        onChange={(e) => {
+                                                                                            const next = [...trackingForm.tracking_history];
+                                                                                            next[idx].location = e.target.value;
+                                                                                            setTrackingForm({ ...trackingForm, tracking_history: next });
+                                                                                        }}
+                                                                                        placeholder="City/Hub Name"
+                                                                                        className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500"
+                                                                                    />
+                                                                                </div>
+                                                                                <div>
+                                                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Timestamp</label>
+                                                                                    <input
+                                                                                        type="datetime-local"
+                                                                                        value={new Date(entry.timestamp).toISOString().slice(0, 16)}
+                                                                                        onChange={(e) => {
+                                                                                            const next = [...trackingForm.tracking_history];
+                                                                                            next[idx].timestamp = new Date(e.target.value).toISOString();
+                                                                                            setTrackingForm({ ...trackingForm, tracking_history: next });
+                                                                                        }}
+                                                                                        className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500"
+                                                                                    />
+                                                                                </div>
+                                                                                <div className="flex gap-2">
+                                                                                    <div className="flex-1">
+                                                                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Note</label>
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            value={entry.description || ""}
+                                                                                            onChange={(e) => {
+                                                                                                const next = [...trackingForm.tracking_history];
+                                                                                                next[idx].description = e.target.value;
+                                                                                                setTrackingForm({ ...trackingForm, tracking_history: next });
+                                                                                            }}
+                                                                                            placeholder="Optional details"
+                                                                                            className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-indigo-500"
+                                                                                        />
+                                                                                    </div>
+                                                                                    <button
+                                                                                        onClick={() => {
+                                                                                            const next = trackingForm.tracking_history.filter((_, i) => i !== idx);
+                                                                                            setTrackingForm({ ...trackingForm, tracking_history: next });
+                                                                                        }}
+                                                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                                                                                        title="Remove event"
+                                                                                    >
+                                                                                        <X className="w-3.5 h-3.5" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {(orderDetails.order?.shipped_at || orderDetails.order?.delivered_at) && (
                                                             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                                                                 <div className="text-xs font-medium text-gray-700 mb-2">Shipment Status:</div>
                                                                 <div className="space-y-2">

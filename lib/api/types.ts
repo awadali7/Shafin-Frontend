@@ -472,6 +472,7 @@ export interface ProductVideo {
 
 export interface Product {
     id: string;
+    weight?: number;
     name: string;
     slug: string;
     description?: string;
@@ -506,6 +507,7 @@ export interface Product {
     is_contact_only?: boolean; // Product can only be contacted via WhatsApp (no direct purchase)
     requires_kyc?: boolean; // Product requires KYC verification to purchase
     product_detail_pdf?: string; // URL to product details PDF
+    product_extra_info_id?: string; // Link to extra info
     created_at?: string;
     updated_at?: string;
 
@@ -529,6 +531,13 @@ export type OrderStatus = "pending" | "paid" | "shipped" | "dispatched" | "deliv
 export interface CreateOrderItem {
     product_id: string;
     quantity: number;
+}
+
+export interface TrackingHistoryEntry {
+    status: string;
+    location: string;
+    timestamp: string;
+    description?: string;
 }
 
 export interface CreateOrderRequest {
@@ -559,6 +568,10 @@ export interface Order {
     estimated_delivery_date?: string | null;
     shipped_at?: string | null;
     delivered_at?: string | null;
+    origin_city?: string | null;
+    destination_city?: string | null;
+    courier_service_type?: string | null;
+    tracking_history?: TrackingHistoryEntry[] | null;
     created_at: string;
     updated_at?: string;
     items?: OrderItem[];
@@ -580,6 +593,11 @@ export interface UpdateTrackingRequest {
     tracking_url?: string;
     estimated_delivery_date?: string;
     shipped_at?: string;
+    delivered_at?: string;
+    origin_city?: string;
+    destination_city?: string;
+    courier_service_type?: string;
+    tracking_history?: TrackingHistoryEntry[];
 }
 
 export interface OrderItem {

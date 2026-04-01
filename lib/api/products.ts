@@ -80,6 +80,7 @@ export const productsApi = {
         images?: File[];
         videos?: Array<{ title: string; url: string; thumbnail?: string }>;
         digital_file_name?: string; // For linking existing files
+        product_extra_info_id?: string; // Link to extra info
         quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number; courier_charge?: number }>;
     }): Promise<ApiResponse<Product>> => {
         const form = new FormData();
@@ -115,6 +116,7 @@ export const productsApi = {
         if (data.digital_file) form.append("digital_file", data.digital_file);
         if (data.product_detail_pdf) form.append("product_detail_pdf", data.product_detail_pdf);
         if (data.digital_file_name) form.append("digital_file_name", data.digital_file_name);
+        if (data.product_extra_info_id) form.append("product_extra_info_id", data.product_extra_info_id);
 
         // Append image files directly
         if (data.images && data.images.length > 0) {
@@ -163,6 +165,7 @@ export const productsApi = {
             images?: File[];
             videos?: Array<{ title: string; url: string; thumbnail?: string }>;
             digital_file_name?: string; // For linking existing files
+            product_extra_info_id?: string;
             quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number; courier_charge?: number }>;
         }>
     ): Promise<ApiResponse<Product>> => {
@@ -191,6 +194,9 @@ export const productsApi = {
         }
         if (data.digital_file_name) {
             form.append("digital_file_name", data.digital_file_name);
+        }
+        if (data.product_extra_info_id) {
+            form.append("product_extra_info_id", data.product_extra_info_id);
         }
 
         // Append image files directly

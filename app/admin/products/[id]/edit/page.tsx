@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Trash, ImageIcon, Video, Save, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { productsApi } from "@/lib/api/products";
+import { productExtraInfoApi, ProductExtraInfo } from "@/lib/api/product-extra-info";
 import type { ProductType } from "@/lib/api/types";
 import { generateSlug } from "@/components/admin/utils";
 import { ImageCropper } from "@/components/ui/ImageCropper";
@@ -39,14 +40,21 @@ type ProductFormState = {
     is_coming_soon: boolean;
     is_contact_only: boolean;
     requires_kyc: boolean;
+    weight: number;
     cover_image: File | null;
     digital_file: File | null;
     product_detail_pdf: File | null;
     product_detail_pdf_url?: string | null;
+    product_extra_info_id?: string;
     digital_file_name_input?: string;
     images: ImageFile[];
     videos: VideoFile[];
-    quantity_pricing: Array<{ min_qty: number | string; max_qty: number | string | null; price_per_item: number | string; courier_charge: number | string }>;
+    quantity_pricing: Array<{ 
+        min_qty: number | string; 
+        max_qty: number | string | null; 
+        price_per_item: number | string; 
+        
+    }>;
 };
 
 const fileToDataURL = (file: File): Promise<string> => {
@@ -75,13 +83,20 @@ const defaultForm: ProductFormState = {
     is_coming_soon: false,
     is_contact_only: false,
     requires_kyc: false,
+    weight: 1000,
     cover_image: null,
     digital_file: null,
     product_detail_pdf: null,
+    product_extra_info_id: "",
     digital_file_name_input: "",
     images: [],
     videos: [],
-    quantity_pricing: [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }],
+    quantity_pricing: [{ 
+        min_qty: "", 
+        max_qty: "", 
+        price_per_item: "", 
+        
+    }],
 };
 
 export default function EditProductPage() {
@@ -95,6 +110,7 @@ export default function EditProductPage() {
     const [form, setForm] = useState<ProductFormState>(defaultForm);
     const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
     const [existingCategories, setExistingCategories] = useState<string[][]>([]);
+    const [extraInfos, setExtraInfos] = useState<ProductExtraInfo[]>([]);
     const [showCategoryDropdown, setShowCategoryDropdown] = useState<number | null>(null);
 
     // Cropper State
@@ -157,9 +173,17 @@ export default function EditProductPage() {
                         min_qty: qp.min_qty || "",
                         max_qty: qp.max_qty || "",
                         price_per_item: qp.price_per_item || "",
-                        courier_charge: qp.courier_charge || ""
+                        courier_charge: qp.courier_charge || "",
+                        courier_charge_local: qp.courier_charge_local || qp.courier_charge || "",
+                        courier_charge_regional: qp.courier_charge_regional || qp.courier_charge || "",
+                        courier_charge_national: qp.courier_charge_national || qp.courier_charge || ""
                     }))
-                    : [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }];
+                    : [{ 
+                        min_qty: "", 
+                        max_qty: "", 
+                        price_per_item: "", 
+                        
+                    }];
 
                 setForm({
                     name: product.name,
@@ -172,6 +196,7 @@ export default function EditProductPage() {
                     hindi_description: product.hindi_description || "",
                     product_type: product.type,
                     price: Number(product.price),
+                    weight: Number(product.weight || 1000),
                     stock_quantity: product.type === "physical" ? Number(product.stock_quantity || 0) : 0,
                     is_active: product.is_active !== false,
                     is_featured: product.is_featured || false,
@@ -182,6 +207,7 @@ export default function EditProductPage() {
                     digital_file: null,
                     product_detail_pdf: null,
                     product_detail_pdf_url: product.product_detail_pdf || null,
+                    product_extra_info_id: product.product_extra_info_id || "",
                     images: existingImages,
                     videos: existingVideos,
                     quantity_pricing: quantityPricing,
@@ -201,7 +227,19 @@ export default function EditProductPage() {
 
     useEffect(() => {
         fetchExistingCategories();
+        fetchExtraInfos();
     }, []);
+
+    const fetchExtraInfos = async () => {
+        try {
+            const res = await productExtraInfoApi.list();
+            if (res.success && res.data) {
+                setExtraInfos(res.data);
+            }
+        } catch (e) {
+            console.error("Failed to fetch extra infos:", e);
+        }
+    };
 
     const fetchExistingCategories = async () => {
         try {
@@ -328,8 +366,7 @@ export default function EditProductPage() {
                 .map(tier => ({
                     min_qty: Number(tier.min_qty),
                     max_qty: tier.max_qty && tier.max_qty !== "" ? Number(tier.max_qty) : null,
-                    price_per_item: Number(tier.price_per_item),
-                    courier_charge: tier.courier_charge !== "" ? Number(tier.courier_charge) : 0
+                    price_per_item: Number(tier.price_per_item)
                 }))
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
 
@@ -358,6 +395,7 @@ export default function EditProductPage() {
                 requires_kyc: form.requires_kyc,
                 cover_image: form.cover_image || undefined,
                 digital_file: form.product_type === "digital" ? form.digital_file : undefined,
+                product_extra_info_id: form.product_extra_info_id || undefined,
                 product_detail_pdf: form.product_detail_pdf,
                 digital_file_name: form.digital_file_name_input?.trim() || undefined,
                 images: images.length > 0 ? images : undefined,
@@ -462,6 +500,27 @@ export default function EditProductPage() {
                             >
                                 <option value="physical">Physical</option>
                                 <option value="digital">Digital</option>
+                            </select>
+                        </div>
+
+                        <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Product Extra Info Package (Optional)
+                            </label>
+                            <select
+                                value={form.product_extra_info_id || ""}
+                                onChange={(e) =>
+                                    setForm((p) => ({
+                                        ...p,
+                                        product_extra_info_id: e.target.value,
+                                    }))
+                                }
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                            >
+                                <option value="">-- None --</option>
+                                {extraInfos.map(info => (
+                                    <option key={info.id} value={info.id}>{info.title}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -644,8 +703,8 @@ export default function EditProductPage() {
                         <h2 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-gray-200">
                             Pricing & Inventory
                         </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Price *
                                 </label>
@@ -688,20 +747,15 @@ export default function EditProductPage() {
                                 💰 Tiered Pricing (Optional)
                             </h3>
                             <p className="text-xs text-gray-600 mb-3">
-                                Set price per item and courier charge based on quantity ranges.
+                                Set price per item and courier charges based on quantity ranges and zones.
                             </p>
 
                             <div className="space-y-3">
                                 {form.quantity_pricing.map((tier, index) => {
                                     const minQty = Number(tier.min_qty) || 0;
                                     const pricePerItem = Number(tier.price_per_item) || 0;
-                                    const courierCharge = Number(tier.courier_charge) || 0;
                                     const savingsPerItem = form.price > 0 && pricePerItem > 0 ? form.price - pricePerItem : 0;
                                     const savingsPercent = form.price > 0 ? Math.round((savingsPerItem / form.price) * 100) : 0;
-
-                                    // Example calculation for display (e.g., 2 items)
-                                    const exampleQty = minQty > 0 ? Math.max(minQty, 2) : 2;
-                                    const exampleTotal = pricePerItem > 0 ? (pricePerItem * exampleQty) + courierCharge : 0;
 
                                     return (
                                         <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
@@ -763,57 +817,38 @@ export default function EditProductPage() {
                                                         <span className="text-xs text-gray-500">/each</span>
                                                     </div>
                                                 </div>
-
-                                                {/* Courier Charge */}
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                        🚚 Courier Charge
-                                                    </label>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-gray-500 text-sm">₹</span>
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            min="0"
-                                                            placeholder="e.g., 70"
-                                                            value={tier.courier_charge}
-                                                            onChange={(e) => {
-                                                                const newPricing = [...form.quantity_pricing];
-                                                                newPricing[index] = { ...newPricing[index], courier_charge: e.target.value };
-                                                                setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                            }}
-                                                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000]"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* Savings & Example */}
-                                                <div className="flex flex-col justify-center">
-                                                    {savingsPerItem > 0 && (
-                                                        <div className="text-xs text-green-600 mb-1">
-                                                            💰 Save ₹{savingsPerItem.toFixed(0)} ({savingsPercent}%) per item
-                                                        </div>
-                                                    )}
-                                                    {exampleTotal > 0 && (
-                                                        <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                                            📦 Example: {exampleQty} items = ₹{(pricePerItem * exampleQty).toFixed(0)} + ₹{courierCharge.toFixed(0)} courier = <strong>₹{exampleTotal.toFixed(0)}</strong>
-                                                        </div>
-                                                    )}
-                                                </div>
                                             </div>
 
-                                            {/* Delete Button */}
-                                            <div className="mt-2 flex justify-end">
+                                            {/* Savings & Info */}
+                                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
+                                                <div className="flex flex-wrap items-center gap-3">
+                                                    {savingsPerItem > 0 && (
+                                                        <div className="text-xs text-green-600 font-medium">
+                                                            💰 Save ₹{savingsPerItem.toFixed(0)} ({savingsPercent}%) / item
+                                                        </div>
+                                                    )}
+                                                    <div className="text-[10px] text-gray-500 italic bg-gray-100 px-2 py-0.5 rounded">
+                                                        Local: Same City | Regional: Same State | National: Rest of India
+                                                    </div>
+                                                </div>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
                                                         const newPricing = form.quantity_pricing.filter((_, i) => i !== index);
-                                                        setForm(p => ({ ...p, quantity_pricing: newPricing.length > 0 ? newPricing : [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }] }));
+                                                        setForm(p => ({ 
+                                                            ...p, 
+                                                            quantity_pricing: newPricing.length > 0 ? newPricing : [{ 
+                                                                min_qty: "", 
+                                                                max_qty: "", 
+                                                                price_per_item: "", 
+                                                                
+                                                            }] 
+                                                        }));
                                                     }}
-                                                    className="inline-flex items-center gap-1 px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded border border-red-200"
+                                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                                    title="Remove tier"
                                                 >
-                                                    <Trash className="w-3 h-3" />
-                                                    Remove Tier
+                                                    <Trash className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </div>
@@ -825,7 +860,12 @@ export default function EditProductPage() {
                                     onClick={() => {
                                         setForm(p => ({
                                             ...p,
-                                            quantity_pricing: [...p.quantity_pricing, { min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }]
+                                            quantity_pricing: [...p.quantity_pricing, { 
+                                                min_qty: "", 
+                                                max_qty: "", 
+                                                price_per_item: "", 
+                                                
+                                            }]
                                         }));
                                     }}
                                     className="w-full px-4 py-3 text-sm border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#B00000] hover:text-[#B00000] hover:bg-red-50 transition-colors"
@@ -834,7 +874,7 @@ export default function EditProductPage() {
                                 </button>
 
                                 <div className="mt-3 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
-                                    <strong>💡 Example:</strong> For 1-5 items: ₹100/item + ₹70 courier | For 6-10 items: ₹90/item + ₹50 courier
+                                    <strong>💡 Tip:</strong> Courier charges are calculated per zone. If a specific zone charge is missing, it will fallback to the general courier charge (if any).
                                 </div>
                             </div>
                         </div>

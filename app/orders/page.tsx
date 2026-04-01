@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Package, ChevronDown, CreditCard, Truck, Calendar, ExternalLink, CheckCircle, Clock, Download } from "lucide-react";
+import { Loader2, Package, ChevronDown, CreditCard, Truck, Calendar, ExternalLink, CheckCircle, Clock, Download, MapPin } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersApi } from "@/lib/api/orders";
 import { paymentsApi } from "@/lib/api/payments";
@@ -442,104 +442,162 @@ export default function OrdersPage() {
                                             </h4>
 
                                             <div className="bg-white rounded-lg p-4 shadow-sm">
-                                                {/* Tracking Number & Link */}
-                                                {order.tracking_number && (
-                                                    <div className="mb-4">
-                                                        <p className="text-xs text-gray-600 mb-1">Tracking Number</p>
-                                                        <div className="flex items-center gap-3 flex-wrap">
-                                                            <p className="text-base font-semibold text-slate-900 font-mono">
-                                                                {order.tracking_number}
+                                                {/* Tracking Number & Detailed Header */}
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                                    <div>
+                                                        <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Tracking ID</p>
+                                                        <div className="flex items-center gap-3">
+                                                            <p className="text-lg font-bold text-slate-900 font-mono">
+                                                                {order.tracking_number || "Awaiting Pickup"}
                                                             </p>
                                                             {order.tracking_url && (
                                                                 <a
                                                                     href={order.tracking_url}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                                                    className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm font-medium"
                                                                 >
-                                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                                    Track Your Order
+                                                                    <ExternalLink className="w-3.5 h-3.5" /> External Track
                                                                 </a>
                                                             )}
                                                         </div>
                                                     </div>
-                                                )}
+                                                    <div className="flex gap-4 md:justify-end">
+                                                        {order.origin_city && (
+                                                            <div>
+                                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Origin</p>
+                                                                <p className="text-sm font-semibold text-slate-800">{order.origin_city}</p>
+                                                            </div>
+                                                        )}
+                                                        {order.destination_city && (
+                                                            <div>
+                                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Destination</p>
+                                                                <p className="text-sm font-semibold text-slate-800">{order.destination_city}</p>
+                                                            </div>
+                                                        )}
+                                                        {order.courier_service_type && (
+                                                            <div>
+                                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Service</p>
+                                                                <p className="text-sm font-semibold text-[#B00000]">{order.courier_service_type}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
 
-                                                {/* Estimated Delivery */}
+                                                {/* Estimated Delivery Banner */}
                                                 {estimatedDate && (
-                                                    <div className="mb-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <Calendar className="w-4 h-4 text-green-600" />
-                                                            <p className="text-xs text-gray-600">Estimated Delivery</p>
+                                                    <div className="mb-6 flex items-center gap-3 p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100">
+                                                        <div className="p-2 bg-blue-500 rounded-lg">
+                                                            <Calendar className="w-5 h-5" />
                                                         </div>
-                                                        <p className="text-sm font-semibold text-slate-900 mt-1 ml-6">
-                                                            {formatShortDate(estimatedDate)}
-                                                        </p>
+                                                        <div>
+                                                            <p className="text-[10px] uppercase font-bold opacity-80">Estimated Delivery</p>
+                                                            <p className="text-base font-bold">{formatShortDate(estimatedDate)}</p>
+                                                        </div>
                                                     </div>
                                                 )}
 
                                                 {/* Shipment Timeline */}
-                                                <div className="mt-4 pt-4 border-t border-gray-200">
-                                                    <p className="text-xs font-medium text-gray-700 mb-3">Shipment Progress</p>
-                                                    <div className="space-y-3">
-                                                        <TimelineStep
-                                                            icon={CheckCircle}
-                                                            status="complete"
-                                                            title="Order Placed"
-                                                            description={formatDate(order.created_at)}
-                                                        />
-
-                                                        {['paid', 'processing', 'shipped', 'dispatched', 'delivered'].includes(order.status) && (
-                                                            <TimelineStep
-                                                                icon={CheckCircle}
-                                                                status="complete"
-                                                                title="Payment Confirmed"
-                                                                description="Order is being processed"
-                                                            />
-                                                        )}
-
-                                                        {order.shipped_at ? (
-                                                            <TimelineStep
-                                                                icon={CheckCircle}
-                                                                status="complete"
-                                                                title="Shipped"
-                                                                description={formatDate(order.shipped_at)}
-                                                            />
+                                                <div className="mt-4 pt-4 border-t border-slate-200">
+                                                    <p className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-6">Shipment Journey</p>
+                                                    <div className="relative pl-8 space-y-8 before:content-[''] before:absolute before:left-3.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                                                        {Array.isArray(order.tracking_history) && order.tracking_history.length > 0 ? (
+                                                            // Custom DTDC-style History - Sorted Newest First
+                                                            order.tracking_history
+                                                                .slice()
+                                                                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                                                                .map((entry, idx) => (
+                                                                    <div key={idx} className="relative">
+                                                                    {/* Dot indicator */}
+                                                                    <div className={`absolute -left-[25px] top-1.5 w-4 h-4 rounded-full border-2 bg-white ${idx === 0 ? 'border-blue-600 flex items-center justify-center after:content-[""] after:w-1.5 after:h-1.5 after:bg-blue-600 after:rounded-full' : 'border-slate-300'}`} />
+                                                                    
+                                                                    <div>
+                                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                                            <p className={`text-sm font-bold ${idx === 0 ? 'text-blue-600' : 'text-slate-900'}`}>
+                                                                                {entry.status}
+                                                                            </p>
+                                                                            <span className="text-[10px] text-slate-400 font-mono">
+                                                                                {formatDate(entry.timestamp)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                                                            {entry.location && (
+                                                                                <p className="text-xs text-slate-600 flex items-center gap-1">
+                                                                                    <MapPin className="w-3 h-3 text-slate-400" /> {entry.location}
+                                                                                </p>
+                                                                            )}
+                                                                            {entry.description && (
+                                                                                <p className="text-xs text-slate-500 italic">
+                                                                                    {entry.description}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))
                                                         ) : (
-                                                            <TimelineStep
-                                                                icon={Clock}
-                                                                status="pending"
-                                                                title="Preparing to Ship"
-                                                                description="Your order is being prepared"
-                                                            />
-                                                        )}
+                                                            // Default/Fallback Timeline
+                                                            <>
+                                                                <TimelineStep
+                                                                    icon={CheckCircle}
+                                                                    status="complete"
+                                                                    title="Order Placed"
+                                                                    description={formatDate(order.created_at)}
+                                                                />
 
-                                                        {order.delivered_at ? (
-                                                            <TimelineStep
-                                                                icon={CheckCircle}
-                                                                status="complete"
-                                                                title="✨ Delivered"
-                                                                description={formatDate(order.delivered_at)}
-                                                            />
-                                                        ) : order.shipped_at ? (
-                                                            <TimelineStep
-                                                                icon={Truck}
-                                                                status="active"
-                                                                title="In Transit"
-                                                                description={
-                                                                    estimatedDate
-                                                                        ? `Expected: ${formatShortDate(estimatedDate)}`
-                                                                        : 'On the way to you'
-                                                                }
-                                                                animated
-                                                            />
-                                                        ) : (
-                                                            <TimelineStep
-                                                                icon={Clock}
-                                                                status="pending"
-                                                                title="Delivery Pending"
-                                                                description="Will be shipped soon"
-                                                            />
+                                                                {['paid', 'processing', 'shipped', 'dispatched', 'delivered'].includes(order.status) && (
+                                                                    <TimelineStep
+                                                                        icon={CheckCircle}
+                                                                        status="complete"
+                                                                        title="Payment Confirmed"
+                                                                        description="Order is being processed"
+                                                                    />
+                                                                )}
+
+                                                                {order.shipped_at ? (
+                                                                    <TimelineStep
+                                                                        icon={CheckCircle}
+                                                                        status="complete"
+                                                                        title="Shipped"
+                                                                        description={formatDate(order.shipped_at)}
+                                                                    />
+                                                                ) : (
+                                                                    <TimelineStep
+                                                                        icon={Clock}
+                                                                        status="pending"
+                                                                        title="Preparing to Ship"
+                                                                        description="Your order is being prepared"
+                                                                    />
+                                                                )}
+
+                                                                {order.delivered_at ? (
+                                                                    <TimelineStep
+                                                                        icon={CheckCircle}
+                                                                        status="complete"
+                                                                        title="✨ Delivered"
+                                                                        description={formatDate(order.delivered_at)}
+                                                                    />
+                                                                ) : order.shipped_at ? (
+                                                                    <TimelineStep
+                                                                        icon={Truck}
+                                                                        status="active"
+                                                                        title="In Transit"
+                                                                        description={
+                                                                            estimatedDate
+                                                                                ? `Expected: ${formatShortDate(estimatedDate)}`
+                                                                                : 'On the way to you'
+                                                                        }
+                                                                        animated
+                                                                    />
+                                                                ) : (
+                                                                    <TimelineStep
+                                                                        icon={Clock}
+                                                                        status="pending"
+                                                                        title="Delivery Pending"
+                                                                        description="Will be shipped soon"
+                                                                    />
+                                                                )}
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>

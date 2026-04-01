@@ -185,7 +185,7 @@ export default function Header() {
                 <div className="flex items-center space-x-4">
                     {/* Country Indicator */}
                     <div className="flex items-center cursor-default group/flag">
-                        <div className="relative w-7 h-7 overflow-hidden rounded-full shadow-sm hover:scale-110 transition-transform duration-300">
+                        <div className="relative w-12 h-12 overflow-hidden rounded-full shadow-sm hover:scale-110 transition-transform duration-300">
                             <Image
                                 src="/images/made-in-india.png"
                                 alt="India"

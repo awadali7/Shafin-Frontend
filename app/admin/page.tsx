@@ -61,6 +61,7 @@ import { DigitalFilesTab } from "@/components/admin/DigitalFilesTab";
 import { GalleryTab } from "@/components/admin/GalleryTab";
 import { GrantAccessModal } from "@/components/admin/GrantAccessModal";
 import { SettingsTab } from "@/components/admin/SettingsTab";
+import { ProductExtraInfoTab } from "@/components/admin/ProductExtraInfoTab";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { formatDate, generateSlug } from "@/components/admin/utils";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -88,11 +89,12 @@ type AdminTab =
     | "orders"
     | "digital_files"
     | "gallery"
+    | "product_extra_info"
     | "settings";
 
 const VALID_TABS: AdminTab[] = [
     "dashboard", "users", "requests", "courses", "blogs",
-    "kyc", "product_kyc", "products", "orders", "digital_files", "gallery", "settings",
+    "kyc", "product_kyc", "products", "orders", "digital_files", "gallery", "product_extra_info", "settings",
 ];
 
 const fileToDataURL = (file: File): Promise<string> => {
@@ -1896,6 +1898,8 @@ function AdminPageContent() {
                 {activeTab === "orders" && <OrdersTab />}
 
                 {activeTab === "gallery" && <GalleryTab />}
+
+                {activeTab === "product_extra_info" && <ProductExtraInfoTab />}
 
                 {activeTab === "settings" && <SettingsTab />}
 

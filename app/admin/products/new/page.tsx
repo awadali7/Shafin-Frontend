@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Trash, ImageIcon, Video, Save, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { productsApi } from "@/lib/api/products";
+import { productExtraInfoApi, ProductExtraInfo } from "@/lib/api/product-extra-info";
 import type { ProductType } from "@/lib/api/types";
 import { generateSlug } from "@/components/admin/utils";
 import { ImageCropper } from "@/components/ui/ImageCropper";
@@ -42,6 +43,7 @@ type ProductFormState = {
     cover_image: File | null;
     digital_file: File | null;
     product_detail_pdf: File | null;
+    product_extra_info_id?: string;
     digital_file_name_input?: string;
     images: ImageFile[];
     videos: VideoFile[];
@@ -77,6 +79,7 @@ const defaultForm: ProductFormState = {
     cover_image: null,
     digital_file: null,
     product_detail_pdf: null,
+    product_extra_info_id: "",
     digital_file_name_input: "",
     images: [],
     videos: [],
@@ -91,6 +94,7 @@ export default function NewProductPage() {
     const [form, setForm] = useState<ProductFormState>(defaultForm);
     const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
     const [existingCategories, setExistingCategories] = useState<string[][]>([]);
+    const [extraInfos, setExtraInfos] = useState<ProductExtraInfo[]>([]);
     const [showCategoryDropdown, setShowCategoryDropdown] = useState<number | null>(null);
 
     // Cropper State
@@ -109,7 +113,19 @@ export default function NewProductPage() {
 
     useEffect(() => {
         fetchExistingCategories();
+        fetchExtraInfos();
     }, []);
+
+    const fetchExtraInfos = async () => {
+        try {
+            const res = await productExtraInfoApi.list();
+            if (res.success && res.data) {
+                setExtraInfos(res.data);
+            }
+        } catch (e) {
+            console.error("Failed to fetch extra infos:", e);
+        }
+    };
 
     const fetchExistingCategories = async () => {
         try {
@@ -266,6 +282,7 @@ export default function NewProductPage() {
                 requires_kyc: form.requires_kyc,
                 cover_image: form.cover_image,
                 digital_file: form.product_type === "digital" ? form.digital_file : undefined,
+                product_extra_info_id: form.product_extra_info_id || undefined,
                 product_detail_pdf: form.product_detail_pdf,
                 digital_file_name: form.digital_file_name_input?.trim() || undefined,
                 images: images.length > 0 ? images : undefined,
@@ -370,6 +387,27 @@ export default function NewProductPage() {
                             >
                                 <option value="physical">Physical</option>
                                 <option value="digital">Digital</option>
+                            </select>
+                        </div>
+
+                        <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Product Extra Info Package (Optional)
+                            </label>
+                            <select
+                                value={form.product_extra_info_id || ""}
+                                onChange={(e) =>
+                                    setForm((p) => ({
+                                        ...p,
+                                        product_extra_info_id: e.target.value,
+                                    }))
+                                }
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                            >
+                                <option value="">-- None --</option>
+                                {extraInfos.map(info => (
+                                    <option key={info.id} value={info.id}>{info.title}</option>
+                                ))}
                             </select>
                         </div>
                     </div>

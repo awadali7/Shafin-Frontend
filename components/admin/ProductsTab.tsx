@@ -37,12 +37,18 @@ type ProductFormState = {
     is_coming_soon: boolean;
     is_contact_only: boolean;
     requires_kyc: boolean;
+    weight: number;
     cover_image: File | null;
     digital_file: File | null;
     digital_file_name_input?: string; // For linking existing files
     images: ImageFile[];
     videos: VideoFile[];
-    quantity_pricing: Array<{ min_qty: number | string; max_qty: number | string | null; price_per_item: number | string; courier_charge: number | string }>;
+    quantity_pricing: Array<{ 
+        min_qty: number | string; 
+        max_qty: number | string | null; 
+        price_per_item: number | string; 
+        
+    }>;
 };
 
 // Helper function to convert file to data URL for preview only
@@ -72,12 +78,18 @@ const defaultForm: ProductFormState = {
     is_coming_soon: false,
     is_contact_only: false,
     requires_kyc: false,
+    weight: 1000,
     cover_image: null,
     digital_file: null,
     digital_file_name_input: "",
     images: [],
     videos: [],
-    quantity_pricing: [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }],
+    quantity_pricing: [{ 
+        min_qty: "", 
+        max_qty: "", 
+        price_per_item: "", 
+        
+    }],
 };
 
 export const ProductsTab: React.FC = () => {
@@ -240,8 +252,7 @@ export const ProductsTab: React.FC = () => {
                 .map(tier => ({
                     min_qty: Number(tier.min_qty),
                     max_qty: tier.max_qty && tier.max_qty !== "" ? Number(tier.max_qty) : null,
-                    price_per_item: Number(tier.price_per_item),
-                    courier_charge: Number(tier.courier_charge) || 0
+                    price_per_item: Number(tier.price_per_item)
                 }))
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
 
@@ -804,7 +815,7 @@ export const ProductsTab: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Price *
@@ -818,6 +829,22 @@ export const ProductsTab: React.FC = () => {
                                                     price: Number(
                                                         e.target.value
                                                     ),
+                                                }))
+                                            }
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Weight (in grams) *
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={form.weight}
+                                            onChange={(e) =>
+                                                setForm((p) => ({
+                                                    ...p,
+                                                    weight: Number(e.target.value),
                                                 }))
                                             }
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
@@ -858,13 +885,9 @@ export const ProductsTab: React.FC = () => {
                                     <div className="space-y-2">
                                         {form.quantity_pricing.map((tier, index) => {
                                             const minQty = Number(tier.min_qty) || 0;
-                                            const maxQty = tier.max_qty && tier.max_qty !== "" ? Number(tier.max_qty) : null;
                                             const pricePerItem = Number(tier.price_per_item) || 0;
-                                            const courierCharge = Number(tier.courier_charge) || 0;
                                             const savingsPerItem = form.price > 0 && pricePerItem > 0 ? form.price - pricePerItem : 0;
                                             const savingsPercent = form.price > 0 ? Math.round((savingsPerItem / form.price) * 100) : 0;
-                                            const exampleQty = minQty > 0 ? Math.max(minQty, 2) : 2;
-                                            const exampleTotal = pricePerItem > 0 ? (pricePerItem * exampleQty) + courierCharge : 0;
 
                                             return (
                                                 <div key={index} className="bg-white p-3 rounded border border-gray-200">
@@ -909,40 +932,30 @@ export const ProductsTab: React.FC = () => {
                                                                     newPricing[index] = { ...newPricing[index], price_per_item: e.target.value };
                                                                     setForm(p => ({ ...p, quantity_pricing: newPricing }));
                                                                 }}
-                                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
-                                                            />
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="text-gray-500 text-xs">🚚</span>
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                min="0"
-                                                                placeholder="Courier"
-                                                                value={tier.courier_charge}
-                                                                onChange={(e) => {
-                                                                    const newPricing = [...form.quantity_pricing];
-                                                                    newPricing[index] = { ...newPricing[index], courier_charge: e.target.value };
-                                                                    setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                                }}
-                                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] focus:border-transparent"
+                                                                className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000]"
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="text-xs text-gray-600">
+
+                                                    <div className="flex items-center justify-between mt-2">
+                                                        <div className="text-[10px] text-gray-500 italic">
                                                             {savingsPerItem > 0 && (
-                                                                <span className="text-green-600">💰 Save ₹{savingsPerItem.toFixed(0)} ({savingsPercent}%) per item | </span>
-                                                            )}
-                                                            {exampleTotal > 0 && (
-                                                                <span className="text-blue-600">Ex: {exampleQty} items = ₹{exampleTotal.toFixed(0)}</span>
+                                                                <span className="text-green-600 font-medium">💰 Save ₹{savingsPerItem.toFixed(0)} ({savingsPercent}%)</span>
                                                             )}
                                                         </div>
                                                         <button
                                                             type="button"
                                                             onClick={() => {
                                                                 const newPricing = form.quantity_pricing.filter((_, i) => i !== index);
-                                                                setForm(p => ({ ...p, quantity_pricing: newPricing.length > 0 ? newPricing : [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }] }));
+                                                                setForm(p => ({ 
+                                                                    ...p, 
+                                                                    quantity_pricing: newPricing.length > 0 ? newPricing : [{ 
+                                                                        min_qty: "", 
+                                                                        max_qty: "", 
+                                                                        price_per_item: "", 
+                                                                        
+                                                                    }] 
+                                                                }));
                                                             }}
                                                             className="p-1 text-red-500 hover:bg-red-50 rounded"
                                                         >
@@ -958,7 +971,12 @@ export const ProductsTab: React.FC = () => {
                                             onClick={() => {
                                                 setForm(p => ({
                                                     ...p,
-                                                    quantity_pricing: [...p.quantity_pricing, { min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }]
+                                                    quantity_pricing: [...p.quantity_pricing, { 
+                                                        min_qty: "", 
+                                                        max_qty: "", 
+                                                        price_per_item: "", 
+                                                        
+                                                    }]
                                                 }));
                                             }}
                                             className="w-full px-3 py-2 text-sm border border-dashed border-gray-300 rounded text-gray-600 hover:border-[#B00000] hover:text-[#B00000] transition-colors"
@@ -966,8 +984,8 @@ export const ProductsTab: React.FC = () => {
                                             + Add Pricing Tier
                                         </button>
 
-                                        <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-800">
-                                            <strong>Example:</strong> 1-1: ₹100, 2-5: ₹90, 6-10: ₹80, 11+: ₹70 (leave max empty for unlimited)
+                                        <div className="mt-3 p-2 bg-blue-50 rounded text-[10px] text-blue-800 italic text-center">
+                                            Local: Same City | Regional: Same State | National: Rest of India
                                         </div>
                                     </div>
                                 </div>
