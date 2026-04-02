@@ -68,6 +68,11 @@ export const productsApi = {
         product_type: ProductType;
         price: number;
         stock_quantity?: number;
+        weight?: number;
+        length?: number;
+        width?: number;
+        height?: number;
+        extra_shipping_charge?: number;
         rating?: number;
         reviews_count?: number;
         is_featured?: boolean;
@@ -81,7 +86,7 @@ export const productsApi = {
         videos?: Array<{ title: string; url: string; thumbnail?: string }>;
         digital_file_name?: string; // For linking existing files
         product_extra_info_id?: string; // Link to extra info
-        quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number; courier_charge?: number }>;
+        quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number }>;
     }): Promise<ApiResponse<Product>> => {
         const form = new FormData();
         form.append("name", data.name);
@@ -111,6 +116,13 @@ export const productsApi = {
             form.append("requires_kyc", String(data.requires_kyc));
         if (data.product_type === "physical") {
             form.append("stock_quantity", String(data.stock_quantity ?? 0));
+            if (data.weight !== undefined) {
+                form.append("weight", String(data.weight));
+            }
+            if (data.length !== undefined) form.append("length", String(data.length));
+            if (data.width !== undefined) form.append("width", String(data.width));
+            if (data.height !== undefined) form.append("height", String(data.height));
+            if (data.extra_shipping_charge !== undefined) form.append("extra_shipping_charge", String(data.extra_shipping_charge));
         }
         if (data.cover_image) form.append("cover_image", data.cover_image);
         if (data.digital_file) form.append("digital_file", data.digital_file);
@@ -152,6 +164,11 @@ export const productsApi = {
             product_type: ProductType;
             price: number;
             stock_quantity: number;
+            weight?: number;
+            length?: number;
+            width?: number;
+            height?: number;
+            extra_shipping_charge?: number;
             rating: number;
             reviews_count: number;
             is_active: boolean;
@@ -166,7 +183,7 @@ export const productsApi = {
             videos?: Array<{ title: string; url: string; thumbnail?: string }>;
             digital_file_name?: string; // For linking existing files
             product_extra_info_id?: string;
-            quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number; courier_charge?: number }>;
+            quantity_pricing?: Array<{ min_qty: number; max_qty: number | null; price_per_item: number }>;
         }>
     ): Promise<ApiResponse<Product>> => {
         const form = new FormData();

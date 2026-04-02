@@ -91,15 +91,21 @@ export default function CheckoutPage() {
     );
 
     // Calculate courier charges and items subtotal separately (must be before early return)
-    const { itemsSubtotal, totalWeight } = useMemo(() => {
+    const { itemsSubtotal, totalWeight, totalExtraShipping } = useMemo(() => {
         let itemsTotal = 0;
         let weightTotal = 0;
+        let extraShippingTotal = 0;
 
         items.forEach((item: any) => {
             const qty = Number(item.quantity) || 1;
-            const weight = Number(item.weight) || 1000;
+            const weight = item.weight !== undefined && item.weight !== null ? Number(item.weight) : 0;
+            const volWeight = item.volumetric_weight !== undefined && item.volumetric_weight !== null ? Number(item.volumetric_weight) : 0;
+            const chargeableWeight = Math.max(weight, volWeight);
+            const extraCharge = item.extra_shipping_charge !== undefined && item.extra_shipping_charge !== null ? Number(item.extra_shipping_charge) : 0;
+
             if (item.type === 'physical') {
-                weightTotal += weight * qty;
+                weightTotal += chargeableWeight * qty;
+                extraShippingTotal += extraCharge * qty;
             }
 
             if (item.quantity_pricing && item.quantity_pricing.length > 0) {
@@ -118,18 +124,18 @@ export default function CheckoutPage() {
             }
         });
 
-        return { itemsSubtotal: itemsTotal, totalWeight: weightTotal };
+        return { itemsSubtotal: itemsTotal, totalWeight: weightTotal, totalExtraShipping: extraShippingTotal };
     }, [items]);
 
     const estimatedCourierCharges = useMemo(() => {
         if (!hasPhysicalItems || totalWeight === 0) return 0;
-        
+
         // Simple zone estimation for UI preview. Actual calculation happens on backend
         // We will default to national rates for preview if address is not filled,
         // or try to match Local/Regional if they match origin.
         const originCity = "Ernakulam";
         const originState = "Kerala";
-        
+
         let zone = "national";
         if (formData.city?.trim().toLowerCase() === originCity.toLowerCase()) {
             zone = "local";
@@ -150,7 +156,7 @@ export default function CheckoutPage() {
         return baseRate + (slabs * addRate);
     }, [hasPhysicalItems, totalWeight, formData.city, formData.state]);
 
-    const courierCharges = estimatedCourierCharges;
+    const courierCharges = estimatedCourierCharges + totalExtraShipping;
     const subtotal = itemsSubtotal + courierCharges;
     const total = subtotal; // No additional charges
 
@@ -491,8 +497,8 @@ export default function CheckoutPage() {
                                         value={formData.firstName}
                                         onChange={handleInputChange}
                                         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.firstName
-                                                ? "border-red-300"
-                                                : "border-gray-300"
+                                            ? "border-red-300"
+                                            : "border-gray-300"
                                             }`}
                                     />
                                     {errors.firstName && (
@@ -511,8 +517,8 @@ export default function CheckoutPage() {
                                         value={formData.lastName}
                                         onChange={handleInputChange}
                                         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.lastName
-                                                ? "border-red-300"
-                                                : "border-gray-300"
+                                            ? "border-red-300"
+                                            : "border-gray-300"
                                             }`}
                                     />
                                     {errors.lastName && (
@@ -532,8 +538,8 @@ export default function CheckoutPage() {
                                     value={formData.email}
                                     onChange={handleInputChange}
                                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.email
-                                            ? "border-red-300"
-                                            : "border-gray-300"
+                                        ? "border-red-300"
+                                        : "border-gray-300"
                                         }`}
                                 />
                                 {errors.email && (
@@ -552,8 +558,8 @@ export default function CheckoutPage() {
                                     value={formData.phone}
                                     onChange={handleInputChange}
                                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.phone
-                                            ? "border-red-300"
-                                            : "border-gray-300"
+                                        ? "border-red-300"
+                                        : "border-gray-300"
                                         }`}
                                 />
                                 {errors.phone && (
@@ -574,8 +580,8 @@ export default function CheckoutPage() {
                                             onChange={handleInputChange}
                                             rows={3}
                                             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.address
-                                                    ? "border-red-300"
-                                                    : "border-gray-300"
+                                                ? "border-red-300"
+                                                : "border-gray-300"
                                                 }`}
                                         />
                                         {errors.address && (
@@ -595,8 +601,8 @@ export default function CheckoutPage() {
                                                 value={formData.city}
                                                 onChange={handleInputChange}
                                                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.city
-                                                        ? "border-red-300"
-                                                        : "border-gray-300"
+                                                    ? "border-red-300"
+                                                    : "border-gray-300"
                                                     }`}
                                             />
                                             {errors.city && (
@@ -615,8 +621,8 @@ export default function CheckoutPage() {
                                                 value={formData.state}
                                                 onChange={handleInputChange}
                                                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.state
-                                                        ? "border-red-300"
-                                                        : "border-gray-300"
+                                                    ? "border-red-300"
+                                                    : "border-gray-300"
                                                     }`}
                                             />
                                             {errors.state && (
@@ -635,8 +641,8 @@ export default function CheckoutPage() {
                                                 value={formData.pincode}
                                                 onChange={handleInputChange}
                                                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.pincode
-                                                        ? "border-red-300"
-                                                        : "border-gray-300"
+                                                    ? "border-red-300"
+                                                    : "border-gray-300"
                                                     }`}
                                             />
                                             {errors.pincode && (

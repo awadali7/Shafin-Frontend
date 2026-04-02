@@ -45,7 +45,6 @@ type ShopProduct = {
         min_qty: number;
         max_qty: number | null;
         price_per_item: number;
-        courier_charge?: number;
     }>;
 };
 

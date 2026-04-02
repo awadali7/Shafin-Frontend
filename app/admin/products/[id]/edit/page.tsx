@@ -41,6 +41,10 @@ type ProductFormState = {
     is_contact_only: boolean;
     requires_kyc: boolean;
     weight: number;
+    length: number;
+    width: number;
+    height: number;
+    extra_shipping_charge: number;
     cover_image: File | null;
     digital_file: File | null;
     product_detail_pdf: File | null;
@@ -49,12 +53,27 @@ type ProductFormState = {
     digital_file_name_input?: string;
     images: ImageFile[];
     videos: VideoFile[];
-    quantity_pricing: Array<{ 
-        min_qty: number | string; 
-        max_qty: number | string | null; 
-        price_per_item: number | string; 
-        
+    quantity_pricing: Array<{
+        min_qty: number | string;
+        max_qty: number | string | null;
+        price_per_item: number | string;
     }>;
+    shipping_zones_config: {
+        local_base_rate?: string | number;
+        local_additional_rate?: string | number;
+        regional_base_rate?: string | number;
+        regional_additional_rate?: string | number;
+        national_base_rate?: string | number;
+        national_additional_rate?: string | number;
+    };
+    weight_slabs_config: {
+        local_base_weight?: string | number;
+        local_additional_weight?: string | number;
+        regional_base_weight?: string | number;
+        regional_additional_weight?: string | number;
+        national_base_weight?: string | number;
+        national_additional_weight?: string | number;
+    };
 };
 
 const fileToDataURL = (file: File): Promise<string> => {
@@ -83,7 +102,11 @@ const defaultForm: ProductFormState = {
     is_coming_soon: false,
     is_contact_only: false,
     requires_kyc: false,
-    weight: 1000,
+    weight: 0,
+    length: 0,
+    width: 0,
+    height: 0,
+    extra_shipping_charge: 0,
     cover_image: null,
     digital_file: null,
     product_detail_pdf: null,
@@ -91,12 +114,27 @@ const defaultForm: ProductFormState = {
     digital_file_name_input: "",
     images: [],
     videos: [],
-    quantity_pricing: [{ 
-        min_qty: "", 
-        max_qty: "", 
-        price_per_item: "", 
-        
+    quantity_pricing: [{
+        min_qty: "",
+        max_qty: "",
+        price_per_item: "",
     }],
+    shipping_zones_config: {
+        local_base_rate: "",
+        local_additional_rate: "",
+        regional_base_rate: "",
+        regional_additional_rate: "",
+        national_base_rate: "",
+        national_additional_rate: "",
+    },
+    weight_slabs_config: {
+        local_base_weight: "",
+        local_additional_weight: "",
+        regional_base_weight: "",
+        regional_additional_weight: "",
+        national_base_weight: "",
+        national_additional_weight: "",
+    },
 };
 
 export default function EditProductPage() {
@@ -172,17 +210,13 @@ export default function EditProductPage() {
                     ? pricingData.map((qp: any) => ({
                         min_qty: qp.min_qty || "",
                         max_qty: qp.max_qty || "",
-                        price_per_item: qp.price_per_item || "",
-                        courier_charge: qp.courier_charge || "",
-                        courier_charge_local: qp.courier_charge_local || qp.courier_charge || "",
-                        courier_charge_regional: qp.courier_charge_regional || qp.courier_charge || "",
-                        courier_charge_national: qp.courier_charge_national || qp.courier_charge || ""
+                        price_per_item: qp.price_per_item || ""
                     }))
-                    : [{ 
-                        min_qty: "", 
-                        max_qty: "", 
-                        price_per_item: "", 
-                        
+                    : [{
+                        min_qty: "",
+                        max_qty: "",
+                        price_per_item: "",
+
                     }];
 
                 setForm({
@@ -196,7 +230,13 @@ export default function EditProductPage() {
                     hindi_description: product.hindi_description || "",
                     product_type: product.type,
                     price: Number(product.price),
-                    weight: Number(product.weight || 1000),
+                    weight: Number(product.weight ?? 0),
+                    length: Number(product.length ?? 0),
+                    width: Number(product.width ?? 0),
+                    height: Number(product.height ?? 0),
+                    extra_shipping_charge: Number(product.extra_shipping_charge ?? 0),
+                    shipping_zones_config: product.shipping_zones_config || defaultForm.shipping_zones_config,
+                    weight_slabs_config: product.weight_slabs_config || defaultForm.weight_slabs_config,
                     stock_quantity: product.type === "physical" ? Number(product.stock_quantity || 0) : 0,
                     is_active: product.is_active !== false,
                     is_featured: product.is_featured || false,
@@ -704,7 +744,7 @@ export default function EditProductPage() {
                             Pricing & Inventory
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
+                            <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Price *
                                 </label>
@@ -741,13 +781,74 @@ export default function EditProductPage() {
                             </div>
                         </div>
 
+                        {/* Dimensions & Extra Shipping */}
+                        {form.product_type === "physical" && (
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Length (cm)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={form.length}
+                                        onChange={(e) => setForm((p) => ({ ...p, length: Number(e.target.value) }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Width (cm)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={form.width}
+                                        onChange={(e) => setForm((p) => ({ ...p, width: Number(e.target.value) }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Height (cm)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={form.height}
+                                        onChange={(e) => setForm((p) => ({ ...p, height: Number(e.target.value) }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Extra Charge (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={form.extra_shipping_charge}
+                                        onChange={(e) => setForm((p) => ({ ...p, extra_shipping_charge: Number(e.target.value) }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="0"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Special handling/packaging fee</p>
+                                </div>
+                                <div className="col-span-4 bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-center justify-between">
+                                    <span className="text-sm text-blue-800 font-medium">Calculated Volumetric Weight:</span>
+                                    <span className="text-base text-blue-900 font-bold">
+                                        {Math.ceil((form.length * form.width * form.height) / 5000)} grams
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Tiered Pricing */}
                         <div className="mt-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
                             <h3 className="text-sm font-semibold text-gray-900 mb-2">
                                 💰 Tiered Pricing (Optional)
                             </h3>
                             <p className="text-xs text-gray-600 mb-3">
-                                Set price per item and courier charges based on quantity ranges and zones.
+                                Set price per item based on quantity ranges.
                             </p>
 
                             <div className="space-y-3">
@@ -827,22 +928,18 @@ export default function EditProductPage() {
                                                             💰 Save ₹{savingsPerItem.toFixed(0)} ({savingsPercent}%) / item
                                                         </div>
                                                     )}
-                                                    <div className="text-[10px] text-gray-500 italic bg-gray-100 px-2 py-0.5 rounded">
-                                                        Local: Same City | Regional: Same State | National: Rest of India
-                                                    </div>
                                                 </div>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
                                                         const newPricing = form.quantity_pricing.filter((_, i) => i !== index);
-                                                        setForm(p => ({ 
-                                                            ...p, 
-                                                            quantity_pricing: newPricing.length > 0 ? newPricing : [{ 
-                                                                min_qty: "", 
-                                                                max_qty: "", 
-                                                                price_per_item: "", 
-                                                                
-                                                            }] 
+                                                        setForm(p => ({
+                                                            ...p,
+                                                            quantity_pricing: newPricing.length > 0 ? newPricing : [{
+                                                                min_qty: "",
+                                                                max_qty: "",
+                                                                price_per_item: ""
+                                                            }]
                                                         }));
                                                     }}
                                                     className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
@@ -860,11 +957,10 @@ export default function EditProductPage() {
                                     onClick={() => {
                                         setForm(p => ({
                                             ...p,
-                                            quantity_pricing: [...p.quantity_pricing, { 
-                                                min_qty: "", 
-                                                max_qty: "", 
-                                                price_per_item: "", 
-                                                
+                                            quantity_pricing: [...p.quantity_pricing, {
+                                                min_qty: "",
+                                                max_qty: "",
+                                                price_per_item: ""
                                             }]
                                         }));
                                     }}
@@ -874,7 +970,7 @@ export default function EditProductPage() {
                                 </button>
 
                                 <div className="mt-3 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
-                                    <strong>💡 Tip:</strong> Courier charges are calculated per zone. If a specific zone charge is missing, it will fallback to the general courier charge (if any).
+                                    <strong>💡 Example:</strong> For 1-5 items: ₹100/item | For 6-10 items: ₹90/item
                                 </div>
                             </div>
                         </div>

@@ -35,6 +35,11 @@ type ProductFormState = {
     product_type: ProductType;
     price: number;
     stock_quantity: number;
+    weight: number;
+    length: number;
+    width: number;
+    height: number;
+    extra_shipping_charge: number;
     is_active: boolean;
     is_featured: boolean;
     is_coming_soon: boolean;
@@ -47,7 +52,23 @@ type ProductFormState = {
     digital_file_name_input?: string;
     images: ImageFile[];
     videos: VideoFile[];
-    quantity_pricing: Array<{ min_qty: number | string; max_qty: number | string | null; price_per_item: number | string; courier_charge: number | string }>;
+    quantity_pricing: Array<{ min_qty: number | string; max_qty: number | string | null; price_per_item: number | string }>;
+    shipping_zones_config: {
+        local_base_rate?: string | number;
+        local_additional_rate?: string | number;
+        regional_base_rate?: string | number;
+        regional_additional_rate?: string | number;
+        national_base_rate?: string | number;
+        national_additional_rate?: string | number;
+    };
+    weight_slabs_config: {
+        local_base_weight?: string | number;
+        local_additional_weight?: string | number;
+        regional_base_weight?: string | number;
+        regional_additional_weight?: string | number;
+        national_base_weight?: string | number;
+        national_additional_weight?: string | number;
+    };
 };
 
 const fileToDataURL = (file: File): Promise<string> => {
@@ -71,6 +92,11 @@ const defaultForm: ProductFormState = {
     product_type: "physical",
     price: 0,
     stock_quantity: 0,
+    weight: 0,
+    length: 0,
+    width: 0,
+    height: 0,
+    extra_shipping_charge: 0,
     is_active: true,
     is_featured: false,
     is_coming_soon: false,
@@ -83,7 +109,23 @@ const defaultForm: ProductFormState = {
     digital_file_name_input: "",
     images: [],
     videos: [],
-    quantity_pricing: [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }],
+    quantity_pricing: [{ min_qty: "", max_qty: "", price_per_item: "" }],
+    shipping_zones_config: {
+        local_base_rate: "",
+        local_additional_rate: "",
+        regional_base_rate: "",
+        regional_additional_rate: "",
+        national_base_rate: "",
+        national_additional_rate: "",
+    },
+    weight_slabs_config: {
+        local_base_weight: "",
+        local_additional_weight: "",
+        regional_base_weight: "",
+        regional_additional_weight: "",
+        national_base_weight: "",
+        national_additional_weight: "",
+    },
 };
 
 export default function NewProductPage() {
@@ -252,8 +294,7 @@ export default function NewProductPage() {
                 .map(tier => ({
                     min_qty: Number(tier.min_qty),
                     max_qty: tier.max_qty && tier.max_qty !== "" ? Number(tier.max_qty) : null,
-                    price_per_item: Number(tier.price_per_item),
-                    courier_charge: tier.courier_charge !== "" ? Number(tier.courier_charge) : 0
+                    price_per_item: Number(tier.price_per_item)
                 }))
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
 
@@ -276,6 +317,11 @@ export default function NewProductPage() {
                 product_type: form.product_type,
                 price: form.price,
                 stock_quantity: form.product_type === "physical" ? form.stock_quantity : 0,
+                weight: form.product_type === "physical" ? form.weight : undefined,
+                length: form.product_type === "physical" ? form.length : undefined,
+                width: form.product_type === "physical" ? form.width : undefined,
+                height: form.product_type === "physical" ? form.height : undefined,
+                extra_shipping_charge: form.product_type === "physical" ? form.extra_shipping_charge : undefined,
                 is_featured: form.is_featured,
                 is_coming_soon: form.is_coming_soon,
                 is_contact_only: form.is_contact_only,
@@ -593,7 +639,7 @@ export default function NewProductPage() {
                         <h2 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-gray-200">
                             Pricing & Inventory
                         </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Price *
@@ -629,7 +675,86 @@ export default function NewProductPage() {
                                     placeholder="0"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Weight (grams)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={form.weight}
+                                    onChange={(e) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            weight: Number(e.target.value),
+                                        }))
+                                    }
+                                    disabled={form.product_type !== "physical"}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent disabled:bg-gray-50"
+                                    placeholder="0"
+                                />
+                            </div>
                         </div>
+
+                        {/* Dimensions & Extra Shipping */}
+                        {form.product_type === "physical" && (
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Length (cm)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={form.length}
+                                        onChange={(e) => setForm((p) => ({ ...p, length: Number(e.target.value) }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Width (cm)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={form.width}
+                                        onChange={(e) => setForm((p) => ({ ...p, width: Number(e.target.value) }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Height (cm)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={form.height}
+                                        onChange={(e) => setForm((p) => ({ ...p, height: Number(e.target.value) }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Extra Charge (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={form.extra_shipping_charge}
+                                        onChange={(e) => setForm((p) => ({ ...p, extra_shipping_charge: Number(e.target.value) }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="0"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">Special handling/packaging fee</p>
+                                </div>
+                                <div className="col-span-4 bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-center justify-between">
+                                    <span className="text-sm text-blue-800 font-medium">Calculated Volumetric Weight:</span>
+                                    <span className="text-base text-blue-900 font-bold">
+                                        {Math.ceil((form.length * form.width * form.height) / 5000)} grams
+                                    </span>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Tiered Pricing */}
                         <div className="mt-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -638,19 +763,19 @@ export default function NewProductPage() {
                             </h3>
                             <p className="text-xs text-gray-600 mb-3">
                                 Set price per item and courier charge based on quantity ranges.
+                                Set price per item based on quantity ranges.
                             </p>
 
                             <div className="space-y-3">
                                 {form.quantity_pricing.map((tier, index) => {
                                     const minQty = Number(tier.min_qty) || 0;
                                     const pricePerItem = Number(tier.price_per_item) || 0;
-                                    const courierCharge = Number(tier.courier_charge) || 0;
                                     const savingsPerItem = form.price > 0 && pricePerItem > 0 ? form.price - pricePerItem : 0;
                                     const savingsPercent = form.price > 0 ? Math.round((savingsPerItem / form.price) * 100) : 0;
 
                                     // Example calculation for display (e.g., 2 items)
                                     const exampleQty = minQty > 0 ? Math.max(minQty, 2) : 2;
-                                    const exampleTotal = pricePerItem > 0 ? (pricePerItem * exampleQty) + courierCharge : 0;
+                                    const exampleTotal = pricePerItem > 0 ? (pricePerItem * exampleQty) : 0;
 
                                     return (
                                         <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
@@ -712,32 +837,11 @@ export default function NewProductPage() {
                                                         <span className="text-xs text-gray-500">/each</span>
                                                     </div>
                                                 </div>
+                                            </div>
 
-                                                {/* Courier Charge */}
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-600 mb-1">
-                                                        🚚 Courier Charge
-                                                    </label>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-gray-500 text-sm">₹</span>
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            min="0"
-                                                            placeholder="e.g., 70"
-                                                            value={tier.courier_charge}
-                                                            onChange={(e) => {
-                                                                const newPricing = [...form.quantity_pricing];
-                                                                newPricing[index] = { ...newPricing[index], courier_charge: e.target.value };
-                                                                setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                            }}
-                                                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000]"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* Savings & Example */}
-                                                <div className="flex flex-col justify-center">
+                                            {/* Savings & Delete */}
+                                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
+                                                <div className="flex flex-col gap-1">
                                                     {savingsPerItem > 0 && (
                                                         <div className="text-xs text-green-600 mb-1">
                                                             💰 Save ₹{savingsPerItem.toFixed(0)} ({savingsPercent}%) per item
@@ -745,19 +849,16 @@ export default function NewProductPage() {
                                                     )}
                                                     {exampleTotal > 0 && (
                                                         <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                                            📦 Example: {exampleQty} items = ₹{(pricePerItem * exampleQty).toFixed(0)} + ₹{courierCharge.toFixed(0)} courier = <strong>₹{exampleTotal.toFixed(0)}</strong>
+                                                            📦 Example: {exampleQty} items = <strong>₹{exampleTotal.toFixed(0)}</strong>
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
 
-                                            {/* Delete Button */}
-                                            <div className="mt-2 flex justify-end">
                                                 <button
                                                     type="button"
                                                     onClick={() => {
                                                         const newPricing = form.quantity_pricing.filter((_, i) => i !== index);
-                                                        setForm(p => ({ ...p, quantity_pricing: newPricing.length > 0 ? newPricing : [{ min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }] }));
+                                                        setForm(p => ({ ...p, quantity_pricing: newPricing.length > 0 ? newPricing : [{ min_qty: "", max_qty: "", price_per_item: "" }] }));
                                                     }}
                                                     className="inline-flex items-center gap-1 px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded border border-red-200"
                                                 >
@@ -774,7 +875,7 @@ export default function NewProductPage() {
                                     onClick={() => {
                                         setForm(p => ({
                                             ...p,
-                                            quantity_pricing: [...p.quantity_pricing, { min_qty: "", max_qty: "", price_per_item: "", courier_charge: "" }]
+                                            quantity_pricing: [...p.quantity_pricing, { min_qty: "", max_qty: "", price_per_item: "" }]
                                         }));
                                     }}
                                     className="w-full px-4 py-3 text-sm border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#B00000] hover:text-[#B00000] hover:bg-red-50 transition-colors"
@@ -783,7 +884,7 @@ export default function NewProductPage() {
                                 </button>
 
                                 <div className="mt-3 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
-                                    <strong>💡 Example:</strong> For 1-5 items: ₹100/item + ₹70 courier | For 6-10 items: ₹90/item + ₹50 courier
+                                    <strong>💡 Example:</strong> For 1-5 items: ₹100/item | For 6-10 items: ₹90/item
                                 </div>
                             </div>
                         </div>

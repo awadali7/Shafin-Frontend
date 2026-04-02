@@ -138,7 +138,6 @@ export default function ProductDetailPage() {
         min_qty: number;
         max_qty: number | null;
         price_per_item: number;
-        courier_charge?: number;
     } | null>(null);
     const [copied, setCopied] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'ml' | 'hi'>('en');
@@ -217,9 +216,8 @@ export default function ProductDetailPage() {
         });
 
         if (tier) {
-            const courierCharge = tier.courier_charge || 0;
-            setCalculatedPrice((tier.price_per_item * quantity) + courierCharge);
-            setAppliedTier({ ...tier, courier_charge: courierCharge });
+            setCalculatedPrice((tier.price_per_item * quantity));
+            setAppliedTier({ ...tier });
         } else {
             setCalculatedPrice(product.price * quantity);
             setAppliedTier(null);
@@ -826,19 +824,7 @@ export default function ProductDetailPage() {
                                                                 )}
                                                             </span>
                                                         </div>
-                                                        {(appliedTier?.courier_charge ?? 0) > 0 && (
-                                                            <div className="flex justify-between items-center text-sm text-gray-600 mb-2 pb-2 border-b border-gray-200">
-                                                                <span>Courier Charge:</span>
-                                                                <span className="font-medium text-slate-800">
-                                                                    ₹
-                                                                    {appliedTier?.courier_charge?.toLocaleString("en-IN")}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {/* fallback border if no courier charge */}
-                                                        {(!appliedTier || !appliedTier.courier_charge || appliedTier.courier_charge <= 0) && (
-                                                            <div className="mb-2 pb-2 border-b border-gray-200" />
-                                                        )}
+                                                        <div className="mb-2 pb-2 border-b border-gray-200" />
 
                                                         <div className="flex justify-between items-center">
                                                             <span className="text-sm font-semibold text-gray-800">

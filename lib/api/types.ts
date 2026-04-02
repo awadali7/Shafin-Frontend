@@ -500,12 +500,23 @@ export interface Product {
     // Convenience
     in_stock?: boolean;
 
-    rating?: number;
-    reviews_count?: number;
+
+    length?: number;
+    width?: number;
+    height?: number;
+    volumetric_weight?: number;
+    extra_shipping_charge?: number;
     is_active?: boolean;
     is_coming_soon?: boolean;
     is_contact_only?: boolean; // Product can only be contacted via WhatsApp (no direct purchase)
     requires_kyc?: boolean; // Product requires KYC verification to purchase
+
+    rating?: number | string;
+    reviews_count?: number | string;
+
+    shipping_zones_config?: any;
+    weight_slabs_config?: any;
+
     product_detail_pdf?: string; // URL to product details PDF
     product_extra_info_id?: string; // Link to extra info
     created_at?: string;
@@ -522,7 +533,6 @@ export interface Product {
         min_qty: number;
         max_qty: number | null;
         price_per_item: number;
-        courier_charge?: number;
     }>;
 }
 
