@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
-import { Plus, X, Upload, FileText, ArrowLeft, Loader2, Calendar } from "lucide-react";
+import { Plus, X, Upload, FileText, ArrowLeft, Loader2, Calendar, Eye, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { productExtraInfoApi, ProductExtraInfo } from "@/lib/api/product-extra-info";
 import { adminApi } from "@/lib/api/admin";
@@ -14,6 +13,9 @@ export const ProductExtraInfoTab: React.FC = () => {
     const [loadingList, setLoadingList] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [infos, setInfos] = useState<ProductExtraInfo[]>([]);
+    const [viewingInfo, setViewingInfo] = useState<ProductExtraInfo | null>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+    const [selectedPdfUrl, setSelectedPdfUrl] = useState("");
     
     // Form state
     const [title, setTitle] = useState("");
@@ -61,6 +63,14 @@ export const ProductExtraInfoTab: React.FC = () => {
         fetchInfos();
         fetchUsers();
     }, []);
+
+    useEffect(() => {
+        if (viewingInfo?.pdf_files?.length) {
+            setSelectedPdfUrl(viewingInfo.pdf_files[0].url);
+        } else {
+            setSelectedPdfUrl("");
+        }
+    }, [viewingInfo]);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -148,6 +158,135 @@ export const ProductExtraInfoTab: React.FC = () => {
         } finally {
             setIsGranting(false);
         }
+    };
+
+    const handleViewInfo = async (id: string) => {
+        setLoadingDetail(true);
+        try {
+            const res = await productExtraInfoApi.getById(id);
+            if (res.success && res.data) {
+                setViewingInfo(res.data);
+            } else {
+                toast.error(res.message || "Failed to load package details");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to load package details");
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
+
+    const renderDetailView = () => {
+        if (!viewingInfo) return null;
+
+        const hasImages = (viewingInfo.image_files?.length || 0) > 0;
+        const hasPdfs = (viewingInfo.pdf_files?.length || 0) > 0;
+        const hasNoAttachments = !hasImages && !hasPdfs;
+
+        return (
+            <div className="p-6 space-y-6">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setViewingInfo(null)}
+                            className="text-gray-500 hover:text-gray-700 transition-colors bg-white p-2 rounded-full shadow-sm hover:bg-gray-50"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900">{viewingInfo.title}</h2>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Created on {new Date(viewingInfo.created_at).toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                        Preview images and PDFs directly here.
+                    </div>
+                </div>
+
+                {viewingInfo.body ? (
+                    <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Body Content</h3>
+                        <div
+                            className="prose prose-sm sm:prose max-w-none"
+                            dangerouslySetInnerHTML={{ __html: viewingInfo.body }}
+                        />
+                    </div>
+                ) : null}
+
+                {hasNoAttachments ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                        No image or PDF files were uploaded for this package.
+                    </div>
+                ) : null}
+
+                {hasImages ? (
+                    <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <ImageIcon className="w-5 h-5 text-[#B00000]" />
+                            <h3 className="text-lg font-semibold text-gray-900">Images</h3>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {viewingInfo.image_files?.map((image) => (
+                                <a
+                                    key={image.url}
+                                    href={image.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block rounded-lg overflow-hidden border border-gray-200 bg-gray-50 hover:shadow-md transition-shadow"
+                                >
+                                    <img
+                                        src={image.url}
+                                        alt={image.name}
+                                        className="w-full h-56 object-cover"
+                                    />
+                                    <div className="p-3 text-sm text-gray-700 truncate">{image.name}</div>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                ) : null}
+
+                {hasPdfs ? (
+                    <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">PDF Documents</h3>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {viewingInfo.pdf_files?.map((pdf) => (
+                                <button
+                                    key={pdf.url}
+                                    onClick={() => setSelectedPdfUrl(pdf.url)}
+                                    className={`px-3 py-2 rounded-md border text-sm transition-colors ${
+                                        selectedPdfUrl === pdf.url
+                                            ? "bg-[#B00000] text-white border-[#B00000]"
+                                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                                    }`}
+                                >
+                                    {pdf.name}
+                                </button>
+                            ))}
+                        </div>
+                        {selectedPdfUrl ? (
+                            <div className="space-y-3">
+                                <a
+                                    href={selectedPdfUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 text-sm text-[#B00000] hover:underline"
+                                >
+                                    Open selected PDF in new tab
+                                </a>
+                                <iframe
+                                    src={selectedPdfUrl}
+                                    title="PDF Preview"
+                                    className="w-full h-[720px] rounded-lg border border-gray-200"
+                                />
+                            </div>
+                        ) : null}
+                    </div>
+                ) : null}
+            </div>
+        );
     };
 
     if (isAdding) {
@@ -322,6 +461,10 @@ export const ProductExtraInfoTab: React.FC = () => {
 
     return (
         <div className="p-6">
+            {viewingInfo ? (
+                renderDetailView()
+            ) : (
+                <>
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900">Product Extra Information</h2>
@@ -338,7 +481,7 @@ export const ProductExtraInfoTab: React.FC = () => {
 
             {/* List View Container */}
             <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-                {loadingList ? (
+                {loadingList || loadingDetail ? (
                     <div className="p-12 flex justify-center">
                         <Loader2 className="w-8 h-8 animate-spin text-[#B00000]" />
                     </div>
@@ -366,7 +509,14 @@ export const ProductExtraInfoTab: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => handleViewInfo(info.id)}
+                                        className="inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded transition-colors"
+                                    >
+                                        <Eye className="w-4 h-4" />
+                                        View
+                                    </button>
                                     <button
                                         onClick={() => {
                                             setSelectedInfo(info);
@@ -444,6 +594,8 @@ export const ProductExtraInfoTab: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            )}
+                </>
             )}
         </div>
     );
