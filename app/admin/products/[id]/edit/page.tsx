@@ -41,6 +41,9 @@ type ProductFormState = {
     is_contact_only: boolean;
     requires_kyc: boolean;
     weight: number;
+    origin_city: string;
+    origin_state: string;
+    origin_pincode: string;
     length: number;
     width: number;
     height: number;
@@ -103,6 +106,9 @@ const defaultForm: ProductFormState = {
     is_contact_only: false,
     requires_kyc: false,
     weight: 0,
+    origin_city: "",
+    origin_state: "",
+    origin_pincode: "",
     length: 0,
     width: 0,
     height: 0,
@@ -231,6 +237,9 @@ export default function EditProductPage() {
                     product_type: product.type,
                     price: Number(product.price),
                     weight: Number(product.weight ?? 0),
+                    origin_city: product.origin_city || "",
+                    origin_state: product.origin_state || "",
+                    origin_pincode: product.origin_pincode || "",
                     length: Number(product.length ?? 0),
                     width: Number(product.width ?? 0),
                     height: Number(product.height ?? 0),
@@ -429,6 +438,14 @@ export default function EditProductPage() {
                 product_type: form.product_type,
                 price: form.price,
                 stock_quantity: form.product_type === "physical" ? form.stock_quantity : 0,
+                weight: form.product_type === "physical" ? form.weight : undefined,
+                origin_city: form.product_type === "physical" ? form.origin_city.trim() || "" : "",
+                origin_state: form.product_type === "physical" ? form.origin_state.trim() || "" : "",
+                origin_pincode: form.product_type === "physical" ? form.origin_pincode.trim() || "" : "",
+                length: form.product_type === "physical" ? form.length : undefined,
+                width: form.product_type === "physical" ? form.width : undefined,
+                height: form.product_type === "physical" ? form.height : undefined,
+                extra_shipping_charge: form.product_type === "physical" ? form.extra_shipping_charge : undefined,
                 is_featured: form.is_featured,
                 is_coming_soon: form.is_coming_soon,
                 is_contact_only: form.is_contact_only,
@@ -779,6 +796,24 @@ export default function EditProductPage() {
                                     placeholder="0"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Weight (grams)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={form.weight}
+                                    onChange={(e) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            weight: Number(e.target.value),
+                                        }))
+                                    }
+                                    disabled={form.product_type !== "physical"}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent disabled:bg-gray-50"
+                                    placeholder="0"
+                                />
+                            </div>
                         </div>
 
                         {/* Dimensions & Extra Shipping */}
@@ -839,6 +874,47 @@ export default function EditProductPage() {
                                         {Math.ceil((form.length * form.width * form.height) / 5000)} grams
                                     </span>
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Origin City
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={form.origin_city}
+                                        onChange={(e) => setForm((p) => ({ ...p, origin_city: e.target.value }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="Falls back to site setting"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Origin State
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={form.origin_state}
+                                        onChange={(e) => setForm((p) => ({ ...p, origin_state: e.target.value }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="Falls back to site setting"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Origin Pincode
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={form.origin_pincode}
+                                        onChange={(e) => setForm((p) => ({ ...p, origin_pincode: e.target.value }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="Optional"
+                                    />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <p className="text-xs text-gray-500">
+                                        Leave these blank to use the global shipping origin from site settings.
+                                    </p>
+                                </div>
                             </div>
                         )}
 
@@ -857,6 +933,10 @@ export default function EditProductPage() {
                                     const pricePerItem = Number(tier.price_per_item) || 0;
                                     const savingsPerItem = form.price > 0 && pricePerItem > 0 ? form.price - pricePerItem : 0;
                                     const savingsPercent = form.price > 0 ? Math.round((savingsPerItem / form.price) * 100) : 0;
+
+                                    // Example calculation for display (e.g., 2 items)
+                                    const exampleQty = minQty > 0 ? Math.max(minQty, 2) : 2;
+                                    const exampleTotal = pricePerItem > 0 ? (pricePerItem * exampleQty) : 0;
 
                                     return (
                                         <div key={index} className="bg-white p-3 rounded-lg border border-gray-200">
@@ -920,15 +1000,21 @@ export default function EditProductPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Savings & Info */}
+                                            {/* Savings & Delete */}
                                             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
-                                                <div className="flex flex-wrap items-center gap-3">
+                                                <div className="flex flex-col gap-1">
                                                     {savingsPerItem > 0 && (
-                                                        <div className="text-xs text-green-600 font-medium">
-                                                            💰 Save ₹{savingsPerItem.toFixed(0)} ({savingsPercent}%) / item
+                                                        <div className="text-xs text-green-600 mb-1">
+                                                            💰 Save ₹{savingsPerItem.toFixed(0)} ({savingsPercent}%) per item
+                                                        </div>
+                                                    )}
+                                                    {exampleTotal > 0 && (
+                                                        <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                                            📦 Example: {exampleQty} items = <strong>₹{exampleTotal.toFixed(0)}</strong>
                                                         </div>
                                                     )}
                                                 </div>
+
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -942,10 +1028,10 @@ export default function EditProductPage() {
                                                             }]
                                                         }));
                                                     }}
-                                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
-                                                    title="Remove tier"
+                                                    className="inline-flex items-center gap-1 px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded border border-red-200"
                                                 >
-                                                    <Trash className="w-4 h-4" />
+                                                    <Trash className="w-3 h-3" />
+                                                    Remove Tier
                                                 </button>
                                             </div>
                                         </div>

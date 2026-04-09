@@ -51,6 +51,12 @@ type ShopProductDetails = {
     isComingSoon?: boolean;
     isContactOnly?: boolean;
     requiresKyc?: boolean;
+    weight?: number;
+    volumetric_weight?: number;
+    extra_shipping_charge?: number;
+    origin_city?: string | null;
+    origin_state?: string | null;
+    origin_pincode?: string | null;
     description: string;
     english_description?: string;
     malayalam_description?: string;
@@ -99,6 +105,12 @@ function mapApiProductToDetails(p: Product): ShopProductDetails {
         isComingSoon: p.is_coming_soon || false,
         isContactOnly: p.is_contact_only || false,
         requiresKyc: p.requires_kyc || false,
+        weight: p.weight,
+        volumetric_weight: p.volumetric_weight,
+        extra_shipping_charge: p.extra_shipping_charge,
+        origin_city: p.origin_city,
+        origin_state: p.origin_state,
+        origin_pincode: p.origin_pincode,
         description:
             p.description ||
             (p.type === "digital"
@@ -271,6 +283,12 @@ export default function ProductDetailPage() {
             type: product.type,
             quantity: finalQty,
             slug: product.slug,
+            weight: product.weight,
+            volumetric_weight: product.volumetric_weight,
+            extra_shipping_charge: product.extra_shipping_charge,
+            origin_city: product.origin_city || undefined,
+            origin_state: product.origin_state || undefined,
+            origin_pincode: product.origin_pincode || undefined,
             quantity_pricing: product.quantity_pricing,
         });
 

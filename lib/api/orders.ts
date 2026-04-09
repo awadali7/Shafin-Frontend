@@ -3,12 +3,17 @@ import type {
     ApiResponse,
     Order,
     CreateOrderRequest,
+    OrderQuote,
     AdminOrderSummary,
     AdminOrderDetailsResponse,
     UpdateTrackingRequest,
 } from "./types";
 
 export const ordersApi = {
+    quote: async (data: CreateOrderRequest): Promise<ApiResponse<OrderQuote>> => {
+        return apiClient.post<OrderQuote>("/orders/quote", data);
+    },
+
     create: async (data: CreateOrderRequest): Promise<ApiResponse<any>> => {
         return apiClient.post<any>("/orders", data);
     },

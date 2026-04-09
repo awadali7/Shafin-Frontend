@@ -69,6 +69,9 @@ export const productsApi = {
         price: number;
         stock_quantity?: number;
         weight?: number;
+        origin_city?: string;
+        origin_state?: string;
+        origin_pincode?: string;
         length?: number;
         width?: number;
         height?: number;
@@ -119,6 +122,15 @@ export const productsApi = {
             if (data.weight !== undefined) {
                 form.append("weight", String(data.weight));
             }
+            if (data.origin_city !== undefined) {
+                form.append("origin_city", data.origin_city);
+            }
+            if (data.origin_state !== undefined) {
+                form.append("origin_state", data.origin_state);
+            }
+            if (data.origin_pincode !== undefined) {
+                form.append("origin_pincode", data.origin_pincode);
+            }
             if (data.length !== undefined) form.append("length", String(data.length));
             if (data.width !== undefined) form.append("width", String(data.width));
             if (data.height !== undefined) form.append("height", String(data.height));
@@ -165,6 +177,9 @@ export const productsApi = {
             price: number;
             stock_quantity: number;
             weight?: number;
+            origin_city?: string;
+            origin_state?: string;
+            origin_pincode?: string;
             length?: number;
             width?: number;
             height?: number;

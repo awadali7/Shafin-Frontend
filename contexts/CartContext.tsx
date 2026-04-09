@@ -13,6 +13,11 @@ export interface CartItem {
     name: string;
     price: number;
     weight?: number;
+    volumetric_weight?: number;
+    extra_shipping_charge?: number;
+    origin_city?: string;
+    origin_state?: string;
+    origin_pincode?: string;
     image?: string;
     type: "physical" | "digital" | "course";
     quantity: number;
@@ -21,7 +26,7 @@ export interface CartItem {
         min_qty: number; 
         max_qty: number | null; 
         price_per_item: number; 
-        
+        courier_charge?: number;
     }>;
 }
 
@@ -38,6 +43,15 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+
+function normalizeCartItem(item: CartItem): CartItem {
+    return {
+        ...item,
+        origin_city: item.origin_city || undefined,
+        origin_state: item.origin_state || undefined,
+        origin_pincode: item.origin_pincode || undefined,
+    };
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
@@ -65,20 +79,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }, [items]);
 
     const addToCart = (item: CartItem) => {
+        const normalizedItem = normalizeCartItem(item);
         setItems((prevItems) => {
-            const existingItem = prevItems.find((i) => i.id === item.id);
+            const existingItem = prevItems.find((i) => i.id === normalizedItem.id);
             if (existingItem) {
                 return prevItems.map((i) =>
-                    i.id === item.id
+                    i.id === normalizedItem.id
                         ? { 
                             ...i, 
-                            ...item, // Merge new item data (including quantity_pricing)
-                            quantity: i.quantity + item.quantity 
+                            ...normalizedItem, // Merge latest product metadata including origin and pricing
+                            quantity: i.quantity + normalizedItem.quantity 
                         }
                         : i
                 );
             }
-            return [...prevItems, item];
+            return [...prevItems, normalizedItem];
         });
     };
 

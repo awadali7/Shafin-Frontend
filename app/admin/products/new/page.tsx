@@ -36,6 +36,9 @@ type ProductFormState = {
     price: number;
     stock_quantity: number;
     weight: number;
+    origin_city: string;
+    origin_state: string;
+    origin_pincode: string;
     length: number;
     width: number;
     height: number;
@@ -93,6 +96,9 @@ const defaultForm: ProductFormState = {
     price: 0,
     stock_quantity: 0,
     weight: 0,
+    origin_city: "",
+    origin_state: "",
+    origin_pincode: "",
     length: 0,
     width: 0,
     height: 0,
@@ -318,6 +324,9 @@ export default function NewProductPage() {
                 price: form.price,
                 stock_quantity: form.product_type === "physical" ? form.stock_quantity : 0,
                 weight: form.product_type === "physical" ? form.weight : undefined,
+                origin_city: form.product_type === "physical" ? form.origin_city.trim() || undefined : undefined,
+                origin_state: form.product_type === "physical" ? form.origin_state.trim() || undefined : undefined,
+                origin_pincode: form.product_type === "physical" ? form.origin_pincode.trim() || undefined : undefined,
                 length: form.product_type === "physical" ? form.length : undefined,
                 width: form.product_type === "physical" ? form.width : undefined,
                 height: form.product_type === "physical" ? form.height : undefined,
@@ -752,6 +761,47 @@ export default function NewProductPage() {
                                     <span className="text-base text-blue-900 font-bold">
                                         {Math.ceil((form.length * form.width * form.height) / 5000)} grams
                                     </span>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Origin City
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={form.origin_city}
+                                        onChange={(e) => setForm((p) => ({ ...p, origin_city: e.target.value }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="Falls back to site setting"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Origin State
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={form.origin_state}
+                                        onChange={(e) => setForm((p) => ({ ...p, origin_state: e.target.value }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="Falls back to site setting"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Origin Pincode
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={form.origin_pincode}
+                                        onChange={(e) => setForm((p) => ({ ...p, origin_pincode: e.target.value }))}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                        placeholder="Optional"
+                                    />
+                                </div>
+                                <div className="md:col-span-4">
+                                    <p className="text-xs text-gray-500">
+                                        Leave these blank to use the global shipping origin from site settings.
+                                    </p>
                                 </div>
                             </div>
                         )}

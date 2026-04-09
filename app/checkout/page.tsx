@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CreditCard, MapPin, Package } from "lucide-react";
@@ -13,6 +13,7 @@ import RegisterDrawer from "@/components/RegisterDrawer";
 import BusinessUpgradeModal from "@/components/BusinessUpgradeModal";
 import ProductTermsModal from "@/components/ProductTermsModal";
 import { setRedirectPath, shouldPreserveRedirect } from "@/lib/utils/redirect";
+import type { OrderQuote } from "@/lib/api/types";
 
 type RazorpaySuccessResponse = {
     razorpay_order_id: string;
@@ -62,7 +63,7 @@ async function loadRazorpayScript(): Promise<boolean> {
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { items, getTotalPrice, clearCart } = useCart();
+    const { items, clearCart } = useCart();
     const { isAuth, user } = useAuth();
     const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
@@ -84,81 +85,76 @@ export default function CheckoutPage() {
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    const [quote, setQuote] = useState<OrderQuote | null>(null);
+    const [isQuoteLoading, setIsQuoteLoading] = useState(false);
 
     const hasPhysicalItems = items.some((item) => item.type === "physical");
     const hasDigitalItems = items.some(
         (item) => item.type === "digital" || item.type === "course"
     );
+    const canShowOrderSummary =
+        !hasPhysicalItems ||
+        Boolean(
+            formData.city.trim() &&
+            formData.state.trim() &&
+            formData.pincode.trim()
+        );
+    const quotePayload = {
+        items: items.map((item) => ({
+            product_id: item.id,
+            quantity: item.quantity,
+        })),
+        customer: {
+            city: formData.city,
+            state: formData.state,
+            pincode: formData.pincode,
+        },
+    };
 
-    // Calculate courier charges and items subtotal separately (must be before early return)
-    const { itemsSubtotal, totalWeight, totalExtraShipping } = useMemo(() => {
-        let itemsTotal = 0;
-        let weightTotal = 0;
-        let extraShippingTotal = 0;
+    useEffect(() => {
+        let active = true;
 
-        items.forEach((item: any) => {
-            const qty = Number(item.quantity) || 1;
-            const weight = item.weight !== undefined && item.weight !== null ? Number(item.weight) : 0;
-            const volWeight = item.volumetric_weight !== undefined && item.volumetric_weight !== null ? Number(item.volumetric_weight) : 0;
-            const chargeableWeight = Math.max(weight, volWeight);
-            const extraCharge = item.extra_shipping_charge !== undefined && item.extra_shipping_charge !== null ? Number(item.extra_shipping_charge) : 0;
+        if (!canShowOrderSummary || items.length === 0) {
+            setQuote(null);
+            setIsQuoteLoading(false);
+            return () => {
+                active = false;
+            };
+        }
 
-            if (item.type === 'physical') {
-                weightTotal += chargeableWeight * qty;
-                extraShippingTotal += extraCharge * qty;
-            }
-
-            if (item.quantity_pricing && item.quantity_pricing.length > 0) {
-                const tier = item.quantity_pricing.find((t: any) => {
-                    const minQty = Number(t.min_qty) || 1;
-                    const maxQty = t.max_qty && String(t.max_qty) !== "" ? Number(t.max_qty) : Infinity;
-                    return qty >= minQty && qty <= maxQty;
-                });
-                if (tier) {
-                    itemsTotal += Number(tier.price_per_item) * qty;
-                } else {
-                    itemsTotal += Number(item.price) * qty;
+        const fetchQuote = async () => {
+            try {
+                setIsQuoteLoading(true);
+                const response = await ordersApi.quote(quotePayload);
+                if (!active) return;
+                setQuote(response.data || null);
+            } catch {
+                if (!active) return;
+                setQuote(null);
+            } finally {
+                if (active) {
+                    setIsQuoteLoading(false);
                 }
-            } else {
-                itemsTotal += Number(item.price) * qty;
             }
-        });
+        };
 
-        return { itemsSubtotal: itemsTotal, totalWeight: weightTotal, totalExtraShipping: extraShippingTotal };
-    }, [items]);
+        fetchQuote();
 
-    const estimatedCourierCharges = useMemo(() => {
-        if (!hasPhysicalItems || totalWeight === 0) return 0;
+        return () => {
+            active = false;
+        };
+    }, [
+        canShowOrderSummary,
+        items,
+        formData.city,
+        formData.state,
+        formData.pincode,
+    ]);
 
-        // Simple zone estimation for UI preview. Actual calculation happens on backend
-        // We will default to national rates for preview if address is not filled,
-        // or try to match Local/Regional if they match origin.
-        const originCity = "Ernakulam";
-        const originState = "Kerala";
-
-        let zone = "national";
-        if (formData.city?.trim().toLowerCase() === originCity.toLowerCase()) {
-            zone = "local";
-        } else if (formData.state?.trim().toLowerCase() === originState.toLowerCase()) {
-            zone = "regional";
-        }
-
-        let baseWeight = 1000, baseRate = 100, addWeight = 1000, addRate = 90;
-        if (zone === 'local') {
-            baseRate = 50; addRate = 40;
-        } else if (zone === 'regional') {
-            baseRate = 70; addRate = 60;
-        }
-
-        if (totalWeight <= baseWeight) return baseRate;
-        const extraWeight = totalWeight - baseWeight;
-        const slabs = Math.ceil(extraWeight / addWeight);
-        return baseRate + (slabs * addRate);
-    }, [hasPhysicalItems, totalWeight, formData.city, formData.state]);
-
-    const courierCharges = estimatedCourierCharges + totalExtraShipping;
-    const subtotal = itemsSubtotal + courierCharges;
-    const total = subtotal; // No additional charges
+    const itemsSubtotal = quote?.subtotal ?? 0;
+    const courierCharges = quote?.shipping_cost ?? 0;
+    const total = quote?.total ?? 0;
+    const shippingGroups = quote?.shipping_groups ?? [];
 
     // If cart no longer contains physical items, force a valid payment method
     useEffect(() => {
@@ -655,7 +651,6 @@ export default function CheckoutPage() {
                                 </>
                             )}
 
-                            {/* Payment Method */}
                             <div className="pt-4 border-t border-gray-200">
                                 <div className="flex items-center space-x-2 mb-4">
                                     <CreditCard className="w-5 h-5 text-[#B00000]" />
@@ -674,10 +669,7 @@ export default function CheckoutPage() {
                                             type="radio"
                                             name="paymentMethod"
                                             value="card"
-                                            checked={
-                                                formData.paymentMethod ===
-                                                "card"
-                                            }
+                                            checked={formData.paymentMethod === "card"}
                                             onChange={handleInputChange}
                                             className="text-[#B00000] focus:ring-[#B00000]"
                                         />
@@ -690,31 +682,24 @@ export default function CheckoutPage() {
                                             type="radio"
                                             name="paymentMethod"
                                             value="upi"
-                                            checked={
-                                                formData.paymentMethod === "upi"
-                                            }
+                                            checked={formData.paymentMethod === "upi"}
                                             onChange={handleInputChange}
                                             className="text-[#B00000] focus:ring-[#B00000]"
                                         />
-                                        <span className="text-gray-700">
-                                            UPI
-                                        </span>
+                                        <span className="text-gray-700">UPI</span>
                                     </label>
                                     <label className="flex items-center space-x-3 p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
                                         <input
                                             type="radio"
                                             name="paymentMethod"
                                             value="cod"
-                                            checked={
-                                                formData.paymentMethod === "cod"
-                                            }
+                                            checked={formData.paymentMethod === "cod"}
                                             onChange={handleInputChange}
                                             disabled={!hasPhysicalItems}
                                             className="text-[#B00000] focus:ring-[#B00000]"
                                         />
                                         <span className="text-gray-700">
-                                            Cash on Delivery (Physical products
-                                            only)
+                                            Cash on Delivery (Physical products only)
                                         </span>
                                     </label>
                                 </div>
@@ -741,6 +726,35 @@ export default function CheckoutPage() {
                         </h2>
                         <div className="space-y-3 mb-4">
                             {items.map((item) => (
+                                (() => {
+                                    const quotedItem = quote?.items?.find(
+                                        (entry) => entry.product_id === item.id
+                                    );
+                                    const lineTotal =
+                                        quotedItem?.line_total ??
+                                        (() => {
+                                            if (
+                                                item.quantity_pricing &&
+                                                item.quantity_pricing.length > 0
+                                            ) {
+                                                const tier = item.quantity_pricing.find((t) => {
+                                                    const minQty = t.min_qty || 1;
+                                                    const maxQty = t.max_qty || Infinity;
+                                                    return (
+                                                        item.quantity >= minQty &&
+                                                        item.quantity <= maxQty
+                                                    );
+                                                });
+
+                                                if (tier) {
+                                                    return tier.price_per_item * item.quantity;
+                                                }
+                                            }
+
+                                            return item.price * item.quantity;
+                                        })();
+
+                                    return (
                                 <div
                                     key={item.id}
                                     className="flex items-start space-x-3 pb-3 border-b border-gray-100"
@@ -762,95 +776,94 @@ export default function CheckoutPage() {
                                             Qty: {item.quantity}
                                         </p>
                                         <p className="text-sm font-semibold text-[#B00000] mt-1">
-                                            ₹
-                                            {(() => {
-                                                // Apply tiered pricing if available
-                                                if (
-                                                    item.quantity_pricing &&
-                                                    item.quantity_pricing
-                                                        .length > 0
-                                                ) {
-                                                    const tier =
-                                                        item.quantity_pricing.find(
-                                                            (t) => {
-                                                                const minQty =
-                                                                    t.min_qty ||
-                                                                    1;
-                                                                const maxQty =
-                                                                    t.max_qty ||
-                                                                    Infinity;
-                                                                return (
-                                                                    item.quantity >=
-                                                                    minQty &&
-                                                                    item.quantity <=
-                                                                    maxQty
-                                                                );
-                                                            }
-                                                        );
-
-                                                    if (tier) {
-                                                        return (
-                                                            (tier.price_per_item * item.quantity)
-                                                        ).toFixed(2);
-                                                    }
-                                                }
-
-                                                // Fallback to base price
-                                                return (
-                                                    item.price * item.quantity
-                                                ).toFixed(2);
-                                            })()}
+                                            Rs.{" "}
+                                            {lineTotal.toFixed(2)}
                                         </p>
                                     </div>
                                 </div>
+                                    );
+                                })()
                             ))}
                         </div>
-                        <div className="space-y-2 pt-4 border-t border-gray-200">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600">Items Subtotal</span>
-                                <span className="text-slate-900">
-                                    ₹{itemsSubtotal.toFixed(2)}
-                                </span>
+                        {!canShowOrderSummary ? (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                <p className="text-sm font-medium text-slate-900">
+                                    Enter your city, state, and pincode to calculate courier charges.
+                                </p>
+                                <p className="mt-2 text-xs text-slate-600">
+                                    Product details are shown above. Shipping charges and the final total will appear after the delivery location is entered.
+                                </p>
                             </div>
-                            {courierCharges > 0 && (
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Courier Charges</span>
-                                    <span className="text-slate-900">
-                                        ₹{courierCharges.toFixed(2)}
-                                    </span>
+                        ) : isQuoteLoading ? (
+                            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                                <p className="text-sm text-slate-700">
+                                    Calculating latest shipping and total...
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="space-y-2 pt-4 border-t border-gray-200">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600">Items Subtotal</span>
+                                        <span className="text-slate-900">
+                                            Rs. {itemsSubtotal.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    {hasPhysicalItems && (
+                                        <>
+                                            {shippingGroups.map((group) => (
+                                                <div
+                                                    key={group.key}
+                                                    className="flex items-center justify-between text-sm"
+                                                >
+                                                    <span className="text-gray-600">
+                                                        {group.origin_city}, {group.origin_state} ({group.zone})
+                                                    </span>
+                                                    <span className="text-slate-900">
+                                                        Rs. {group.slabCost.toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-600">Courier Charges</span>
+                                                <span className="text-slate-900">
+                                                    Rs. {courierCharges.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </>
+                                    )}
+                                    <div className="flex items-center justify-between text-lg font-bold pt-2 border-t border-gray-200">
+                                        <span className="text-slate-900">Total</span>
+                                        <span className="text-[#B00000]">
+                                            Rs. {total.toFixed(2)}
+                                        </span>
+                                    </div>
                                 </div>
-                            )}
-                            <div className="flex items-center justify-between text-lg font-bold pt-2 border-t border-gray-200">
-                                <span className="text-slate-900">Total</span>
-                                <span className="text-[#B00000]">
-                                    ₹{total.toFixed(2)}
-                                </span>
-                            </div>
-                        </div>
 
-                        {/* Delivery Info Notice */}
-                        {hasPhysicalItems && (
-                            <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                                <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                                    <Package className="w-4 h-4 text-[#B00000]" />
-                                    Delivery Information
-                                </h3>
-                                <div className="space-y-1 text-xs text-slate-600">
-                                    <div className="flex justify-between">
-                                        <span>Within Kerala:</span>
-                                        <span className="font-medium">2–3 business days</span>
+                                {hasPhysicalItems && (
+                                    <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                        <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                                            <Package className="w-4 h-4 text-[#B00000]" />
+                                            Delivery Information
+                                        </h3>
+                                        <div className="space-y-1 text-xs text-slate-600">
+                                            <div className="flex justify-between">
+                                                <span>Within Kerala:</span>
+                                                <span className="font-medium">2-3 business days</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Outside Kerala:</span>
+                                                <span className="font-medium">3-10 business days</span>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 pt-3 border-t border-slate-200">
+                                            <p className="text-[11px] text-[#B00000] leading-relaxed">
+                                                <strong>Note:</strong> Contact support within <strong>12 hours</strong> of purchase for any special courier service requests.
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span>Outside Kerala:</span>
-                                        <span className="font-medium">3–10 business days</span>
-                                    </div>
-                                </div>
-                                <div className="mt-3 pt-3 border-t border-slate-200">
-                                    <p className="text-[11px] text-[#B00000] leading-relaxed">
-                                        <strong>Note:</strong> Contact support within <strong>12 hours</strong> of purchase for any special courier service requests.
-                                    </p>
-                                </div>
-                            </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

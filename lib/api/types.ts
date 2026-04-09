@@ -473,6 +473,9 @@ export interface ProductVideo {
 export interface Product {
     id: string;
     weight?: number;
+    origin_city?: string | null;
+    origin_state?: string | null;
+    origin_pincode?: string | null;
     name: string;
     slug: string;
     description?: string;
@@ -562,6 +565,40 @@ export interface CreateOrderRequest {
         state?: string;
         pincode?: string;
     };
+}
+
+export interface OrderQuoteItem {
+    product_id: string;
+    product_name: string;
+    product_slug?: string;
+    cover_image?: string | null;
+    product_type: ProductType;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+    price_per_item: number;
+    courier_charge: number;
+    origin_city?: string | null;
+    origin_state?: string | null;
+    zone?: "local" | "regional" | "national";
+}
+
+export interface OrderQuoteGroup {
+    key: string;
+    origin_city: string;
+    origin_state: string;
+    zone: "local" | "regional" | "national";
+    totalWeight: number;
+    slabCost: number;
+}
+
+export interface OrderQuote {
+    subtotal: number;
+    discount: number;
+    shipping_cost: number;
+    total: number;
+    items: OrderQuoteItem[];
+    shipping_groups: OrderQuoteGroup[];
 }
 
 export interface Order {
