@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Plus, X, Upload, FileText, ArrowLeft, Loader2, Calendar, Eye, Image as ImageIcon } from "lucide-react";
+import React, { useDeferredValue, useEffect, useState } from "react";
+import { Plus, X, Upload, FileText, ArrowLeft, Loader2, Calendar, Eye, Image as ImageIcon, Search } from "lucide-react";
 import { toast } from "sonner";
 import { productExtraInfoApi, ProductExtraInfo } from "@/lib/api/product-extra-info";
 import { adminApi } from "@/lib/api/admin";
@@ -13,6 +13,7 @@ export const ProductExtraInfoTab: React.FC = () => {
     const [loadingList, setLoadingList] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [infos, setInfos] = useState<ProductExtraInfo[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const [viewingInfo, setViewingInfo] = useState<ProductExtraInfo | null>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [selectedPdfUrl, setSelectedPdfUrl] = useState("");
@@ -32,6 +33,25 @@ export const ProductExtraInfoTab: React.FC = () => {
     const [selectedUserId, setSelectedUserId] = useState("");
     const [grantProductName, setGrantProductName] = useState("");
     const [isGranting, setIsGranting] = useState(false);
+    const deferredSearchTerm = useDeferredValue(searchTerm);
+
+    const normalizedSearchTerm = deferredSearchTerm.trim().toLowerCase();
+    const filteredInfos = infos.filter((info) => {
+        if (!normalizedSearchTerm) return true;
+
+        const searchableText = [
+            info.title,
+            info.slug,
+            info.body?.replace(/<[^>]*>/g, " "),
+            ...(info.image_files?.map((image) => image.name) || []),
+            ...(info.pdf_files?.map((pdf) => pdf.name) || []),
+        ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+        return searchableText.includes(normalizedSearchTerm);
+    });
 
     const fetchInfos = async () => {
         setLoadingList(true);
@@ -479,6 +499,19 @@ export const ProductExtraInfoTab: React.FC = () => {
                 </button>
             </div>
 
+            <div className="mb-6">
+                <div className="relative max-w-xl">
+                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search by title, slug, body text, image name, or PDF name"
+                        className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm text-gray-900 shadow-sm focus:border-[#B00000] focus:outline-none focus:ring-2 focus:ring-[#B00000]/15"
+                    />
+                </div>
+            </div>
+
             {/* List View Container */}
             <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                 {loadingList || loadingDetail ? (
@@ -491,9 +524,17 @@ export const ProductExtraInfoTab: React.FC = () => {
                         <h3 className="text-lg font-medium text-gray-900 mb-1">No Extra Information</h3>
                         <p className="text-sm">Get started by clicking the "Add New" button.</p>
                     </div>
+                ) : filteredInfos.length === 0 ? (
+                    <div className="p-12 text-center text-gray-500 flex flex-col items-center justify-center">
+                        <Search className="w-12 h-12 text-gray-300 mb-3" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">No matching results</h3>
+                        <p className="text-sm">
+                            No packages matched "{searchTerm.trim()}". Try a different keyword.
+                        </p>
+                    </div>
                 ) : (
                     <div className="divide-y divide-gray-200">
-                        {infos.map(info => (
+                        {filteredInfos.map(info => (
                             <div key={info.id} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
                                 <div className="flex items-start gap-4">
                                     <div className="p-3 bg-red-50 rounded-lg text-[#B00000]">

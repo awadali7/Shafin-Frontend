@@ -48,6 +48,7 @@ type ProductFormState = {
     is_coming_soon: boolean;
     is_contact_only: boolean;
     requires_kyc: boolean;
+    show_price_before_kyc: boolean;
     cover_image: File | null;
     digital_file: File | null;
     product_detail_pdf: File | null;
@@ -108,6 +109,7 @@ const defaultForm: ProductFormState = {
     is_coming_soon: false,
     is_contact_only: false,
     requires_kyc: false,
+    show_price_before_kyc: false,
     cover_image: null,
     digital_file: null,
     product_detail_pdf: null,
@@ -335,6 +337,7 @@ export default function NewProductPage() {
                 is_coming_soon: form.is_coming_soon,
                 is_contact_only: form.is_contact_only,
                 requires_kyc: form.requires_kyc,
+                show_price_before_kyc: form.show_price_before_kyc,
                 cover_image: form.cover_image,
                 digital_file: form.product_type === "digital" ? form.digital_file : undefined,
                 product_extra_info_id: form.product_extra_info_id || undefined,
@@ -1275,7 +1278,28 @@ export default function NewProductPage() {
                                 />
                                 Requires KYC 🔒
                             </label>
+
+                            <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                                <input
+                                    type="checkbox"
+                                    checked={form.show_price_before_kyc}
+                                    onChange={(e) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            show_price_before_kyc: e.target.checked,
+                                        }))
+                                    }
+                                    disabled={!form.requires_kyc}
+                                    className="w-4 h-4 text-[#B00000] border-gray-300 rounded focus:ring-[#B00000] disabled:opacity-50"
+                                />
+                                Show Price Before KYC
+                            </label>
                         </div>
+                        {form.requires_kyc && (
+                            <p className="mt-3 text-xs text-gray-500">
+                                Enable this if customers should see the price even before Business KYC approval.
+                            </p>
+                        )}
                     </div>
 
                     {/* Action Buttons */}

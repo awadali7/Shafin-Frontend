@@ -82,6 +82,7 @@ export const productsApi = {
         is_coming_soon?: boolean;
         is_contact_only?: boolean;
         requires_kyc?: boolean;
+        show_price_before_kyc?: boolean;
         cover_image?: File | null;
         digital_file?: File | null;
         product_detail_pdf?: File | null;
@@ -117,6 +118,11 @@ export const productsApi = {
             form.append("is_contact_only", String(data.is_contact_only));
         if (data.requires_kyc !== undefined)
             form.append("requires_kyc", String(data.requires_kyc));
+        if (data.show_price_before_kyc !== undefined)
+            form.append(
+                "show_price_before_kyc",
+                String(data.show_price_before_kyc)
+            );
         if (data.product_type === "physical") {
             form.append("stock_quantity", String(data.stock_quantity ?? 0));
             if (data.weight !== undefined) {
@@ -191,6 +197,7 @@ export const productsApi = {
             is_coming_soon: boolean;
             is_contact_only: boolean;
             requires_kyc: boolean;
+            show_price_before_kyc: boolean;
             cover_image: File | null;
             digital_file: File | null;
             product_detail_pdf: File | null;

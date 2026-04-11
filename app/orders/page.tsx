@@ -84,6 +84,37 @@ function getEstimatedDeliveryDate(order: Order): string | null {
     return date.toISOString();
 }
 
+function getDisplayOrderNumber(order: Order): string {
+    return String(order.order_number || order.id.slice(0, 8));
+}
+
+function formatCurrency(value: number | string) {
+    return `Rs. ${Number(value || 0).toFixed(2)}`;
+}
+
+async function loadImageAsDataUrl(src: string): Promise<string> {
+    return await new Promise((resolve, reject) => {
+        const image = new window.Image();
+        image.crossOrigin = "anonymous";
+        image.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+
+            const context = canvas.getContext("2d");
+            if (!context) {
+                reject(new Error("Failed to create canvas context"));
+                return;
+            }
+
+            context.drawImage(image, 0, 0);
+            resolve(canvas.toDataURL("image/png"));
+        };
+        image.onerror = () => reject(new Error("Failed to load logo image"));
+        image.src = src;
+    });
+}
+
 export default function OrdersPage() {
     const { isAuth, user, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -93,6 +124,7 @@ export default function OrdersPage() {
     const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
     const [processingOrderId, setProcessingOrderId] = useState<string | null>(null);
+    const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
 
     const toggleOrderExpansion = (orderId: string) => {
         const newExpanded = new Set(expandedOrders);
@@ -110,6 +142,253 @@ export default function OrdersPage() {
     };
 
     const BACKEND_BASE_URL = getBackendBaseUrl();
+
+    const handleDownloadInvoice = async (order: Order) => {
+        try {
+            setDownloadingInvoiceId(order.id);
+
+            const { jsPDF } = await import("jspdf");
+            const pdf = new jsPDF();
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 14;
+            const contentWidth = pageWidth - margin * 2;
+            const statusText = order.status.toUpperCase();
+            const items = order.items || [];
+            const logoUrl = `${window.location.origin}/images/logo/header-logo.png`;
+            let y = margin;
+
+            const ensureSpace = (requiredHeight: number) => {
+                if (y + requiredHeight <= pageHeight - margin) return;
+                pdf.addPage();
+                y = margin;
+            };
+
+            const drawText = (
+                text: string,
+                x: number,
+                currentY: number,
+                options?: {
+                    width?: number;
+                    size?: number;
+                    bold?: boolean;
+                    color?: [number, number, number];
+                    align?: "left" | "center" | "right";
+                    lineHeight?: number;
+                }
+            ) => {
+                const width = options?.width || contentWidth;
+                const size = options?.size || 10;
+                const lineHeight = options?.lineHeight || 5;
+
+                pdf.setFont("helvetica", options?.bold ? "bold" : "normal");
+                pdf.setFontSize(size);
+                pdf.setTextColor(...(options?.color || [28, 28, 28]));
+
+                const lines = pdf.splitTextToSize(text, width);
+                pdf.text(lines, x, currentY, { align: options?.align || "left" });
+                return currentY + lines.length * lineHeight;
+            };
+
+            const drawLabelValue = (label: string, value: string, x: number, topY: number, width: number) => {
+                let nextY = drawText(label, x, topY, {
+                    width,
+                    size: 8,
+                    bold: true,
+                    color: [107, 114, 128],
+                    lineHeight: 4,
+                });
+                nextY = drawText(value, x, nextY + 1, {
+                    width,
+                    size: 11,
+                    bold: true,
+                    color: [17, 24, 39],
+                    lineHeight: 5,
+                });
+                return nextY;
+            };
+
+            const drawSectionTitle = (title: string) => {
+                ensureSpace(10);
+                y += 4;
+                y = drawText(title, margin, y, {
+                    size: 10,
+                    bold: true,
+                    color: [31, 41, 55],
+                });
+                y += 4;
+            };
+
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(0, 0, pageWidth, pageHeight, "F");
+
+            try {
+                const logoDataUrl = await loadImageAsDataUrl(logoUrl);
+                pdf.addImage(logoDataUrl, "PNG", margin, y, 34, 12);
+            } catch (logoError) {
+                console.error("Failed to load invoice logo", logoError);
+                drawText("DIASTOOLS", margin, y + 7, {
+                    width: 40,
+                    size: 14,
+                    bold: true,
+                    color: [17, 24, 39],
+                });
+            }
+
+            drawText("Invoice", pageWidth - margin, y + 5, {
+                width: 60,
+                size: 18,
+                bold: true,
+                color: [17, 24, 39],
+                align: "right",
+            });
+            drawText(`Order ${getDisplayOrderNumber(order)}`, pageWidth - margin, y + 11, {
+                width: 60,
+                size: 9,
+                color: [100, 116, 139],
+                align: "right",
+            });
+            y += 20;
+
+            pdf.setDrawColor(229, 231, 235);
+            pdf.line(margin, y, pageWidth - margin, y);
+            y += 8;
+
+            const metaY = y;
+            const colWidth = contentWidth / 3;
+            drawLabelValue("Invoice No", getDisplayOrderNumber(order), margin, metaY, colWidth - 4);
+            drawLabelValue("Date", formatShortDate(order.created_at), margin + colWidth, metaY, colWidth - 4);
+            drawLabelValue("Status", statusText, margin + colWidth * 2, metaY, colWidth - 4);
+            y += 18;
+
+            drawSectionTitle("Order Items");
+            ensureSpace(16);
+            pdf.setDrawColor(229, 231, 235);
+            pdf.line(margin, y, pageWidth - margin, y);
+            y += 7;
+            drawText("Item", margin, y, { size: 8, bold: true, color: [107, 114, 128] });
+            drawText("Qty", margin + 124, y, { size: 8, bold: true, color: [107, 114, 128], align: "right", width: 10 });
+            drawText("Price", margin + 148, y, { size: 8, bold: true, color: [107, 114, 128], align: "right", width: 16 });
+            drawText("Total", pageWidth - margin, y, { size: 8, bold: true, color: [107, 114, 128], align: "right", width: 20 });
+            y += 5;
+            pdf.line(margin, y, pageWidth - margin, y);
+            y += 5;
+
+            items.forEach((item) => {
+                const rowHeight = 14;
+                ensureSpace(rowHeight + 4);
+                const itemTotal = Number(item.unit_price) * Number(item.quantity);
+                const itemNameY = drawText(item.product_name, margin + 4, y + 5, {
+                    width: 100,
+                    size: 10,
+                    bold: true,
+                    color: [15, 23, 42],
+                    lineHeight: 4.5,
+                });
+                drawText(item.product_type === "digital" ? "Digital" : "Physical", margin + 4, itemNameY, {
+                    width: 100,
+                    size: 8,
+                    color: [100, 116, 139],
+                });
+                drawText(String(item.quantity), margin + 126, y + 8, {
+                    width: 12,
+                    size: 9,
+                    bold: true,
+                    color: [31, 41, 55],
+                    align: "right",
+                });
+                drawText(formatCurrency(item.unit_price), margin + 154, y + 8, {
+                    width: 24,
+                    size: 9,
+                    color: [31, 41, 55],
+                    align: "right",
+                });
+                drawText(formatCurrency(itemTotal), pageWidth - margin - 4, y + 8, {
+                    width: 24,
+                    size: 9,
+                    bold: true,
+                    color: [17, 24, 39],
+                    align: "right",
+                });
+                y += rowHeight;
+                pdf.setDrawColor(243, 244, 246);
+                pdf.line(margin, y, pageWidth - margin, y);
+                y += 3;
+            });
+
+            drawSectionTitle("Payment Summary");
+            ensureSpace(26);
+            const summaryBoxWidth = 72;
+            const summaryBoxX = pageWidth - margin - summaryBoxWidth;
+            drawText("Subtotal", summaryBoxX + 4, y + 5, { size: 9, color: [71, 85, 105] });
+            drawText(formatCurrency(order.subtotal), summaryBoxX + summaryBoxWidth - 4, y + 7, {
+                size: 9,
+                color: [15, 23, 42],
+                align: "right",
+                width: 30,
+            });
+            drawText("Shipping", summaryBoxX + 4, y + 12, { size: 9, color: [71, 85, 105] });
+            drawText(Number(order.shipping_cost) > 0 ? formatCurrency(order.shipping_cost) : "Free", summaryBoxX + summaryBoxWidth - 4, y + 14, {
+                size: 9,
+                color: [15, 23, 42],
+                align: "right",
+                width: 30,
+            });
+            pdf.setDrawColor(203, 213, 225);
+            pdf.line(summaryBoxX + 4, y + 17, summaryBoxX + summaryBoxWidth - 4, y + 17);
+            drawText("Total", summaryBoxX + 4, y + 24, { size: 10, bold: true, color: [17, 24, 39] });
+            drawText(formatCurrency(order.total), summaryBoxX + summaryBoxWidth - 4, y + 24, {
+                size: 10,
+                bold: true,
+                color: [17, 24, 39],
+                align: "right",
+                width: 30,
+            });
+            y += 30;
+
+            if (order.tracking_number || order.courier_service_type || order.destination_city || order.delivered_at) {
+                drawSectionTitle("Delivery Details");
+                ensureSpace(16);
+                const details: string[] = [];
+                if (order.tracking_number) details.push(`Tracking: ${order.tracking_number}`);
+                if (order.courier_service_type) details.push(`Courier: ${order.courier_service_type}`);
+                if (order.origin_city) details.push(`Origin: ${order.origin_city}`);
+                if (order.destination_city) details.push(`Destination: ${order.destination_city}`);
+                if (order.delivered_at) details.push(`Delivered: ${formatShortDate(order.delivered_at)}`);
+
+                let detailsY = y + 7;
+                details.forEach((detail) => {
+                    detailsY = drawText(detail, margin + 5, detailsY, {
+                        width: contentWidth - 10,
+                        size: 9,
+                        color: [51, 65, 85],
+                    });
+                });
+                y = detailsY + 2;
+            }
+
+            ensureSpace(20);
+            pdf.setDrawColor(226, 232, 240);
+            pdf.line(margin, pageHeight - 22, pageWidth - margin, pageHeight - 22);
+            drawText("Thank you for your order.", margin, pageHeight - 15, {
+                size: 9,
+                color: [107, 114, 128],
+            });
+            drawText(`Generated on ${new Date().toLocaleString()}`, pageWidth - margin, pageHeight - 15, {
+                size: 8,
+                color: [100, 116, 139],
+                align: "right",
+                width: 70,
+            });
+
+            pdf.save(`invoice-${getDisplayOrderNumber(order)}.pdf`);
+        } catch (error) {
+            console.error("Invoice download failed", error);
+            toast.error("Failed to download invoice");
+        } finally {
+            setDownloadingInvoiceId(null);
+        }
+    };
 
     const handleContinuePayment = async (orderId: string, orderTotal: number) => {
         try {
@@ -348,7 +627,7 @@ export default function OrdersPage() {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
                                                 <h3 className="text-lg font-semibold text-slate-900">
-                                                    #{order.order_number || order.id.slice(0, 8)}
+                                                    #{getDisplayOrderNumber(order)}
                                                 </h3>
                                                 <Badge variant={order.status as any}>
                                                     {order.status.toUpperCase()}
@@ -652,6 +931,24 @@ export default function OrdersPage() {
                                                         value={`₹${Number(order.total).toFixed(2)}`}
                                                     />
                                                 </div>
+
+                                                <button
+                                                    onClick={() => handleDownloadInvoice(order)}
+                                                    disabled={downloadingInvoiceId === order.id}
+                                                    className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                                                >
+                                                    {downloadingInvoiceId === order.id ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            <span>Preparing Invoice...</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Download className="w-4 h-4" />
+                                                            <span>Download Invoice</span>
+                                                        </>
+                                                    )}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>

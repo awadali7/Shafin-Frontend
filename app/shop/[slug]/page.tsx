@@ -51,6 +51,7 @@ type ShopProductDetails = {
     isComingSoon?: boolean;
     isContactOnly?: boolean;
     requiresKyc?: boolean;
+    showPriceBeforeKyc?: boolean;
     weight?: number;
     volumetric_weight?: number;
     extra_shipping_charge?: number;
@@ -105,6 +106,7 @@ function mapApiProductToDetails(p: Product): ShopProductDetails {
         isComingSoon: p.is_coming_soon || false,
         isContactOnly: p.is_contact_only || false,
         requiresKyc: p.requires_kyc || false,
+        showPriceBeforeKyc: p.show_price_before_kyc || false,
         weight: p.weight,
         volumetric_weight: p.volumetric_weight,
         extra_shipping_charge: p.extra_shipping_charge,
@@ -565,8 +567,11 @@ export default function ProductDetailPage() {
                                 user?.user_type === "business_owner" &&
                                 userKycStatus?.status === "verified"
                             );
+                            const canShowPrice =
+                                showPriceAndAddToCart ||
+                                product.showPriceBeforeKyc;
 
-                            if (!showPriceAndAddToCart) {
+                            if (!canShowPrice) {
                                 return (
                                     <div className="flex flex-col w-full gap-3 mt-4 mb-4 p-4 border rounded-lg bg-amber-50 border-amber-200">
                                         <div className="flex items-center gap-2">
@@ -593,11 +598,13 @@ export default function ProductDetailPage() {
                                         {product.isContactOnly ? (
                                             // Contact Only Product
                                             <>
-                                                <div className="flex items-baseline gap-2">
-                                                    <p className="text-3xl font-bold text-[#B00000]">
-                                                        ₹{product.price.toLocaleString("en-IN")}
-                                                    </p>
-                                                </div>
+                                                {canShowPrice ? (
+                                                    <div className="flex items-baseline gap-2">
+                                                        <p className="text-3xl font-bold text-[#B00000]">
+                                                            ₹{product.price.toLocaleString("en-IN")}
+                                                        </p>
+                                                    </div>
+                                                ) : null}
                                                 <p className="text-xs text-gray-600 mt-1">
                                                     {product.type === "digital" ? "Digital Product" : "Physical Product"} • Please contact us via WhatsApp
                                                 </p>
@@ -605,18 +612,22 @@ export default function ProductDetailPage() {
                                         ) : (
                                             // Normal Product
                                             <>
-                                                <div className="flex items-baseline gap-2">
-                                                    <p className="text-3xl font-bold text-[#B00000]">
-                                                        ₹{product.price.toLocaleString("en-IN")}
-                                                    </p>
-                                                    {product.type !== "digital" && quantity > 1 && (
-                                                        <span className="text-xs text-gray-500">
-                                                            per item
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                {canShowPrice ? (
+                                                    <div className="flex items-baseline gap-2">
+                                                        <p className="text-3xl font-bold text-[#B00000]">
+                                                            ₹{product.price.toLocaleString("en-IN")}
+                                                        </p>
+                                                        {product.type !== "digital" && quantity > 1 && (
+                                                            <span className="text-xs text-gray-500">
+                                                                per item
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ) : null}
                                                 <p className="text-xs text-gray-600 mt-1">
-                                                    {product.type === "digital"
+                                                    {!showPriceAndAddToCart && product.requiresKyc
+                                                        ? "Business KYC required to purchase"
+                                                        : product.type === "digital"
                                                         ? `Instant download (${product.digitalFile?.format?.toUpperCase() ||
                                                         "DIGITAL"
                                                         })`
@@ -629,7 +640,8 @@ export default function ProductDetailPage() {
                                     </div>
 
                                     {/* Tiered Pricing - Minimal */}
-                                    {product.type !== "digital" &&
+                                    {canShowPrice &&
+                                        product.type !== "digital" &&
                                         product.quantity_pricing &&
                                         product.quantity_pricing.length > 0 && (
                                             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
@@ -896,8 +908,13 @@ export default function ProductDetailPage() {
 
                                             {/* Add to Cart Button */}
                                             <button
-                                                onClick={handleAddToCart}
+                                                onClick={() => {
+                                                    if (showPriceAndAddToCart) {
+                                                        handleAddToCart();
+                                                    }
+                                                }}
                                                 disabled={
+                                                    !showPriceAndAddToCart ||
                                                     product.isComingSoon ||
                                                     (product.type === "physical" &&
                                                         !product.inStock)
@@ -906,7 +923,9 @@ export default function ProductDetailPage() {
                                             >
                                                 <ShoppingCart className="w-4 h-4" />
                                                 <span>
-                                                    {product.isComingSoon
+                                                    {!showPriceAndAddToCart
+                                                        ? "KYC Required"
+                                                        : product.isComingSoon
                                                         ? "Coming Soon"
                                                         : product.type === "digital"
                                                             ? "Add to Cart"

@@ -37,6 +37,7 @@ type ShopProduct = {
     isComingSoon?: boolean;
     is_contact_only?: boolean;
     requiresKyc?: boolean;
+    showPriceBeforeKyc?: boolean;
     weight?: number;
     volumetric_weight?: number;
     extra_shipping_charge?: number;
@@ -75,6 +76,7 @@ function mapApiProductToShopProduct(p: Product): ShopProduct {
         isComingSoon: p.is_coming_soon || false,
         is_contact_only: p.is_contact_only || false,
         requiresKyc: p.requires_kyc || false,
+        showPriceBeforeKyc: p.show_price_before_kyc || false,
         weight: p.weight,
         volumetric_weight: p.volumetric_weight,
         extra_shipping_charge: p.extra_shipping_charge,
@@ -413,8 +415,11 @@ export default function ShopPage() {
                                                 user?.user_type === "business_owner" &&
                                                 userKycStatus?.status === "verified"
                                             );
+                                            const canShowPrice =
+                                                showPriceAndAddToCart ||
+                                                product.showPriceBeforeKyc;
 
-                                            if (!showPriceAndAddToCart) {
+                                            if (!canShowPrice) {
                                                 return (
                                                     <div className="flex flex-col w-full gap-2">
                                                         <div className="flex items-center gap-2">
@@ -435,9 +440,11 @@ export default function ShopPage() {
                                                 return (
                                                     <>
                                                         <div>
-                                                            <p className="text-lg font-bold text-[#B00000]">
-                                                                ₹{product.price.toLocaleString()}
-                                                            </p>
+                                                            {canShowPrice ? (
+                                                                <p className="text-lg font-bold text-[#B00000]">
+                                                                    ₹{product.price.toLocaleString()}
+                                                                </p>
+                                                            ) : null}
                                                             <p className="text-xs text-gray-500">
                                                                 {product.type === "digital" ? "Digital" : "Physical"}
                                                             </p>
@@ -457,11 +464,15 @@ export default function ShopPage() {
                                             return (
                                                 <>
                                                     <div>
-                                                        <p className="text-lg font-bold text-[#B00000]">
-                                                            ₹{product.price.toLocaleString()}
-                                                        </p>
+                                                        {canShowPrice ? (
+                                                            <p className="text-lg font-bold text-[#B00000]">
+                                                                ₹{product.price.toLocaleString()}
+                                                            </p>
+                                                        ) : null}
                                                         <p className="text-xs text-gray-500">
-                                                            {product.type === "digital"
+                                                            {!showPriceAndAddToCart && product.requiresKyc
+                                                                ? "Business KYC required to purchase"
+                                                                : product.type === "digital"
                                                                 ? "Digital"
                                                                 : product.inStock
                                                                     ? "In Stock"
@@ -469,14 +480,23 @@ export default function ShopPage() {
                                                         </p>
                                                     </div>
                                                     <button
-                                                        onClick={() => handleAddToCart(product)}
+                                                        onClick={() => {
+                                                            if (showPriceAndAddToCart) {
+                                                                handleAddToCart(product);
+                                                            }
+                                                        }}
                                                         disabled={
+                                                            !showPriceAndAddToCart ||
                                                             product.isComingSoon ||
                                                             (product.type === "physical" && !product.inStock)
                                                         }
                                                         className="px-4 py-2 bg-[#B00000] text-white text-sm rounded hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                                     >
-                                                        {product.isComingSoon ? "Soon" : "Add to Cart"}
+                                                        {!showPriceAndAddToCart
+                                                            ? "KYC Required"
+                                                            : product.isComingSoon
+                                                                ? "Soon"
+                                                                : "Add to Cart"}
                                                     </button>
                                                 </>
                                             );

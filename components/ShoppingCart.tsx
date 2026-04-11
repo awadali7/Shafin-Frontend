@@ -2,8 +2,7 @@
 
 import React, { useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { X, Plus, Minus, ShoppingBag } from "lucide-react";
+import { X, Plus, Minus, ShoppingBag, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useCart } from "@/contexts/CartContext";
 import type { CartItem } from "@/contexts/CartContext";
@@ -79,13 +78,12 @@ export default function ShoppingCart() {
         items,
         removeFromCart,
         updateQuantity,
-        getTotalPrice,
         isOpen,
         setIsOpen,
     } = useCart();
 
     // Calculate total with bulk discounts
-    const { subtotal, totalSavings, finalTotal } = useMemo(() => {
+    const { totalSavings, finalTotal } = useMemo(() => {
         let subtotal = 0;
         let totalSavings = 0;
 
@@ -101,6 +99,26 @@ export default function ShoppingCart() {
             finalTotal: subtotal,
         };
     }, [items]);
+
+    const buyOnChatUrl = useMemo(() => {
+        if (items.length === 0) return "";
+
+        const phoneNumber = "918714388741";
+        const itemLines = items.map((item, index) => {
+            const { finalPrice } = calculateItemPrice(item);
+            return `${index + 1}. ${item.name} x ${item.quantity} - Rs. ${finalPrice.toLocaleString("en-IN")}`;
+        });
+
+        const message = [
+            "Hi, I want to buy these items:",
+            "",
+            ...itemLines,
+            "",
+            `Total: Rs. ${finalTotal.toLocaleString("en-IN")}`,
+        ].join("\n");
+
+        return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    }, [items, finalTotal]);
 
     return (
         <AnimatePresence>
@@ -294,6 +312,16 @@ export default function ShoppingCart() {
                                 >
                                     Checkout
                                 </Link>
+                                <a
+                                    href={buyOnChatUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => setIsOpen(false)}
+                                    className="flex w-full items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg text-center text-sm font-medium hover:bg-green-700 transition-colors"
+                                >
+                                    <MessageCircle className="w-4 h-4" />
+                                    Buy on Chat
+                                </a>
                                 <Link
                                     href="/shop"
                                     onClick={() => setIsOpen(false)}
