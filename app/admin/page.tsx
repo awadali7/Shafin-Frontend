@@ -32,11 +32,6 @@ import {
     File as FileIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import "easymde/dist/easymde.min.css";
-
-const SimpleMDE = dynamic(() => import("react-simplemde-editor"), {
-    ssr: false,
-});
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api/admin";
 import { requestsApi } from "@/lib/api/requests";
@@ -3797,132 +3792,22 @@ function AdminPageContent() {
                                                 </div>
                                             </div>
 
-                                            {/* Markdown */}
+                                            {/* Body Content (Rich Text) */}
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-900 mb-2">
-                                                    Markdown Content
+                                                    Body Content (Rich Text)
                                                 </label>
-
-                                                {/* Markdown Editor */}
-                                                <div data-color-mode="light">
-                                                    <SimpleMDE
-                                                        key={
-                                                            editingVideo
-                                                                ? editingVideo.id
-                                                                : "new-video"
-                                                        }
-                                                        value={
-                                                            videoFormData.markdown
-                                                        }
+                                                <div>
+                                                    <RichTextEditor
+                                                        content={videoFormData.markdown}
                                                         onChange={(value) =>
                                                             setVideoFormData({
                                                                 ...videoFormData,
                                                                 markdown: value,
                                                             })
                                                         }
-                                                        options={{
-                                                            spellChecker: false,
-                                                            placeholder:
-                                                                "Write video description...",
-                                                            maxHeight: "450px",
-                                                            toolbar: [
-                                                                "bold",
-                                                                "italic",
-                                                                "strikethrough",
-                                                                "|",
-                                                                "heading-1",
-                                                                "heading-2",
-                                                                "heading-3",
-                                                                "|",
-                                                                "code",
-                                                                "quote",
-                                                                "unordered-list",
-                                                                "ordered-list",
-                                                                "|",
-                                                                "link",
-                                                                "image",
-                                                                "table",
-                                                                "|",
-                                                                "preview",
-                                                                "side-by-side",
-                                                                "fullscreen",
-                                                                "|",
-                                                                "guide",
-                                                            ],
-                                                        }}
+                                                        placeholder="Write video description..."
                                                     />
-                                                </div>
-
-                                                {/* Helper Buttons */}
-                                                <div className="mt-2 flex flex-wrap gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const current =
-                                                                videoFormData.markdown ||
-                                                                "";
-                                                            setVideoFormData({
-                                                                ...videoFormData,
-                                                                markdown:
-                                                                    current +
-                                                                    "\n\n## Heading\n\n",
-                                                            });
-                                                        }}
-                                                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                                                    >
-                                                        + H2 Heading
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const current =
-                                                                videoFormData.markdown ||
-                                                                "";
-                                                            setVideoFormData({
-                                                                ...videoFormData,
-                                                                markdown:
-                                                                    current +
-                                                                    "\n\n[Link Text](https://example.com)\n\n",
-                                                            });
-                                                        }}
-                                                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                                                    >
-                                                        + Link
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const current =
-                                                                videoFormData.markdown ||
-                                                                "";
-                                                            setVideoFormData({
-                                                                ...videoFormData,
-                                                                markdown:
-                                                                    current +
-                                                                    '\n\n<iframe src="https://example.com" width="600" height="400" frameborder="0" allowfullscreen></iframe>\n\n',
-                                                            });
-                                                        }}
-                                                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                                                    >
-                                                        + Iframe
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const current =
-                                                                videoFormData.markdown ||
-                                                                "";
-                                                            setVideoFormData({
-                                                                ...videoFormData,
-                                                                markdown:
-                                                                    current +
-                                                                    "\n\n---\n\n",
-                                                            });
-                                                        }}
-                                                        className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                                                    >
-                                                        + Divider
-                                                    </button>
                                                 </div>
                                             </div>
 
