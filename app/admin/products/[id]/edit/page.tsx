@@ -158,6 +158,7 @@ export default function EditProductPage() {
     const [existingCategories, setExistingCategories] = useState<string[][]>([]);
     const [extraInfos, setExtraInfos] = useState<ProductExtraInfo[]>([]);
     const [showCategoryDropdown, setShowCategoryDropdown] = useState<number | null>(null);
+    const [existingCoverImageUrl, setExistingCoverImageUrl] = useState<string | null>(null);
 
     // Cropper State
     const [cropModalOpen, setCropModalOpen] = useState(false);
@@ -226,6 +227,8 @@ export default function EditProductPage() {
                         price_per_item: "",
 
                     }];
+
+                setExistingCoverImageUrl(product.cover_image || null);
 
                 setForm({
                     name: product.name,
@@ -449,6 +452,7 @@ export default function EditProductPage() {
                 width: form.product_type === "physical" ? form.width : undefined,
                 height: form.product_type === "physical" ? form.height : undefined,
                 extra_shipping_charge: form.product_type === "physical" ? form.extra_shipping_charge : undefined,
+                is_active: form.is_active,
                 is_featured: form.is_featured,
                 is_coming_soon: form.is_coming_soon,
                 is_contact_only: form.is_contact_only,
@@ -1080,18 +1084,30 @@ export default function EditProductPage() {
                                     Recommended: 1280x720px (16:9)
                                 </span>
                             </label>
+                            {/* Show existing cover image when no new file is staged */}
+                            {!form.cover_image && existingCoverImageUrl && (
+                                <div className="mb-3">
+                                    <p className="text-xs text-gray-500 mb-1">Current cover image</p>
+                                    <img
+                                        src={existingCoverImageUrl}
+                                        alt="Current cover"
+                                        className="w-40 h-24 object-contain rounded border border-gray-200 bg-gray-50"
+                                    />
+                                </div>
+                            )}
+                            {/* Show new file preview once selected */}
                             {form.cover_image && (
                                 <div className="mb-3 relative inline-block">
                                     <img
                                         src={URL.createObjectURL(form.cover_image)}
-                                        alt="Cover preview"
-                                        className="w-40 h-24 object-cover rounded border border-gray-200"
+                                        alt="New cover preview"
+                                        className="w-40 h-24 object-contain rounded border border-[#B00000]"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setForm(p => ({ ...p, cover_image: null }))}
                                         className="absolute -top-2 -right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-                                        title="Remove cover image"
+                                        title="Remove new cover image"
                                     >
                                         <X className="w-3 h-3" />
                                     </button>
