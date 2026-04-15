@@ -202,6 +202,7 @@ export const productsApi = {
             digital_file: File | null;
             product_detail_pdf: File | null;
             images?: File[];
+            existing_image_urls?: string[];
             videos?: Array<{ title: string; url: string; thumbnail?: string }>;
             digital_file_name?: string; // For linking existing files
             product_extra_info_id?: string;
@@ -212,7 +213,7 @@ export const productsApi = {
         Object.entries(data).forEach(([k, v]) => {
             if (v === undefined || v === null) return;
             if (v instanceof File) return;
-            if (k === "images" || k === "videos" || k === "categories" || k === "quantity_pricing") {
+            if (k === "images" || k === "existing_image_urls" || k === "videos" || k === "categories" || k === "quantity_pricing") {
                 // Skip these, handle separately
                 return;
             }
@@ -238,7 +239,12 @@ export const productsApi = {
             form.append("product_extra_info_id", data.product_extra_info_id);
         }
 
-        // Append image files directly
+        // Append existing image URLs to preserve (as JSON)
+        if (data.existing_image_urls !== undefined) {
+            form.append("existing_images", JSON.stringify(data.existing_image_urls));
+        }
+
+        // Append new image files
         if (data.images && data.images.length > 0) {
             data.images.forEach((file) => {
                 if (file) form.append("images", file);

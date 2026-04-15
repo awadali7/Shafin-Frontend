@@ -338,10 +338,14 @@ export default function EditProductPage() {
         if (cropTarget?.type === 'cover') {
             setForm(prev => ({ ...prev, cover_image: croppedFile }));
         } else if (cropTarget?.type === 'gallery' && cropTarget.index !== undefined) {
-            const newImages = [...form.images];
             const preview = await fileToDataURL(croppedFile);
-            newImages[cropTarget.index] = { file: croppedFile, preview };
-            setForm(prev => ({ ...prev, images: newImages }));
+            const targetIndex = cropTarget.index;
+            // Use functional updater to avoid stale closure over form.images
+            setForm(prev => {
+                const newImages = [...prev.images];
+                newImages[targetIndex] = { file: croppedFile, preview };
+                return { ...prev, images: newImages };
+            });
         }
 
         setCropModalOpen(false);
@@ -425,7 +429,12 @@ export default function EditProductPage() {
                 }))
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
 
+            // New files to upload
             const images = form.images.map(img => img.file).filter((f): f is File => f !== null);
+            // Existing image URLs that must be preserved on the server
+            const existingImageUrls = form.images
+                .filter(img => img.file === null && img.preview !== null)
+                .map(img => img.preview as string);
 
             // Filter valid videos (must have title and url)
             const validVideos = form.videos.filter(vid =>
@@ -464,6 +473,7 @@ export default function EditProductPage() {
                 product_detail_pdf: form.product_detail_pdf,
                 digital_file_name: form.digital_file_name_input?.trim() || undefined,
                 images: images.length > 0 ? images : undefined,
+                existing_image_urls: existingImageUrls,
                 videos: validVideos.length > 0 ? validVideos : undefined,
                 quantity_pricing: validPricing.length > 0 ? validPricing : undefined,
             });
