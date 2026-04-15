@@ -27,7 +27,9 @@ export default function MultiLevelCategoryMenu({
     const [isOpen, setIsOpen] = useState(false);
     const [selectedPath, setSelectedPath] = useState<string[]>([]);
     const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(new Set());
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(() =>
+        typeof window !== "undefined" ? window.innerWidth < 768 : false
+    );
     const menuRef = useRef<HTMLDivElement>(null);
 
     // Detect mobile viewport
@@ -36,13 +38,8 @@ export default function MultiLevelCategoryMenu({
             setIsMobile(window.innerWidth < 768); // md breakpoint (Tailwind default)
         };
 
-        // Check immediately on mount
         checkMobile();
-
-        // Listen for resize events
         window.addEventListener('resize', checkMobile);
-
-        // Cleanup
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
@@ -299,12 +296,9 @@ export default function MultiLevelCategoryMenu({
 
             {/* Cascading Menu */}
             {isOpen && (
-                <div className={`absolute top-full mt-2 z-50 ${isMobile
-                        ? 'left-0 right-0 w-full'
-                        : 'left-0'
-                    }`}>
+                <div className="absolute top-full mt-2 left-0 z-[200]">
                     <div className={`shadow-xl border border-gray-200 bg-white ${isMobile
-                            ? 'w-full max-h-[70vh] overflow-y-auto rounded-lg'
+                            ? 'min-w-[280px] max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-lg'
                             : 'min-w-[220px] overflow-visible rounded-md'
                         }`}>
                         <div className="relative">
