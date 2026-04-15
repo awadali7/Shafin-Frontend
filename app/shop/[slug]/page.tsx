@@ -441,7 +441,7 @@ export default function ProductDetailPage() {
                                 product.image
                             }
                             alt={product.name}
-                            className="w-full h-96 object-cover"
+                            className="w-full h-96 object-contain"
                         />
                     </div>
 

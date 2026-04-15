@@ -359,13 +359,13 @@ export default function ShopPage() {
                                     className={viewMode === "list" ? "w-48 shrink-0" : ""}
                                 >
                                     <div
-                                        className={`bg-gray-100 ${viewMode === "list" ? "h-full" : "h-48 w-full"
+                                        className={`bg-white ${viewMode === "list" ? "h-full" : "h-48 w-full"
                                             }`}
                                     >
                                         <img
                                             src={product.image}
                                             alt={product.name}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-contain"
                                         />
                                     </div>
                                 </Link>
