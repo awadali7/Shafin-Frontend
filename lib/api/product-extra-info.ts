@@ -65,6 +65,10 @@ export const productExtraInfoApi = {
         return apiClient.post<ProductExtraInfo>("/product-extra-info", form);
     },
 
+    delete: async (id: string): Promise<ApiResponse<null>> => {
+        return apiClient.delete<null>(`/product-extra-info/${id}`);
+    },
+
     // Grant access to a user
     grantAccess: async (data: {
         product_extra_info_id: string;

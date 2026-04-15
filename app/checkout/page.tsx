@@ -811,13 +811,13 @@ export default function CheckoutPage() {
                                     </div>
                                     {hasPhysicalItems && (
                                         <>
-                                            {shippingGroups.map((group) => (
+                                            {shippingGroups.length > 1 && shippingGroups.map((group) => (
                                                 <div
                                                     key={group.key}
                                                     className="flex items-center justify-between text-sm"
                                                 >
-                                                    <span className="text-gray-600">
-                                                        {group.origin_city}, {group.origin_state} ({group.zone})
+                                                    <span className="text-gray-500 pl-2">
+                                                        ↳ {group.origin_city}, {group.origin_state} ({group.zone})
                                                     </span>
                                                     <span className="text-slate-900">
                                                         Rs. {group.slabCost.toFixed(2)}

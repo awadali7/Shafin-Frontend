@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useDeferredValue, useEffect, useState } from "react";
-import { Plus, X, Upload, FileText, ArrowLeft, Loader2, Calendar, Eye, Image as ImageIcon, Search } from "lucide-react";
+import { Plus, X, Upload, FileText, ArrowLeft, Loader2, Calendar, Eye, Image as ImageIcon, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { productExtraInfoApi, ProductExtraInfo } from "@/lib/api/product-extra-info";
 import { adminApi } from "@/lib/api/admin";
@@ -33,6 +33,7 @@ export const ProductExtraInfoTab: React.FC = () => {
     const [selectedUserId, setSelectedUserId] = useState("");
     const [grantProductName, setGrantProductName] = useState("");
     const [isGranting, setIsGranting] = useState(false);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     const deferredSearchTerm = useDeferredValue(searchTerm);
 
     const normalizedSearchTerm = deferredSearchTerm.trim().toLowerCase();
@@ -177,6 +178,24 @@ export const ProductExtraInfoTab: React.FC = () => {
             toast.error(e.message || "An error occurred");
         } finally {
             setIsGranting(false);
+        }
+    };
+
+    const handleDelete = async (info: ProductExtraInfo) => {
+        if (!confirm(`Delete "${info.title}"? This cannot be undone.`)) return;
+        setDeletingId(info.id);
+        try {
+            const res = await productExtraInfoApi.delete(info.id);
+            if (res.success) {
+                setInfos(prev => prev.filter(i => i.id !== info.id));
+                toast.success("Deleted successfully");
+            } else {
+                toast.error(res.message || "Failed to delete");
+            }
+        } catch {
+            toast.error("Failed to delete");
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -566,6 +585,16 @@ export const ProductExtraInfoTab: React.FC = () => {
                                         className="text-sm px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
                                     >
                                         Grant Access
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(info)}
+                                        disabled={deletingId === info.id}
+                                        className="inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-white border border-red-300 hover:bg-red-50 text-red-600 rounded transition-colors disabled:opacity-50"
+                                    >
+                                        {deletingId === info.id
+                                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                                            : <Trash2 className="w-4 h-4" />}
+                                        Delete
                                     </button>
                                 </div>
                             </div>

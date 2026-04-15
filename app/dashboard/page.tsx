@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
     BookOpen,
@@ -9,7 +8,6 @@ import {
     CheckCircle,
     AlertCircle,
     TrendingUp,
-    Users,
     Video,
     Bell,
     Loader2,
@@ -30,18 +28,14 @@ import LoginDrawer from "@/components/LoginDrawer";
 import RegisterDrawer from "@/components/RegisterDrawer";
 
 export default function DashboardPage() {
-    const router = useRouter();
-    const { user, loading: authLoading, isAuth } = useAuth();
+const { user, loading: authLoading, isAuth } = useAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [userDashboard, setUserDashboard] =
         useState<UserDashboardData | null>(null);
     const [adminDashboard, setAdminDashboard] =
         useState<AdminDashboardData | null>(null);
-    const [activeTab, setActiveTab] = useState<"overview" | "performance">(
-        "overview"
-    );
-    const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
+const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
 
     useEffect(() => {
@@ -167,239 +161,82 @@ export default function DashboardPage() {
                             Admin Dashboard
                         </h1>
                         <p className="text-sm text-slate-600 mt-1">
-                            Business overview and performance metrics
+                            Performance metrics
                         </p>
                     </div>
 
-                    {/* Tabs */}
-                    <div className="mb-4 border-b border-gray-200">
-                        <div className="flex space-x-6">
-                            <button
-                                onClick={() => setActiveTab("overview")}
-                                className={`pb-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "overview"
-                                    ? "border-[#B00000] text-[#B00000]"
-                                    : "border-transparent text-gray-600 hover:text-gray-900"
-                                    }`}
-                            >
-                                Business Overview
-                            </button>
-                            <button
-                                onClick={() => setActiveTab("performance")}
-                                className={`pb-2 text-sm font-medium border-b-2 transition-colors ${activeTab === "performance"
-                                    ? "border-[#B00000] text-[#B00000]"
-                                    : "border-transparent text-gray-600 hover:text-gray-900"
-                                    }`}
-                            >
-                                Performance
-                            </button>
+                    {/* Performance Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">
+                                        Courses
+                                    </p>
+                                    <p className="text-2xl font-bold text-slate-900">
+                                        {
+                                            adminDashboard
+                                                .admin_performance
+                                                .courses_accessed
+                                        }
+                                    </p>
+                                </div>
+                                <BookOpen className="w-8 h-8 text-blue-500 opacity-60" />
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">
+                                        Watched
+                                    </p>
+                                    <p className="text-2xl font-bold text-slate-900">
+                                        {
+                                            adminDashboard
+                                                .admin_performance
+                                                .videos_watched
+                                        }
+                                    </p>
+                                </div>
+                                <Video className="w-8 h-8 text-green-500 opacity-60" />
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">
+                                        Completion
+                                    </p>
+                                    <p className="text-2xl font-bold text-slate-900">
+                                        {
+                                            adminDashboard
+                                                .admin_performance
+                                                .completion_percentage
+                                        }
+                                        %
+                                    </p>
+                                </div>
+                                <TrendingUp className="w-8 h-8 text-purple-500 opacity-60" />
+                            </div>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">
+                                        Total Videos
+                                    </p>
+                                    <p className="text-2xl font-bold text-slate-900">
+                                        {
+                                            adminDashboard
+                                                .admin_performance
+                                                .total_available_videos
+                                        }
+                                    </p>
+                                </div>
+                                <Video className="w-8 h-8 text-orange-500 opacity-60" />
+                            </div>
                         </div>
                     </div>
-
-                    {/* Business Overview Tab */}
-                    {activeTab === "overview" && (
-                        <>
-                            {/* Statistics Cards */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">
-                                                Users
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {
-                                                    adminDashboard
-                                                        .business_overview
-                                                        .statistics.total_users
-                                                }
-                                            </p>
-                                        </div>
-                                        <Users className="w-8 h-8 text-blue-500 opacity-60" />
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">
-                                                Courses
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {
-                                                    adminDashboard
-                                                        .business_overview
-                                                        .statistics
-                                                        .total_courses
-                                                }
-                                            </p>
-                                        </div>
-                                        <BookOpen className="w-8 h-8 text-green-500 opacity-60" />
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">
-                                                Pending
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {
-                                                    adminDashboard
-                                                        .business_overview
-                                                        .statistics
-                                                        .pending_requests
-                                                }
-                                            </p>
-                                        </div>
-                                        <AlertCircle className="w-8 h-8 text-yellow-500 opacity-60" />
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">
-                                                Active
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {
-                                                    adminDashboard
-                                                        .business_overview
-                                                        .statistics
-                                                        .active_access
-                                                }
-                                            </p>
-                                        </div>
-                                        <CheckCircle className="w-8 h-8 text-purple-500 opacity-60" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Recent Requests */}
-                            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-                                <h2 className="text-sm font-semibold text-slate-900 mb-3">
-                                    Recent Requests
-                                </h2>
-                                <div className="space-y-2">
-                                    {adminDashboard.business_overview
-                                        .recent_requests.length > 0 ? (
-                                        adminDashboard.business_overview.recent_requests
-                                            .slice(0, 5)
-                                            .map((request) => (
-                                                <div
-                                                    key={request.id}
-                                                    className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded text-sm"
-                                                >
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium text-slate-900 truncate">
-                                                            {request.first_name}{" "}
-                                                            {request.last_name}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500 truncate">
-                                                            {
-                                                                request.course_name
-                                                            }
-                                                        </p>
-                                                    </div>
-                                                    <span
-                                                        className={`ml-2 px-2 py-0.5 rounded text-xs font-medium shrink-0 ${request.status ===
-                                                            "pending"
-                                                            ? "bg-yellow-100 text-yellow-700"
-                                                            : request.status ===
-                                                                "approved"
-                                                                ? "bg-green-100 text-green-700"
-                                                                : "bg-red-100 text-red-700"
-                                                            }`}
-                                                    >
-                                                        {request.status}
-                                                    </span>
-                                                </div>
-                                            ))
-                                    ) : (
-                                        <p className="text-xs text-gray-500 text-center py-3">
-                                            No recent requests
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    )}
-
-                    {/* Admin Performance Tab */}
-                    {activeTab === "performance" && (
-                        <>
-                            {/* Performance Stats */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">
-                                                Courses
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {
-                                                    adminDashboard
-                                                        .admin_performance
-                                                        .courses_accessed
-                                                }
-                                            </p>
-                                        </div>
-                                        <BookOpen className="w-8 h-8 text-blue-500 opacity-60" />
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">
-                                                Watched
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {
-                                                    adminDashboard
-                                                        .admin_performance
-                                                        .videos_watched
-                                                }
-                                            </p>
-                                        </div>
-                                        <Video className="w-8 h-8 text-green-500 opacity-60" />
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">
-                                                Completion
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {
-                                                    adminDashboard
-                                                        .admin_performance
-                                                        .completion_percentage
-                                                }
-                                                %
-                                            </p>
-                                        </div>
-                                        <TrendingUp className="w-8 h-8 text-purple-500 opacity-60" />
-                                    </div>
-                                </div>
-                                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">
-                                                Total Videos
-                                            </p>
-                                            <p className="text-2xl font-bold text-slate-900">
-                                                {
-                                                    adminDashboard
-                                                        .admin_performance
-                                                        .total_available_videos
-                                                }
-                                            </p>
-                                        </div>
-                                        <Video className="w-8 h-8 text-orange-500 opacity-60" />
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
 
                     {/* Notifications & Current Video - Side by Side */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
