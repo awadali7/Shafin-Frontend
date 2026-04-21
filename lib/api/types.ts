@@ -15,6 +15,8 @@ export interface User {
     last_name: string;
     role?: "user" | "admin";
     user_type?: "student" | "business_owner" | null;
+    kyc_status?: "verified" | "pending" | "rejected" | null;
+    product_kyc_status?: "verified" | "pending" | "rejected" | null;
     course_terms_accepted_at?: string | null;
     product_terms_accepted_at?: string | null;
     profile_picture?: string | null;
@@ -61,6 +63,28 @@ export interface AuthResponse {
     token: string;
     refreshToken?: string;
     deviceInfo?: DeviceInfo;
+}
+
+export type UserType =
+    | "guest"
+    | "student"
+    | "business_owner"
+    | "admin"
+    | "student_business"
+    | "admin_student"
+    | "admin_business"
+    | "admin_all";
+
+export interface UserTypeFlags {
+    isGuest: boolean;
+    isAuthenticated: boolean;
+    isStudent: boolean;
+    isBusinessOwner: boolean;
+    isAdmin: boolean;
+    userType: UserType;
+    hasAnyKYC: boolean;
+    needsKYC: boolean;
+    needsProductKYC: boolean;
 }
 
 // Course Types
