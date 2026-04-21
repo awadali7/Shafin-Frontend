@@ -61,7 +61,7 @@ export default function DownloadsPage() {
                         slug: access.slug,
                         category: "Extra Package",
                         type: "digital" as any,
-                        digital_file_format: "view",
+                        digital_file_format: "view" as any,
                         cover_image: access.image_files && access.image_files.length > 0 ? access.image_files[0].url : null,
                         isExtraInfo: true,
                     })) : [];
