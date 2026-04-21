@@ -2,9 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Download, Loader2, Package } from "lucide-react";
+import { Download, Loader2, Package, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { entitlementsApi } from "@/lib/api/entitlements";
+import { productExtraInfoApi } from "@/lib/api/product-extra-info";
 import { apiClient } from "@/lib/api/client";
 import type { ProductEntitlement } from "@/lib/api/types";
 import LoginDrawer from "@/components/LoginDrawer";
@@ -16,11 +17,15 @@ function formatDate(dateString: string) {
     return d.toLocaleString();
 }
 
+type ExtendedEntitlement = ProductEntitlement & {
+    isExtraInfo?: boolean;
+};
+
 export default function DownloadsPage() {
     const { isAuth, user, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [items, setItems] = useState<ProductEntitlement[]>([]);
+    const [items, setItems] = useState<ExtendedEntitlement[]>([]);
     const [downloadingSlug, setDownloadingSlug] = useState<string | null>(null);
     const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
@@ -40,8 +45,33 @@ export default function DownloadsPage() {
                 try {
                     setLoading(true);
                     setError(null);
-                    const resp = await entitlementsApi.my();
-                    setItems(Array.isArray(resp.data) ? resp.data : []);
+                    const [entResp, extraInfoResp] = await Promise.all([
+                        entitlementsApi.my(),
+                        productExtraInfoApi.getMyAccesses().catch(() => ({ data: [] }))
+                    ]);
+                    
+                    const standardItems = Array.isArray(entResp.data) ? entResp.data : [];
+                    const extraInfoItems = Array.isArray(extraInfoResp?.data) ? extraInfoResp.data.map((access: any) => ({
+                        entitlement_id: access.id,
+                        source: access.source || "admin_grant",
+                        granted_at: access.granted_at,
+                        product_id: "extra-info-" + access.id,
+                        product_type: "digital" as any,
+                        name: access.title,
+                        slug: access.slug,
+                        category: "Extra Package",
+                        type: "digital" as any,
+                        digital_file_format: "view",
+                        cover_image: access.image_files && access.image_files.length > 0 ? access.image_files[0].url : null,
+                        isExtraInfo: true,
+                    })) : [];
+
+                    // Combine and sort by date
+                    const combined = [...standardItems, ...extraInfoItems].sort((a, b) => {
+                        return new Date(b.granted_at).getTime() - new Date(a.granted_at).getTime();
+                    });
+                    
+                    setItems(combined);
                 } catch (e: any) {
                     setError(e?.message || "Failed to load downloads");
                 } finally {
@@ -51,7 +81,9 @@ export default function DownloadsPage() {
         }
     }, [authLoading, isAuth, user]);
 
-    const handleDownload = async (ent: ProductEntitlement) => {
+    const handleDownload = async (ent: ExtendedEntitlement) => {
+        if (ent.isExtraInfo) return; // handled via route link instead
+
         const token = apiClient.getToken();
         if (!token) {
             setIsLoginDrawerOpen(true);
@@ -172,23 +204,27 @@ export default function DownloadsPage() {
                     {items.map((ent) => (
                         <div
                             key={ent.entitlement_id}
-                            className="bg-white rounded-lg border border-gray-200 overflow-hidden"
+                            className="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col"
                         >
-                            <div className="h-40 w-full bg-gray-100">
+                            <div className="h-40 w-full bg-gray-100 flex-shrink-0">
                                 {ent.cover_image ? (
                                     <img
                                         src={ent.cover_image}
                                         alt={ent.name}
                                         className="w-full h-full object-cover"
                                     />
-                                ) : null}
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                       <Package className="w-10 h-10 text-gray-300" />
+                                    </div>
+                                )}
                             </div>
-                            <div className="p-5">
+                            <div className="p-5 flex flex-col flex-grow">
                                 <div className="flex items-center justify-between gap-3 mb-2">
                                     <span className="text-xs text-gray-500">
                                         {ent.category || "Digital"}
                                     </span>
-                                    <span className="text-xs font-medium px-2 py-1 rounded-full border bg-blue-50 text-blue-700 border-blue-200">
+                                    <span className={`text-xs font-medium px-2 py-1 rounded-full border ${ent.isExtraInfo ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}>
                                         {(
                                             ent.digital_file_format || "digital"
                                         ).toUpperCase()}
@@ -197,25 +233,35 @@ export default function DownloadsPage() {
                                 <h3 className="text-lg font-semibold text-slate-900 mb-1 line-clamp-2">
                                     {ent.name}
                                 </h3>
-                                <p className="text-xs text-gray-500 mb-4">
+                                <p className="text-xs text-gray-500 mb-4 flex-grow">
                                     Granted: {formatDate(ent.granted_at)} •{" "}
                                     {ent.source === "admin_grant"
                                         ? "Admin grant"
                                         : "Paid order"}
                                 </p>
 
-                                <button
-                                    onClick={() => handleDownload(ent)}
-                                    disabled={downloadingSlug === ent.slug}
-                                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#B00000] text-white rounded-lg text-sm font-semibold hover:bg-red-800 transition-colors disabled:opacity-60"
-                                >
-                                    {downloadingSlug === ent.slug ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <Download className="w-4 h-4" />
-                                    )}
-                                    Download
-                                </button>
+                                {ent.isExtraInfo ? (
+                                    <Link
+                                        href={`/product-extra-info/${ent.slug}`}
+                                        className="w-full mt-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#B00000] text-white rounded-lg text-sm font-semibold hover:bg-red-800 transition-colors"
+                                    >
+                                        <Eye className="w-4 h-4" />
+                                        View Package
+                                    </Link>
+                                ) : (
+                                    <button
+                                        onClick={() => handleDownload(ent)}
+                                        disabled={downloadingSlug === ent.slug}
+                                        className="w-full mt-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#B00000] text-white rounded-lg text-sm font-semibold hover:bg-red-800 transition-colors disabled:opacity-60"
+                                    >
+                                        {downloadingSlug === ent.slug ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Download className="w-4 h-4" />
+                                        )}
+                                        Download
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}

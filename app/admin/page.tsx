@@ -64,13 +64,13 @@ import { ImageCropper } from "@/components/ui/ImageCropper";
 import type {
     DashboardStats,
     User,
-    CourseRequest,
     Course,
     Video,
     BlogPost,
     KYCVerification,
     ProductKYCVerification,
 } from "@/lib/api/types";
+import { CoursePurchase } from "@/lib/api/admin";
 
 type AdminTab =
     | "dashboard"
@@ -122,7 +122,7 @@ function AdminPageContent() {
     };
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [users, setUsers] = useState<User[]>([]);
-    const [requests, setRequests] = useState<CourseRequest[]>([]);
+    const [coursePurchases, setCoursePurchases] = useState<CoursePurchase[]>([]);
     const [courses, setCourses] = useState<Course[]>([]);
     const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
     const [kycApplications, setKycApplications] = useState<KYCVerification[]>(
@@ -337,18 +337,16 @@ function AdminPageContent() {
                     }
                 }
             } else if (activeTab === "requests") {
-                const requestsResponse = await adminApi.getAllRequests(1, 50);
-                if (requestsResponse.success && requestsResponse.data) {
-                    // Backend returns { requests: [], pagination: {} }
-                    const requestsData = requestsResponse.data;
+                const response = await adminApi.getAllCoursePurchases(1, 50);
+                if (response.success && response.data) {
+                    const purchasesData = response.data;
                     if (
-                        requestsData.requests &&
-                        Array.isArray(requestsData.requests)
+                        purchasesData.purchases &&
+                        Array.isArray(purchasesData.purchases)
                     ) {
-                        setRequests(requestsData.requests);
-                    } else if (Array.isArray(requestsData as any)) {
-                        // Fallback: if it's already an array
-                        setRequests(requestsData as any);
+                        setCoursePurchases(purchasesData.purchases);
+                    } else if (Array.isArray(purchasesData as any)) {
+                        setCoursePurchases(purchasesData as any);
                     }
                 }
             } else if (activeTab === "courses") {
@@ -414,49 +412,12 @@ function AdminPageContent() {
         }
     }, [activeTab]);
 
-    // Request approval/rejection modal states
-    const [showApproveModal, setShowApproveModal] = useState(false);
-    const [showRejectModal, setShowRejectModal] = useState(false);
-    const [selectedRequest, setSelectedRequest] =
-        useState<CourseRequest | null>(null);
-    const [isProcessingRequest, setIsProcessingRequest] = useState(false);
-    const [requestSuccess, setRequestSuccess] = useState<string | null>(null);
-    const [requestError, setRequestError] = useState<string | null>(null);
-    const [accessStartDate, setAccessStartDate] = useState<string>("");
-    const [accessEndDate, setAccessEndDate] = useState<string>("");
-
+    // Course request logic has been removed as per the conversion to course purchases
+    
     // Grant access modal states
     const [showGrantAccessModal, setShowGrantAccessModal] = useState(false);
     const [selectedCourseForGrant, setSelectedCourseForGrant] =
         useState<Course | null>(null);
-
-    const handleApproveRequestClick = (request: CourseRequest) => {
-        setSelectedRequest(request);
-        setRequestError(null);
-        setRequestSuccess(null);
-
-        // Set default dates: start = today, end = 6 months from today
-        const today = new Date();
-        const sixMonthsLater = new Date();
-        sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
-
-        // Format dates as ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ)
-        setAccessStartDate(
-            today.toISOString().split("T")[0] + "T00:00:00.000Z"
-        );
-        setAccessEndDate(
-            sixMonthsLater.toISOString().split("T")[0] + "T23:59:59.999Z"
-        );
-
-        setShowApproveModal(true);
-    };
-
-    const handleRejectRequestClick = (request: CourseRequest) => {
-        setSelectedRequest(request);
-        setRequestError(null);
-        setRequestSuccess(null);
-        setShowRejectModal(true);
-    };
 
     const handleGrantAccessClick = (course: Course) => {
         setSelectedCourseForGrant(course);
@@ -466,113 +427,7 @@ function AdminPageContent() {
     const handleGrantAccessSuccess = async () => {
         // Refresh courses data if needed
         await fetchData();
-    };
-
-    const handleApproveRequest = async () => {
-        if (!selectedRequest) return;
-
-        // Validate dates
-        if (!accessStartDate || !accessEndDate) {
-            setRequestError("Please select both start and end dates");
-            return;
-        }
-
-        const startDate = new Date(accessStartDate);
-        const endDate = new Date(accessEndDate);
-
-        if (endDate <= startDate) {
-            setRequestError("End date must be after start date");
-            return;
-        }
-
-        setIsProcessingRequest(true);
-        setRequestError(null);
-        setRequestSuccess(null);
-
-        try {
-            // Convert dates to ISO 8601 format
-            const accessStart = new Date(accessStartDate).toISOString();
-            const accessEnd = new Date(accessEndDate).toISOString();
-
-            const response = await requestsApi.approve(selectedRequest.id, {
-                access_start: accessStart,
-                access_end: accessEnd,
-            });
-
-            if (response.success) {
-                setRequestSuccess("Request approved successfully!");
-                // Refresh requests and close modal after 1.5 seconds
-                await fetchData();
-                setTimeout(() => {
-                    setShowApproveModal(false);
-                    setSelectedRequest(null);
-                    setRequestSuccess(null);
-                    setRequestError(null);
-                    setAccessStartDate("");
-                    setAccessEndDate("");
-                }, 1500);
-            } else {
-                const errorMsg =
-                    (response as any).message || "Failed to approve request";
-                const errors = (response as any).errors;
-                if (errors && Array.isArray(errors)) {
-                    const errorMessages = errors
-                        .map((e: any) => e.msg)
-                        .join(", ");
-                    setRequestError(errorMessages || errorMsg);
-                } else {
-                    setRequestError(errorMsg);
-                }
-            }
-        } catch (err: any) {
-            const errorMsg = err.message || "Failed to approve request";
-            if (
-                err.response?.data?.errors &&
-                Array.isArray(err.response.data.errors)
-            ) {
-                const errorMessages = err.response.data.errors
-                    .map((e: any) => e.msg)
-                    .join(", ");
-                setRequestError(errorMessages || errorMsg);
-            } else {
-                setRequestError(errorMsg);
-            }
-        } finally {
-            setIsProcessingRequest(false);
-        }
-    };
-
-    const handleRejectRequest = async () => {
-        if (!selectedRequest) return;
-
-        setIsProcessingRequest(true);
-        setRequestError(null);
-        setRequestSuccess(null);
-
-        try {
-            const response = await requestsApi.reject(selectedRequest.id);
-
-            if (response.success) {
-                setRequestSuccess("Request rejected successfully!");
-                // Refresh requests and close modal after 1.5 seconds
-                await fetchData();
-                setTimeout(() => {
-                    setShowRejectModal(false);
-                    setSelectedRequest(null);
-                    setRequestSuccess(null);
-                    setRequestError(null);
-                }, 1500);
-            } else {
-                setRequestError(
-                    (response as any).message || "Failed to reject request"
-                );
-            }
-        } catch (err: any) {
-            setRequestError(err.message || "Failed to reject request");
-        } finally {
-            setIsProcessingRequest(false);
-        }
-    };
+    };    
 
     // KYC handlers
     const handleViewKyc = async (kyc: KYCVerification) => {
@@ -1843,11 +1698,7 @@ function AdminPageContent() {
                 )}
 
                 {activeTab === "requests" && (
-                    <RequestsTab
-                        requests={requests}
-                        onApproveRequest={handleApproveRequestClick}
-                        onRejectRequest={handleRejectRequestClick}
-                    />
+                    <RequestsTab coursePurchases={coursePurchases} />
                 )}
 
                 {/* Grant Access Modal */}
@@ -4080,456 +3931,6 @@ function AdminPageContent() {
                                                     setVideoToDelete(null);
                                                     setDeleteVideoError(null);
                                                     setDeleteVideoSuccess(null);
-                                                }}
-                                                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                                            >
-                                                Close
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                )
-            }
-
-            {/* Approve Request Confirmation Modal */}
-            {
-                showApproveModal && selectedRequest && (
-                    <>
-                        {/* Backdrop */}
-                        <div
-                            className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
-                            onClick={() => {
-                                if (!isProcessingRequest) {
-                                    setShowApproveModal(false);
-                                    setSelectedRequest(null);
-                                }
-                            }}
-                        ></div>
-
-                        {/* Modal */}
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-                                {/* Header */}
-                                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="p-2 bg-green-100 rounded-lg">
-                                            <CheckCircle className="w-6 h-6 text-green-600" />
-                                        </div>
-                                        <h2 className="text-xl font-bold text-slate-900">
-                                            Approve Request
-                                        </h2>
-                                    </div>
-                                    {!isProcessingRequest && !requestSuccess && (
-                                        <button
-                                            onClick={() => {
-                                                setShowApproveModal(false);
-                                                setSelectedRequest(null);
-                                                setRequestError(null);
-                                                setRequestSuccess(null);
-                                            }}
-                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                            aria-label="Close modal"
-                                        >
-                                            <X className="w-5 h-5 text-gray-600" />
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-6">
-                                    {/* Success Message */}
-                                    {requestSuccess && (
-                                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
-                                            <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                                            <p className="text-sm text-green-600 font-medium">
-                                                {requestSuccess}
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* Error Message */}
-                                    {requestError && (
-                                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-                                            <XCircle className="w-5 h-5 text-red-600 shrink-0" />
-                                            <p className="text-sm text-red-600 font-medium">
-                                                {requestError}
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {!requestSuccess && (
-                                        <>
-                                            <p className="text-gray-700 mb-4">
-                                                Are you sure you want to approve
-                                                this course access request?
-                                            </p>
-                                            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                                                <div className="space-y-2">
-                                                    <div>
-                                                        <span className="text-sm font-medium text-gray-600">
-                                                            User:{" "}
-                                                        </span>
-                                                        <span className="text-sm text-slate-900">
-                                                            {selectedRequest.user
-                                                                ?.first_name ||
-                                                                ""}{" "}
-                                                            {selectedRequest.user
-                                                                ?.last_name || ""}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-sm font-medium text-gray-600">
-                                                            Course:{" "}
-                                                        </span>
-                                                        <span className="text-sm text-slate-900">
-                                                            {selectedRequest.course
-                                                                ?.name ||
-                                                                "Unknown Course"}
-                                                        </span>
-                                                    </div>
-                                                    {selectedRequest.request_message && (
-                                                        <div>
-                                                            <span className="text-sm font-medium text-gray-600">
-                                                                Message:{" "}
-                                                            </span>
-                                                            <span className="text-sm text-slate-900">
-                                                                {
-                                                                    selectedRequest.request_message
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {/* Date Selection Fields */}
-                                            <div className="space-y-4 mb-6">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                            Access Start Date *
-                                                        </label>
-                                                        <input
-                                                            type="date"
-                                                            value={
-                                                                accessStartDate
-                                                                    ? new Date(
-                                                                        accessStartDate
-                                                                    )
-                                                                        .toISOString()
-                                                                        .split(
-                                                                            "T"
-                                                                        )[0]
-                                                                    : ""
-                                                            }
-                                                            onChange={(e) => {
-                                                                const dateValue =
-                                                                    e.target.value;
-                                                                if (dateValue) {
-                                                                    // Set time to start of day
-                                                                    const isoDate =
-                                                                        new Date(
-                                                                            dateValue +
-                                                                            "T00:00:00.000Z"
-                                                                        ).toISOString();
-                                                                    setAccessStartDate(
-                                                                        isoDate
-                                                                    );
-                                                                }
-                                                            }}
-                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                            Access End Date *
-                                                        </label>
-                                                        <input
-                                                            type="date"
-                                                            value={
-                                                                accessEndDate
-                                                                    ? new Date(
-                                                                        accessEndDate
-                                                                    )
-                                                                        .toISOString()
-                                                                        .split(
-                                                                            "T"
-                                                                        )[0]
-                                                                    : ""
-                                                            }
-                                                            onChange={(e) => {
-                                                                const dateValue =
-                                                                    e.target.value;
-                                                                if (dateValue) {
-                                                                    // Set time to end of day
-                                                                    const isoDate =
-                                                                        new Date(
-                                                                            dateValue +
-                                                                            "T23:59:59.999Z"
-                                                                        ).toISOString();
-                                                                    setAccessEndDate(
-                                                                        isoDate
-                                                                    );
-                                                                }
-                                                            }}
-                                                            min={
-                                                                accessStartDate
-                                                                    ? new Date(
-                                                                        accessStartDate
-                                                                    )
-                                                                        .toISOString()
-                                                                        .split(
-                                                                            "T"
-                                                                        )[0]
-                                                                    : ""
-                                                            }
-                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <p className="text-xs text-gray-500">
-                                                    Default: 6 months access period.
-                                                    You can modify these dates as
-                                                    needed.
-                                                </p>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                                        {!requestSuccess && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setShowApproveModal(false);
-                                                        setSelectedRequest(null);
-                                                        setRequestError(null);
-                                                        setRequestSuccess(null);
-                                                        setAccessStartDate("");
-                                                        setAccessEndDate("");
-                                                    }}
-                                                    disabled={isProcessingRequest}
-                                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleApproveRequest}
-                                                    disabled={isProcessingRequest}
-                                                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                                                >
-                                                    {isProcessingRequest ? (
-                                                        <>
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                            <span>
-                                                                Approving...
-                                                            </span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <CheckCircle className="w-4 h-4" />
-                                                            <span>
-                                                                Confirm Approve
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </>
-                                        )}
-                                        {requestSuccess && (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setShowApproveModal(false);
-                                                    setSelectedRequest(null);
-                                                    setRequestError(null);
-                                                    setRequestSuccess(null);
-                                                }}
-                                                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                                            >
-                                                Close
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                )
-            }
-
-            {/* Reject Request Confirmation Modal */}
-            {
-                showRejectModal && selectedRequest && (
-                    <>
-                        {/* Backdrop */}
-                        <div
-                            className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
-                            onClick={() => {
-                                if (!isProcessingRequest) {
-                                    setShowRejectModal(false);
-                                    setSelectedRequest(null);
-                                }
-                            }}
-                        ></div>
-
-                        {/* Modal */}
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-                                {/* Header */}
-                                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="p-2 bg-red-100 rounded-lg">
-                                            <AlertCircle className="w-6 h-6 text-red-600" />
-                                        </div>
-                                        <h2 className="text-xl font-bold text-slate-900">
-                                            Reject Request
-                                        </h2>
-                                    </div>
-                                    {!isProcessingRequest && !requestSuccess && (
-                                        <button
-                                            onClick={() => {
-                                                setShowRejectModal(false);
-                                                setSelectedRequest(null);
-                                                setRequestError(null);
-                                                setRequestSuccess(null);
-                                            }}
-                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                            aria-label="Close modal"
-                                        >
-                                            <X className="w-5 h-5 text-gray-600" />
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-6">
-                                    {/* Success Message */}
-                                    {requestSuccess && (
-                                        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
-                                            <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                                            <p className="text-sm text-green-600 font-medium">
-                                                {requestSuccess}
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* Error Message */}
-                                    {requestError && (
-                                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-                                            <XCircle className="w-5 h-5 text-red-600 shrink-0" />
-                                            <p className="text-sm text-red-600 font-medium">
-                                                {requestError}
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {!requestSuccess && (
-                                        <>
-                                            <p className="text-gray-700 mb-4">
-                                                Are you sure you want to reject this
-                                                course access request?
-                                            </p>
-                                            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                                                <div className="space-y-2">
-                                                    <div>
-                                                        <span className="text-sm font-medium text-gray-600">
-                                                            User:{" "}
-                                                        </span>
-                                                        <span className="text-sm text-slate-900">
-                                                            {selectedRequest.user
-                                                                ?.first_name ||
-                                                                ""}{" "}
-                                                            {selectedRequest.user
-                                                                ?.last_name || ""}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-sm font-medium text-gray-600">
-                                                            Course:{" "}
-                                                        </span>
-                                                        <span className="text-sm text-slate-900">
-                                                            {selectedRequest.course
-                                                                ?.name ||
-                                                                "Unknown Course"}
-                                                        </span>
-                                                    </div>
-                                                    {selectedRequest.request_message && (
-                                                        <div>
-                                                            <span className="text-sm font-medium text-gray-600">
-                                                                Message:{" "}
-                                                            </span>
-                                                            <span className="text-sm text-slate-900">
-                                                                {
-                                                                    selectedRequest.request_message
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-red-600 mb-6">
-                                                This action cannot be undone. The
-                                                user will not be granted access to
-                                                this course.
-                                            </p>
-                                        </>
-                                    )}
-
-                                    <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                                        {!requestSuccess && (
-                                            <>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setShowRejectModal(false);
-                                                        setSelectedRequest(null);
-                                                        setRequestError(null);
-                                                        setRequestSuccess(null);
-                                                    }}
-                                                    disabled={isProcessingRequest}
-                                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleRejectRequest}
-                                                    disabled={isProcessingRequest}
-                                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                                                >
-                                                    {isProcessingRequest ? (
-                                                        <>
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                            <span>
-                                                                Rejecting...
-                                                            </span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <XCircle className="w-4 h-4" />
-                                                            <span>
-                                                                Confirm Reject
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </>
-                                        )}
-                                        {requestSuccess && (
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setShowRejectModal(false);
-                                                    setSelectedRequest(null);
-                                                    setRequestError(null);
-                                                    setRequestSuccess(null);
                                                 }}
                                                 className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
                                             >

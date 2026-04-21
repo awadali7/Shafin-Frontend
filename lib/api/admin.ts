@@ -28,6 +28,30 @@ export interface RequestsResponse {
     };
 }
 
+export interface CoursePurchase {
+    course_order_id: string;
+    course_id: string;
+    course_name: string;
+    course_price: string | number;
+    created_at: string;
+    order_id: string;
+    payment_status: string;
+    user_id: string;
+    user_email: string;
+    user_first_name: string;
+    user_last_name: string;
+}
+
+export interface CoursePurchasesResponse {
+    purchases: CoursePurchase[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        pages: number;
+    };
+}
+
 // Admin API Services
 export const adminApi = {
     // Get dashboard statistics (legacy)
@@ -71,6 +95,22 @@ export const adminApi = {
 
         return apiClient.get<RequestsResponse>(
             `/admin/requests?${params.toString()}`
+        );
+    },
+
+    // Get all course purchases (with pagination support)
+    getAllCoursePurchases: async (
+        page: number = 1,
+        limit: number = 50,
+        search?: string
+    ): Promise<ApiResponse<CoursePurchasesResponse>> => {
+        const params = new URLSearchParams();
+        params.append("page", page.toString());
+        params.append("limit", limit.toString());
+        if (search) params.append("search", search);
+
+        return apiClient.get<CoursePurchasesResponse>(
+            `/admin/course-purchases?${params.toString()}`
         );
     },
 

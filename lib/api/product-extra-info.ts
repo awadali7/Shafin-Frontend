@@ -78,4 +78,8 @@ export const productExtraInfoApi = {
         return apiClient.post<any>("/product-extra-info/grant", data);
     },
 
+    // Get user accesses
+    getMyAccesses: async (): Promise<ApiResponse<any[]>> => {
+        return apiClient.get<any[]>("/product-extra-info/my/access");
+    },
 };
