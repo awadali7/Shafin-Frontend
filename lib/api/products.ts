@@ -78,10 +78,12 @@ export const productsApi = {
         extra_shipping_charge?: number;
         rating?: number;
         reviews_count?: number;
+        is_active?: boolean;
         is_featured?: boolean;
         is_coming_soon?: boolean;
         is_contact_only?: boolean;
         requires_kyc?: boolean;
+        requires_kyc_multiple?: boolean;
         show_price_before_kyc?: boolean;
         cover_image?: File | null;
         digital_file?: File | null;
@@ -110,6 +112,8 @@ export const productsApi = {
             form.append("rating", String(data.rating));
         if (data.reviews_count !== undefined)
             form.append("reviews_count", String(data.reviews_count));
+        if (data.is_active !== undefined)
+            form.append("is_active", String(data.is_active));
         if (data.is_featured !== undefined)
             form.append("is_featured", String(data.is_featured));
         if (data.is_coming_soon !== undefined)
@@ -118,6 +122,11 @@ export const productsApi = {
             form.append("is_contact_only", String(data.is_contact_only));
         if (data.requires_kyc !== undefined)
             form.append("requires_kyc", String(data.requires_kyc));
+        if (data.requires_kyc_multiple !== undefined)
+            form.append(
+                "requires_kyc_multiple",
+                String(data.requires_kyc_multiple)
+            );
         if (data.show_price_before_kyc !== undefined)
             form.append(
                 "show_price_before_kyc",
@@ -197,6 +206,7 @@ export const productsApi = {
             is_coming_soon: boolean;
             is_contact_only: boolean;
             requires_kyc: boolean;
+            requires_kyc_multiple: boolean;
             show_price_before_kyc: boolean;
             cover_image: File | null;
             digital_file: File | null;

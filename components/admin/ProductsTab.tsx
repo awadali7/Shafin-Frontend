@@ -268,6 +268,7 @@ export const ProductsTab: React.FC = () => {
                     product_type: form.product_type,
                     price: form.price,
                     stock_quantity: form.stock_quantity,
+                    is_active: form.is_active,
                     is_featured: form.is_featured,
                     is_coming_soon: form.is_coming_soon,
                     requires_kyc: form.requires_kyc,
@@ -555,13 +556,13 @@ export const ProductsTab: React.FC = () => {
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
-                                            {/* <button
+                                            <button
                                                 onClick={() => deleteProduct(p)}
                                                 className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors"
                                                 aria-label="Delete"
                                             >
                                                 <Trash2 className="w-4 h-4" />
-                                            </button> */}
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -1423,4 +1424,3 @@ export const ProductsTab: React.FC = () => {
         </div>
     );
 };
-

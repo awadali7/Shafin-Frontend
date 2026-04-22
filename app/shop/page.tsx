@@ -37,6 +37,7 @@ type ShopProduct = {
     isComingSoon?: boolean;
     is_contact_only?: boolean;
     requiresKyc?: boolean;
+    requiresKycMultiple?: boolean;
     showPriceBeforeKyc?: boolean;
     weight?: number;
     volumetric_weight?: number;
@@ -76,6 +77,7 @@ function mapApiProductToShopProduct(p: Product): ShopProduct {
         isComingSoon: p.is_coming_soon || false,
         is_contact_only: p.is_contact_only || false,
         requiresKyc: p.requires_kyc || false,
+        requiresKycMultiple: p.requires_kyc_multiple || false,
         showPriceBeforeKyc: p.show_price_before_kyc || false,
         weight: p.weight,
         volumetric_weight: p.volumetric_weight,
@@ -389,9 +391,9 @@ export default function ShopPage() {
                                                 Coming Soon
                                             </span>
                                         )}
-                                        {product.requiresKyc && (
+                                        {(product.requiresKyc || product.requiresKycMultiple) && (
                                             <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded">
-                                                KYC
+                                                {product.requiresKyc ? "KYC" : "Bulk KYC"}
                                             </span>
                                         )}
                                         <span

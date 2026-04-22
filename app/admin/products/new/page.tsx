@@ -48,6 +48,7 @@ type ProductFormState = {
     is_coming_soon: boolean;
     is_contact_only: boolean;
     requires_kyc: boolean;
+    requires_kyc_multiple: boolean;
     show_price_before_kyc: boolean;
     cover_image: File | null;
     digital_file: File | null;
@@ -109,6 +110,7 @@ const defaultForm: ProductFormState = {
     is_coming_soon: false,
     is_contact_only: false,
     requires_kyc: false,
+    requires_kyc_multiple: false,
     show_price_before_kyc: false,
     cover_image: null,
     digital_file: null,
@@ -333,10 +335,12 @@ export default function NewProductPage() {
                 width: form.product_type === "physical" ? form.width : undefined,
                 height: form.product_type === "physical" ? form.height : undefined,
                 extra_shipping_charge: form.product_type === "physical" ? form.extra_shipping_charge : undefined,
+                is_active: form.is_active,
                 is_featured: form.is_featured,
                 is_coming_soon: form.is_coming_soon,
                 is_contact_only: form.is_contact_only,
                 requires_kyc: form.requires_kyc,
+                requires_kyc_multiple: form.requires_kyc_multiple,
                 show_price_before_kyc: form.show_price_before_kyc,
                 cover_image: form.cover_image,
                 digital_file: form.product_type === "digital" ? form.digital_file : undefined,
@@ -1282,6 +1286,21 @@ export default function NewProductPage() {
                             <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
                                 <input
                                     type="checkbox"
+                                    checked={form.requires_kyc_multiple}
+                                    onChange={(e) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            requires_kyc_multiple: e.target.checked,
+                                        }))
+                                    }
+                                    className="w-4 h-4 text-[#B00000] border-gray-300 rounded focus:ring-[#B00000]"
+                                />
+                                Requires KYC For Multiple Quantity
+                            </label>
+
+                            <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                                <input
+                                    type="checkbox"
                                     checked={form.show_price_before_kyc}
                                     onChange={(e) =>
                                         setForm((p) => ({
@@ -1289,15 +1308,15 @@ export default function NewProductPage() {
                                             show_price_before_kyc: e.target.checked,
                                         }))
                                     }
-                                    disabled={!form.requires_kyc}
+                                    disabled={!form.requires_kyc && !form.requires_kyc_multiple}
                                     className="w-4 h-4 text-[#B00000] border-gray-300 rounded focus:ring-[#B00000] disabled:opacity-50"
                                 />
                                 Show Price Before KYC
                             </label>
                         </div>
-                        {form.requires_kyc && (
+                        {(form.requires_kyc || form.requires_kyc_multiple) && (
                             <p className="mt-3 text-xs text-gray-500">
-                                Enable this if customers should see the price even before Business KYC approval.
+                                Use Requires KYC for any quantity, or Requires KYC For Multiple Quantity when only quantities above 1 need Business KYC. Show Price Before KYC only affects price visibility, not purchase permission.
                             </p>
                         )}
                     </div>

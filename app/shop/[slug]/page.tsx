@@ -51,6 +51,7 @@ type ShopProductDetails = {
     isComingSoon?: boolean;
     isContactOnly?: boolean;
     requiresKyc?: boolean;
+    requiresKycMultiple?: boolean;
     showPriceBeforeKyc?: boolean;
     weight?: number;
     volumetric_weight?: number;
@@ -106,6 +107,7 @@ function mapApiProductToDetails(p: Product): ShopProductDetails {
         isComingSoon: p.is_coming_soon || false,
         isContactOnly: p.is_contact_only || false,
         requiresKyc: p.requires_kyc || false,
+        requiresKycMultiple: p.requires_kyc_multiple || false,
         showPriceBeforeKyc: p.show_price_before_kyc || false,
         weight: p.weight,
         volumetric_weight: p.volumetric_weight,
@@ -297,6 +299,11 @@ export default function ProductDetailPage() {
         // Open the cart drawer
         setIsOpen(true);
     };
+
+    const requiresKycForSelectedQuantity =
+        !!product &&
+        (product.requiresKyc ||
+            (product.requiresKycMultiple && quantity > 1));
 
     const handleCopyLink = async () => {
         const url = window.location.href;
@@ -534,10 +541,12 @@ export default function ProductDetailPage() {
                             )}
 
                             {/* KYC Required Badge */}
-                            {product.requiresKyc && (
+                            {(product.requiresKyc || product.requiresKycMultiple) && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-amber-50 text-amber-700 border-amber-200">
                                     <ShieldCheck className="w-3 h-3" />
-                                    KYC Required
+                                    {product.requiresKyc
+                                        ? "KYC Required"
+                                        : "Bulk KYC"}
                                 </span>
                             )}
 
@@ -563,7 +572,7 @@ export default function ProductDetailPage() {
 
                         {/* Verify KYC conditions */}
                         {(() => {
-                            const showPriceAndAddToCart = !product.requiresKyc || (
+                            const showPriceAndAddToCart = !requiresKycForSelectedQuantity || (
                                 user?.user_type === "business_owner" &&
                                 userKycStatus?.status === "verified"
                             );
@@ -579,7 +588,9 @@ export default function ProductDetailPage() {
                                             <h3 className="text-sm font-semibold text-amber-900">Business KYC Required</h3>
                                         </div>
                                         <p className="text-xs text-amber-800">
-                                            You need an approved Business KYC to view pricing and purchase this product.
+                                            {product.requiresKycMultiple && !product.requiresKyc
+                                                ? "You need an approved Business KYC to buy more than one unit of this product."
+                                                : "You need an approved Business KYC to view pricing and purchase this product."}
                                         </p>
                                         <Link
                                             href="/kyc/product"
@@ -625,8 +636,10 @@ export default function ProductDetailPage() {
                                                     </div>
                                                 ) : null}
                                                 <p className="text-xs text-gray-600 mt-1">
-                                                    {!showPriceAndAddToCart && product.requiresKyc
-                                                        ? "Business KYC required to purchase"
+                                                    {!showPriceAndAddToCart && requiresKycForSelectedQuantity
+                                                        ? product.requiresKycMultiple && !product.requiresKyc
+                                                            ? "Business KYC required for quantities above 1"
+                                                            : "Business KYC required to purchase"
                                                         : product.type === "digital"
                                                         ? `Instant download (${product.digitalFile?.format?.toUpperCase() ||
                                                         "DIGITAL"
@@ -842,6 +855,12 @@ export default function ProductDetailPage() {
                                                             +
                                                         </button>
                                                     </div>
+
+                                                    {product.requiresKycMultiple && !product.requiresKyc && (
+                                                        <p className="mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                                            1 unit can be purchased normally. Business KYC is required for quantities above 1.
+                                                        </p>
+                                                    )}
 
                                                     {/* Total Price with Discount Display */}
                                                     <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">

@@ -537,6 +537,7 @@ export interface Product {
     is_coming_soon?: boolean;
     is_contact_only?: boolean; // Product can only be contacted via WhatsApp (no direct purchase)
     requires_kyc?: boolean; // Product requires KYC verification to purchase
+    requires_kyc_multiple?: boolean; // Product requires KYC only when buying more than 1 unit
     show_price_before_kyc?: boolean; // Show price even before KYC approval
 
     rating?: number | string;

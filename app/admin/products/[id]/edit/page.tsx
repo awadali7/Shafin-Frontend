@@ -40,6 +40,7 @@ type ProductFormState = {
     is_coming_soon: boolean;
     is_contact_only: boolean;
     requires_kyc: boolean;
+    requires_kyc_multiple: boolean;
     show_price_before_kyc: boolean;
     weight: number;
     origin_city: string;
@@ -106,6 +107,7 @@ const defaultForm: ProductFormState = {
     is_coming_soon: false,
     is_contact_only: false,
     requires_kyc: false,
+    requires_kyc_multiple: false,
     show_price_before_kyc: false,
     weight: 0,
     origin_city: "",
@@ -153,6 +155,7 @@ export default function EditProductPage() {
 
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [form, setForm] = useState<ProductFormState>(defaultForm);
     const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
     const [existingCategories, setExistingCategories] = useState<string[][]>([]);
@@ -257,6 +260,7 @@ export default function EditProductPage() {
                     is_coming_soon: product.is_coming_soon || false,
                     is_contact_only: product.is_contact_only || false,
                     requires_kyc: product.requires_kyc || false,
+                    requires_kyc_multiple: product.requires_kyc_multiple || false,
                     show_price_before_kyc: product.show_price_before_kyc || false,
                     cover_image: null,
                     digital_file: null,
@@ -466,6 +470,7 @@ export default function EditProductPage() {
                 is_coming_soon: form.is_coming_soon,
                 is_contact_only: form.is_contact_only,
                 requires_kyc: form.requires_kyc,
+                requires_kyc_multiple: form.requires_kyc_multiple,
                 show_price_before_kyc: form.show_price_before_kyc,
                 cover_image: form.cover_image || undefined,
                 digital_file: form.product_type === "digital" ? form.digital_file : undefined,
@@ -484,13 +489,37 @@ export default function EditProductPage() {
             });
 
             router.push("/admin?tab=products");
-        } catch (error: any) {
+        } catch (error: unknown) {
             toast.error("Failed to Update Product", {
-                description: error?.message || "An unexpected error occurred. Please try again.",
+                description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
                 id: toastId
             });
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const deleteProduct = async () => {
+        if (!confirm(`Delete product "${form.name || "this product"}"? This cannot be undone.`)) {
+            return;
+        }
+
+        setIsDeleting(true);
+        const toastId = toast.loading("Deleting product...");
+
+        try {
+            await productsApi.adminDelete(productId);
+            toast.success("Product Deleted", {
+                description: `${form.name || "Product"} has been removed.`,
+                id: toastId
+            });
+            router.push("/admin?tab=products");
+        } catch (error: unknown) {
+            toast.error("Failed to Delete Product", {
+                description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
+                id: toastId
+            });
+            setIsDeleting(false);
         }
     };
 
@@ -1456,6 +1485,21 @@ export default function EditProductPage() {
                             <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
                                 <input
                                     type="checkbox"
+                                    checked={form.requires_kyc_multiple}
+                                    onChange={(e) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            requires_kyc_multiple: e.target.checked,
+                                        }))
+                                    }
+                                    className="w-4 h-4 text-[#B00000] border-gray-300 rounded focus:ring-[#B00000]"
+                                />
+                                Requires KYC For Multiple Quantity
+                            </label>
+
+                            <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                                <input
+                                    type="checkbox"
                                     checked={form.show_price_before_kyc}
                                     onChange={(e) =>
                                         setForm((p) => ({
@@ -1463,21 +1507,30 @@ export default function EditProductPage() {
                                             show_price_before_kyc: e.target.checked,
                                         }))
                                     }
-                                    disabled={!form.requires_kyc}
+                                    disabled={!form.requires_kyc && !form.requires_kyc_multiple}
                                     className="w-4 h-4 text-[#B00000] border-gray-300 rounded focus:ring-[#B00000] disabled:opacity-50"
                                 />
                                 Show Price Before KYC
                             </label>
                         </div>
-                        {form.requires_kyc && (
+                        {(form.requires_kyc || form.requires_kyc_multiple) && (
                             <p className="mt-3 text-xs text-gray-500">
-                                Enable this if customers should see the price even before Business KYC approval.
+                                Use Requires KYC for any quantity, or Requires KYC For Multiple Quantity when only quantities above 1 need Business KYC. Show Price Before KYC only affects price visibility, not purchase permission.
                             </p>
                         )}
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
+                        <button
+                            type="button"
+                            onClick={deleteProduct}
+                            disabled={isDeleting || isSubmitting}
+                            className="inline-flex items-center gap-2 px-6 py-2 border border-red-200 text-red-700 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-60"
+                        >
+                            <Trash className="w-4 h-4" />
+                            {isDeleting ? "Deleting..." : "Delete Product"}
+                        </button>
                         <button
                             type="button"
                             onClick={() => router.push("/admin?tab=products")}
@@ -1487,11 +1540,11 @@ export default function EditProductPage() {
                         </button>
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isDeleting}
                             className="inline-flex items-center gap-2 px-6 py-2 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-colors disabled:opacity-60"
                         >
                             {isSubmitting ? (
-                                "Creating..."
+                                "Updating..."
                             ) : (
                                 <>
                                     <Save className="w-4 h-4" />
