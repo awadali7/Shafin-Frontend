@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect } from "react";
-import { ChevronRight, Filter, X, ChevronDown } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronRight, Filter, X } from "lucide-react";
 
 interface Product {
     id: string;
@@ -11,101 +11,65 @@ interface Product {
 
 interface MultiLevelCategoryMenuProps {
     products: Product[];
+    selectedPath: string[];
     onFilterChange: (selectedPath: string[]) => void;
 }
 
 interface CategoryNode {
     name: string;
     children: Map<string, CategoryNode>;
-    hasProducts: boolean;
 }
+
+const MAX_LEVELS = 4;
+const LEVEL_LABELS = [
+    "Main category",
+    "Sub-category",
+    "Series",
+    "Variant",
+];
 
 export default function MultiLevelCategoryMenu({
     products,
+    selectedPath,
     onFilterChange,
 }: MultiLevelCategoryMenuProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedPath, setSelectedPath] = useState<string[]>([]);
-    const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(new Set());
-    const [isMobile, setIsMobile] = useState(() =>
-        typeof window !== "undefined" ? window.innerWidth < 768 : false
-    );
     const menuRef = useRef<HTMLDivElement>(null);
 
-    // Detect mobile viewport
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768); // md breakpoint (Tailwind default)
-        };
-
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
-    // Build category tree structure
     const categoryTree = useMemo(() => {
         const root = new Map<string, CategoryNode>();
 
         products.forEach((product) => {
-            const cats =
-                product.categories ||
-                (product.category ? [product.category] : []);
+            const cats = (
+                product.categories?.length
+                    ? product.categories
+                    : product.category
+                      ? [product.category]
+                      : []
+            )
+                .map((cat) => cat.trim())
+                .filter(Boolean)
+                .slice(0, MAX_LEVELS);
 
             if (cats.length === 0) return;
 
             let currentLevel = root;
 
-            cats.forEach((cat, index) => {
+            cats.forEach((cat) => {
                 if (!currentLevel.has(cat)) {
                     currentLevel.set(cat, {
                         name: cat,
                         children: new Map(),
-                        hasProducts: index === cats.length - 1,
                     });
                 }
 
-                const node = currentLevel.get(cat)!;
-                if (index === cats.length - 1) {
-                    node.hasProducts = true;
-                }
-                currentLevel = node.children;
+                currentLevel = currentLevel.get(cat)!.children;
             });
         });
 
         return root;
     }, [products]);
 
-    // Handle category selection
-    const handleSelect = (path: string[]) => {
-        setSelectedPath(path);
-        onFilterChange(path);
-        setIsOpen(false);
-        setOpenSubmenus(new Set());
-    };
-
-    // Handle clear filter
-    const handleClear = () => {
-        setSelectedPath([]);
-        onFilterChange([]);
-        setIsOpen(false);
-        setOpenSubmenus(new Set());
-    };
-
-    // Toggle submenu (for mobile click behavior)
-    const toggleSubmenu = (itemKey: string) => {
-        setOpenSubmenus((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(itemKey)) {
-                newSet.delete(itemKey);
-            } else {
-                newSet.add(itemKey);
-            }
-            return newSet;
-        });
-    };
-
-    // Close menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (
@@ -113,7 +77,6 @@ export default function MultiLevelCategoryMenu({
                 !menuRef.current.contains(event.target as Node)
             ) {
                 setIsOpen(false);
-                setOpenSubmenus(new Set());
             }
         };
 
@@ -126,205 +89,207 @@ export default function MultiLevelCategoryMenu({
         };
     }, [isOpen]);
 
-    // Recursive menu item component
-    const MenuItem = ({
-        node,
-        path,
-        level,
-    }: {
-        node: CategoryNode;
-        path: string[];
-        level: number;
-    }) => {
-        const buttonRef = useRef<HTMLButtonElement>(null);
-        const itemPath = [...path, node.name];
-        const itemKey = itemPath.join(">");
-        const hasChildren = node.children.size > 0;
-        const isSubmenuOpen = openSubmenus.has(itemKey);
-        const isSelected =
-            selectedPath.length === itemPath.length &&
-            itemPath.every((cat, idx) => selectedPath[idx] === cat);
-        const isInSelectedPath =
-            selectedPath.length > 0 &&
-            selectedPath
-                .slice(0, itemPath.length)
-                .every((cat, idx) => itemPath[idx] === cat);
+    const levels = useMemo(() => {
+        const output: string[][] = [];
+        let currentLevel = categoryTree;
 
-        // Mobile: click to expand, desktop: hover to expand
-        const handleItemClick = (e: React.MouseEvent) => {
-            if (isMobile && hasChildren) {
-                e.stopPropagation();
-                toggleSubmenu(itemKey);
-            } else {
-                handleSelect(itemPath);
-            }
-        };
+        for (let level = 0; level < MAX_LEVELS; level += 1) {
+            const options = Array.from(currentLevel.values())
+                .map((node) => node.name)
+                .sort((a, b) => a.localeCompare(b));
 
-        const handleChevronClick = (e: React.MouseEvent) => {
-            e.stopPropagation();
-            if (hasChildren) {
-                toggleSubmenu(itemKey);
-            }
-        };
+            if (options.length === 0) break;
+            output.push(options);
 
-        return (
-            <div
-                className="relative"
-                onMouseEnter={() => {
-                    if (!isMobile && hasChildren) {
-                        setOpenSubmenus((prev) => new Set([...prev, itemKey]));
-                    }
-                }}
-                onMouseLeave={() => {
-                    if (!isMobile && hasChildren) {
-                        setTimeout(() => {
-                            setOpenSubmenus((prev) => {
-                                const newSet = new Set(prev);
-                                newSet.delete(itemKey);
-                                return newSet;
-                            });
-                        }, 300);
-                    }
-                }}
-            >
-                <button
-                    ref={buttonRef}
-                    onClick={handleItemClick}
-                    className={`w-full px-4 py-2.5 flex items-center justify-between text-left text-sm transition-colors ${isSelected
-                        ? "bg-[#B00000] text-white font-medium"
-                        : isInSelectedPath
-                            ? "bg-red-50 text-[#B00000] font-medium"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                >
-                    <span className="flex-1 truncate">{node.name}</span>
-                    {hasChildren && (
-                        <button
-                            onClick={handleChevronClick}
-                            className="ml-2 p-1 hover:bg-black/10 rounded"
-                        >
-                            {isMobile ? (
-                                <ChevronDown
-                                    className={`w-4 h-4 shrink-0 transition-transform ${isSubmenuOpen ? "rotate-180" : ""
-                                        } ${isSelected ? "text-white" : "text-gray-400"}`}
-                                />
-                            ) : (
-                                <ChevronRight
-                                    className={`w-4 h-4 shrink-0 ${isSelected ? "text-white" : "text-gray-400"
-                                        }`}
-                                />
-                            )}
-                        </button>
-                    )}
-                </button>
+            const selected = selectedPath[level];
+            const nextNode = selected ? currentLevel.get(selected) : undefined;
+            if (!nextNode) break;
+            currentLevel = nextNode.children;
+        }
 
-                {/* Submenu */}
-                {hasChildren && isSubmenuOpen && (
-                    <div
-                        className={`${isMobile
-                            ? "relative left-0 top-0 pl-4 bg-gray-50"
-                            : "absolute left-full top-0 shadow-xl border border-gray-200 bg-white min-w-[200px] z-[9999]"
-                            }`}
-                        onMouseEnter={() => {
-                            if (!isMobile) {
-                                setOpenSubmenus((prev) => new Set([...prev, itemKey]));
-                            }
-                        }}
-                        onMouseLeave={() => {
-                            if (!isMobile) {
-                                setTimeout(() => {
-                                    setOpenSubmenus((prev) => {
-                                        const newSet = new Set(prev);
-                                        newSet.delete(itemKey);
-                                        return newSet;
-                                    });
-                                }, 300);
-                            }
-                        }}
-                    >
-                        {Array.from(node.children.values())
-                            .sort((a, b) => a.name.localeCompare(b.name))
-                            .map((childNode) => (
-                                <MenuItem
-                                    key={childNode.name}
-                                    node={childNode}
-                                    path={itemPath}
-                                    level={level + 1}
-                                />
-                            ))}
-                    </div>
-                )}
-            </div>
-        );
+        return output;
+    }, [categoryTree, selectedPath]);
+
+    const totalCategories = useMemo(() => {
+        const unique = new Set<string>();
+
+        products.forEach((product) => {
+            (product.categories?.length
+                ? product.categories
+                : product.category
+                  ? [product.category]
+                  : []
+            )
+                .map((cat) => cat.trim())
+                .filter(Boolean)
+                .forEach((cat) => unique.add(cat));
+        });
+
+        return unique.size;
+    }, [products]);
+
+    const handleSelect = (level: number, category: string) => {
+        const alreadySelected = selectedPath[level] === category;
+        const nextPath = alreadySelected
+            ? selectedPath.slice(0, level)
+            : [...selectedPath.slice(0, level), category];
+
+        onFilterChange(nextPath);
     };
 
-    const rootCategories = Array.from(categoryTree.values()).sort((a, b) =>
-        a.name.localeCompare(b.name)
-    );
+    const handleClear = () => {
+        onFilterChange([]);
+        setIsOpen(false);
+    };
+
+    const hasCategories = levels.length > 0;
 
     return (
-        <div className="relative" ref={menuRef}>
-            {/* Filter Button */}
+        <div className="relative w-full lg:w-auto" ref={menuRef}>
             <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={`h-10 px-4 flex items-center gap-2 text-sm font-medium rounded-md transition-all ${selectedPath.length > 0
-                    ? "bg-[#B00000] text-white shadow-sm"
-                    : "border border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                    }`}
+                type="button"
+                onClick={() => setIsOpen((prev) => !prev)}
+                className={`flex h-10 w-full items-center justify-between gap-2 rounded-md border px-3 text-left text-sm transition-colors lg:min-w-[280px] ${
+                    selectedPath.length > 0
+                        ? "border-[#B00000] bg-white text-[#B00000]"
+                        : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                }`}
+                aria-expanded={isOpen}
             >
-                <Filter className="w-4 h-4" />
-                {selectedPath.length > 0 ? (
-                    <>
-                        <span className="max-w-[200px] truncate">
-                            {selectedPath.join(" > ")}
-                        </span>
+                <span className="flex min-w-0 items-center gap-2">
+                    <Filter className="h-4 w-4 shrink-0" />
+                    <span className="truncate">
+                        {selectedPath.length > 0
+                            ? selectedPath.join(" / ")
+                            : "Filter by Category"}
+                    </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                    {selectedPath.length > 0 && (
                         <button
-                            onClick={(e) => {
-                                e.stopPropagation();
+                            type="button"
+                            onClick={(event) => {
+                                event.stopPropagation();
                                 handleClear();
                             }}
-                            className="ml-1 hover:bg-red-800 rounded-full p-0.5 transition-colors"
+                            className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#B00000]"
                             aria-label="Clear filter"
                         >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="h-3.5 w-3.5" />
                         </button>
-                    </>
-                ) : (
-                    <span>Filter by Category</span>
-                )}
+                    )}
+                    <ChevronDown
+                        className={`h-4 w-4 text-gray-400 transition-transform ${
+                            isOpen ? "rotate-180" : ""
+                        }`}
+                    />
+                </span>
             </button>
 
-            {/* Cascading Menu */}
             {isOpen && (
-                <div className="absolute top-full mt-2 left-0 z-[200]">
-                    <div className={`shadow-xl border border-gray-200 bg-white ${isMobile
-                            ? 'min-w-[280px] max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-lg'
-                            : 'min-w-[220px] overflow-visible rounded-md'
-                        }`}>
-                        <div className="relative">
-                            {rootCategories.map((node) => (
-                                <MenuItem
-                                    key={node.name}
-                                    node={node}
-                                    path={[]}
-                                    level={0}
-                                />
-                            ))}
-
-                            {/* Clear button */}
+                <div className="absolute left-0 top-full z-[200] mt-2 w-full lg:min-w-[720px] lg:w-auto">
+                    <div className="overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
+                        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                            <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                    Filter by Category
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {totalCategories > 0
+                                        ? `${totalCategories} categories available`
+                                        : "Choose a category path"}
+                                </p>
+                            </div>
                             {selectedPath.length > 0 && (
                                 <button
+                                    type="button"
                                     onClick={handleClear}
-                                    className="w-full px-4 py-2.5 bg-gray-50 border-t border-gray-200 text-sm font-medium text-gray-600 hover:text-[#B00000] hover:bg-gray-100 transition-colors text-left"
+                                    className="text-sm text-[#B00000] hover:underline"
                                 >
-                                    Clear All Filters
+                                    Clear
                                 </button>
                             )}
                         </div>
+
+                        {!hasCategories ? (
+                            <div className="px-4 py-6 text-sm text-gray-500">
+                                Categories will appear once products are loaded.
+                            </div>
+                        ) : (
+                            <div className="grid gap-3 p-4 lg:grid-cols-4">
+                                {levels.map((options, level) => (
+                                    <section
+                                        key={`level-${level}`}
+                                        className="min-w-0"
+                                    >
+                                        <p className="mb-2 text-xs font-medium text-gray-500">
+                                            {LEVEL_LABELS[level] || `Level ${level + 1}`}
+                                        </p>
+                                        <div className="space-y-1.5">
+                                            {options.map((option) => {
+                                                const isSelected =
+                                                    selectedPath[level] === option;
+                                                const isActiveParent =
+                                                    level === 0 ||
+                                                    selectedPath[level - 1] !== undefined;
+
+                                                return (
+                                                    <button
+                                                        key={option}
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleSelect(level, option)
+                                                        }
+                                                        className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                                                            isSelected
+                                                                ? "border-[#B00000] bg-[#B00000] text-white"
+                                                                : isActiveParent
+                                                                  ? "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
+                                                                  : "border-gray-100 bg-gray-50 text-gray-400"
+                                                        }`}
+                                                    >
+                                                        <span className="truncate">
+                                                            {option}
+                                                        </span>
+                                                        <ChevronRight
+                                                            className={`h-4 w-4 shrink-0 ${
+                                                                isSelected
+                                                                    ? "text-white"
+                                                                    : "text-gray-300"
+                                                            }`}
+                                                        />
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </section>
+                                ))}
+                            </div>
+                        )}
+
+                        {selectedPath.length > 0 && (
+                            <div className="border-t border-gray-200 px-4 py-3">
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedPath.map((item, index) => (
+                                        <button
+                                            key={`${item}-${index}`}
+                                            type="button"
+                                            onClick={() =>
+                                                onFilterChange(
+                                                    selectedPath.slice(0, index + 1)
+                                                )
+                                            }
+                                            className="rounded border border-gray-300 px-2.5 py-1 text-xs text-gray-700 hover:border-[#B00000] hover:text-[#B00000]"
+                                        >
+                                            {item}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
         </div>
     );
 }
-

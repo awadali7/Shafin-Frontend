@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Package, ChevronDown, CreditCard, Truck, Calendar, ExternalLink, CheckCircle, Clock, Download, MapPin } from "lucide-react";
+import { Loader2, Package, ChevronDown, CreditCard, Truck, Calendar, ExternalLink, CheckCircle, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersApi } from "@/lib/api/orders";
 import { paymentsApi } from "@/lib/api/payments";
@@ -10,7 +10,7 @@ import type { Order } from "@/lib/api/types";
 import LoginDrawer from "@/components/LoginDrawer";
 import RegisterDrawer from "@/components/RegisterDrawer";
 import { toast } from "sonner";
-import { Badge, NotificationBanner, TimelineStep, SummaryRow, OrderItemCard } from "@/components/orders";
+import { Badge, NotificationBanner, SummaryRow, OrderItemCard } from "@/components/orders";
 
 // Razorpay types
 interface RazorpaySuccessResponse {
@@ -33,10 +33,6 @@ interface RazorpayOptions {
     modal?: {
         ondismiss?: () => void;
     };
-}
-
-interface RazorpayInstance {
-    open: () => void;
 }
 
 async function loadRazorpayScript(): Promise<boolean> {
@@ -346,14 +342,13 @@ export default function OrdersPage() {
             });
             y += 30;
 
-            if (order.tracking_number || order.courier_service_type || order.destination_city || order.delivered_at) {
+            if (order.tracking_number || order.estimated_delivery_date || order.tracking_url || order.delivered_at) {
                 drawSectionTitle("Delivery Details");
                 ensureSpace(16);
                 const details: string[] = [];
                 if (order.tracking_number) details.push(`Tracking: ${order.tracking_number}`);
-                if (order.courier_service_type) details.push(`Courier: ${order.courier_service_type}`);
-                if (order.origin_city) details.push(`Origin: ${order.origin_city}`);
-                if (order.destination_city) details.push(`Destination: ${order.destination_city}`);
+                if (order.estimated_delivery_date) details.push(`Estimated Delivery: ${formatShortDate(order.estimated_delivery_date)}`);
+                if (order.tracking_url) details.push("Tracking link available online");
                 if (order.delivered_at) details.push(`Delivered: ${formatShortDate(order.delivered_at)}`);
 
                 let detailsY = y + 7;
@@ -390,7 +385,7 @@ export default function OrdersPage() {
         }
     };
 
-    const handleContinuePayment = async (orderId: string, orderTotal: number) => {
+    const handleContinuePayment = async (orderId: string) => {
         try {
             setProcessingOrderId(orderId);
             toast.loading("Loading payment gateway...");
@@ -674,7 +669,7 @@ export default function OrdersPage() {
 
                                             {order.status === "pending" && Number(order.total) > 0 && (
                                                 <button
-                                                    onClick={() => handleContinuePayment(order.id, Number(order.total))}
+                                                    onClick={() => handleContinuePayment(order.id)}
                                                     disabled={processingOrderId === order.id}
                                                     className="flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap text-sm font-medium"
                                                 >
@@ -721,44 +716,21 @@ export default function OrdersPage() {
                                             </h4>
 
                                             <div className="bg-white rounded-lg p-4 shadow-sm">
-                                                {/* Tracking Number & Detailed Header */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                                    <div>
-                                                        <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Tracking ID</p>
-                                                        <div className="flex items-center gap-3">
-                                                            <p className="text-lg font-bold text-slate-900 font-mono">
-                                                                {order.tracking_number || "Awaiting Pickup"}
-                                                            </p>
-                                                            {order.tracking_url && (
-                                                                <a
-                                                                    href={order.tracking_url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm font-medium"
-                                                                >
-                                                                    <ExternalLink className="w-3.5 h-3.5" /> External Track
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex gap-4 md:justify-end">
-                                                        {order.origin_city && (
-                                                            <div>
-                                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Origin</p>
-                                                                <p className="text-sm font-semibold text-slate-800">{order.origin_city}</p>
-                                                            </div>
-                                                        )}
-                                                        {order.destination_city && (
-                                                            <div>
-                                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Destination</p>
-                                                                <p className="text-sm font-semibold text-slate-800">{order.destination_city}</p>
-                                                            </div>
-                                                        )}
-                                                        {order.courier_service_type && (
-                                                            <div>
-                                                                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-0.5">Service</p>
-                                                                <p className="text-sm font-semibold text-[#B00000]">{order.courier_service_type}</p>
-                                                            </div>
+                                                <div className="mb-6">
+                                                    <p className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Tracking Number</p>
+                                                    <div className="flex flex-wrap items-center gap-3">
+                                                        <p className="text-lg font-bold text-slate-900 font-mono">
+                                                            {order.tracking_number || "Awaiting Pickup"}
+                                                        </p>
+                                                        {order.tracking_url && (
+                                                            <a
+                                                                href={order.tracking_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1 text-blue-600 hover:underline text-sm font-medium"
+                                                            >
+                                                                <ExternalLink className="w-3.5 h-3.5" /> Track Package
+                                                            </a>
                                                         )}
                                                     </div>
                                                 </div>
@@ -776,110 +748,13 @@ export default function OrdersPage() {
                                                     </div>
                                                 )}
 
-                                                {/* Shipment Timeline */}
-                                                <div className="mt-4 pt-4 border-t border-slate-200">
-                                                    <p className="text-xs font-bold text-slate-800 uppercase tracking-widest mb-6">Shipment Journey</p>
-                                                    <div className="relative pl-8 space-y-8 before:content-[''] before:absolute before:left-3.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-                                                        {Array.isArray(order.tracking_history) && order.tracking_history.length > 0 ? (
-                                                            // Custom DTDC-style History - Sorted Newest First
-                                                            order.tracking_history
-                                                                .slice()
-                                                                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                                                                .map((entry, idx) => (
-                                                                    <div key={idx} className="relative">
-                                                                    {/* Dot indicator */}
-                                                                    <div className={`absolute -left-[25px] top-1.5 w-4 h-4 rounded-full border-2 bg-white ${idx === 0 ? 'border-blue-600 flex items-center justify-center after:content-[""] after:w-1.5 after:h-1.5 after:bg-blue-600 after:rounded-full' : 'border-slate-300'}`} />
-                                                                    
-                                                                    <div>
-                                                                        <div className="flex items-center gap-2 mb-0.5">
-                                                                            <p className={`text-sm font-bold ${idx === 0 ? 'text-blue-600' : 'text-slate-900'}`}>
-                                                                                {entry.status}
-                                                                            </p>
-                                                                            <span className="text-[10px] text-slate-400 font-mono">
-                                                                                {formatDate(entry.timestamp)}
-                                                                            </span>
-                                                                        </div>
-                                                                        <div className="flex flex-wrap gap-x-4 gap-y-1">
-                                                                            {entry.location && (
-                                                                                <p className="text-xs text-slate-600 flex items-center gap-1">
-                                                                                    <MapPin className="w-3 h-3 text-slate-400" /> {entry.location}
-                                                                                </p>
-                                                                            )}
-                                                                            {entry.description && (
-                                                                                <p className="text-xs text-slate-500 italic">
-                                                                                    {entry.description}
-                                                                                </p>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            ))
-                                                        ) : (
-                                                            // Default/Fallback Timeline
-                                                            <>
-                                                                <TimelineStep
-                                                                    icon={CheckCircle}
-                                                                    status="complete"
-                                                                    title="Order Placed"
-                                                                    description={formatDate(order.created_at)}
-                                                                />
-
-                                                                {['paid', 'processing', 'shipped', 'dispatched', 'delivered'].includes(order.status) && (
-                                                                    <TimelineStep
-                                                                        icon={CheckCircle}
-                                                                        status="complete"
-                                                                        title="Payment Confirmed"
-                                                                        description="Order is being processed"
-                                                                    />
-                                                                )}
-
-                                                                {order.shipped_at ? (
-                                                                    <TimelineStep
-                                                                        icon={CheckCircle}
-                                                                        status="complete"
-                                                                        title="Shipped"
-                                                                        description={formatDate(order.shipped_at)}
-                                                                    />
-                                                                ) : (
-                                                                    <TimelineStep
-                                                                        icon={Clock}
-                                                                        status="pending"
-                                                                        title="Preparing to Ship"
-                                                                        description="Your order is being prepared"
-                                                                    />
-                                                                )}
-
-                                                                {order.delivered_at ? (
-                                                                    <TimelineStep
-                                                                        icon={CheckCircle}
-                                                                        status="complete"
-                                                                        title="✨ Delivered"
-                                                                        description={formatDate(order.delivered_at)}
-                                                                    />
-                                                                ) : order.shipped_at ? (
-                                                                    <TimelineStep
-                                                                        icon={Truck}
-                                                                        status="active"
-                                                                        title="In Transit"
-                                                                        description={
-                                                                            estimatedDate
-                                                                                ? `Expected: ${formatShortDate(estimatedDate)}`
-                                                                                : 'On the way to you'
-                                                                        }
-                                                                        animated
-                                                                    />
-                                                                ) : (
-                                                                    <TimelineStep
-                                                                        icon={Clock}
-                                                                        status="pending"
-                                                                        title="Delivery Pending"
-                                                                        description="Will be shipped soon"
-                                                                    />
-                                                                )}
-                                                            </>
-                                                        )}
+                                                {order.delivered_at && (
+                                                    <div className="mt-4 pt-4 border-t border-slate-200">
+                                                        <p className="text-sm font-medium text-green-700">
+                                                            Delivered on {formatShortDate(order.delivered_at)}
+                                                        </p>
                                                     </div>
-                                                </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

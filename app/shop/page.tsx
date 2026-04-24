@@ -3,14 +3,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-    Download,
     Package,
     Search,
-    Truck,
     X,
     Grid3x3,
     List,
-    ArrowUpDown,
     ShieldCheck,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
@@ -23,6 +20,7 @@ import Pagination from "@/components/ui/Pagination";
 
 type ProductType = "physical" | "digital";
 type DigitalFileFormat = "zip" | "rar";
+type SortOption = "name" | "price-asc" | "price-desc";
 
 type ShopProduct = {
     id: string;
@@ -100,6 +98,7 @@ export default function ShopPage() {
     const { user, isAuth } = useAuth();
     const [userKycStatus, setUserKycStatus] = useState<UserDashboardData["kyc_status"] | null>(null);
     const [products, setProducts] = useState<ShopProduct[]>([]);
+    const [categoryProducts, setCategoryProducts] = useState<ShopProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedCategoryPath, setSelectedCategoryPath] = useState<string[]>(
@@ -108,15 +107,11 @@ export default function ShopPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-    const [sortBy, setSortBy] = useState<
-        "name" | "price-asc" | "price-desc"
-    >("name");
+    const [sortBy, setSortBy] = useState<SortOption>("name");
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState<PaginationInfo | null>(null);
     const itemsPerPage = 20;
     const { addToCart, setIsOpen } = useCart();
-
-    const normalizedQuery = debouncedSearch.trim().toLowerCase();
 
     // Debounce search input
     useEffect(() => {
@@ -153,9 +148,11 @@ export default function ShopPage() {
 
                 // Scroll to top when page changes
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-            } catch (e: any) {
+            } catch (e: unknown) {
                 if (!mounted) return;
-                setError(e?.message || "Failed to load products");
+                setError(
+                    e instanceof Error ? e.message : "Failed to load products"
+                );
             } finally {
                 if (!mounted) return;
                 setLoading(false);
@@ -165,6 +162,43 @@ export default function ShopPage() {
             mounted = false;
         };
     }, [debouncedSearch, selectedCategoryPath, currentPage, itemsPerPage]);
+
+    // Fetch a stable product catalog to build the category filter.
+    useEffect(() => {
+        let mounted = true;
+
+        (async () => {
+            try {
+                const allProducts: ShopProduct[] = [];
+                let page = 1;
+                let totalPages = 1;
+
+                while (page <= totalPages) {
+                    const resp = await productsApi.list({
+                        page,
+                        limit: 100,
+                    });
+
+                    if (!mounted) return;
+
+                    const list = Array.isArray(resp.data) ? resp.data : [];
+                    allProducts.push(...list.map(mapApiProductToShopProduct));
+                    totalPages = resp.pagination?.totalPages || 1;
+                    page += 1;
+                }
+
+                if (!mounted) return;
+                setCategoryProducts(allProducts);
+            } catch (e) {
+                if (!mounted) return;
+                console.error("Failed to load category filter catalog:", e);
+            }
+        })();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     // Fetch user KYC status if authenticated
     useEffect(() => {
@@ -240,7 +274,8 @@ export default function ShopPage() {
                 <div className="mb-6 flex flex-wrap items-center gap-3">
                     {/* Category Filter */}
                     <MultiLevelCategoryMenu
-                        products={products}
+                        products={categoryProducts.length > 0 ? categoryProducts : products}
+                        selectedPath={selectedCategoryPath}
                         onFilterChange={setSelectedCategoryPath}
                     />
 
@@ -269,7 +304,9 @@ export default function ShopPage() {
                     {/* Sort Dropdown */}
                     <select
                         value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as any)}
+                        onChange={(e) =>
+                            setSortBy(e.target.value as SortOption)
+                        }
                         className="px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#B00000] focus:ring-1 focus:ring-[#B00000]"
                     >
                         <option value="name">Name (A-Z)</option>

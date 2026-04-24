@@ -99,7 +99,7 @@ export default function Header() {
                             alt="DIAGTOOLS"
                             width={1000}
                             height={1000}
-                            className="h-10 w-[70%] object-contain"
+                            className="h-12 w-[90%] object-contain"
                             priority
                         />
                     </div>
