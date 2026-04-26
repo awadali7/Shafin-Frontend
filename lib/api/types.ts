@@ -469,6 +469,8 @@ export interface ProductKYCVerification {
     whatsapp_number: string;
     id_proofs: string[]; // Array of ID proof URLs (minimum 2)
     business_proofs: string[]; // Array of business proof URLs (optional)
+    back_side_id_proof_url?: string | null;
+    signature_url?: string | null;
     status: "pending" | "verified" | "rejected";
     rejection_reason?: string;
     verified_by?: string;
@@ -507,6 +509,7 @@ export interface Product {
     malayalam_description?: string;
     hindi_description?: string;
     price: number;
+    offer_price?: number | null;
     category?: string | null; // First category for backward compatibility
     categories?: string[]; // Array of up to 4 categories
     // Backend returns product_type + we also include a friendlier `type`

@@ -418,9 +418,19 @@ function AdminPageContent() {
     const [showGrantAccessModal, setShowGrantAccessModal] = useState(false);
     const [selectedCourseForGrant, setSelectedCourseForGrant] =
         useState<Course | null>(null);
+    const [grantAccessMode, setGrantAccessMode] = useState<"grant" | "remove">(
+        "grant"
+    );
 
     const handleGrantAccessClick = (course: Course) => {
         setSelectedCourseForGrant(course);
+        setGrantAccessMode("grant");
+        setShowGrantAccessModal(true);
+    };
+
+    const handleRevokeAccessClick = (course: Course) => {
+        setSelectedCourseForGrant(course);
+        setGrantAccessMode("remove");
         setShowGrantAccessModal(true);
     };
 
@@ -1705,6 +1715,7 @@ function AdminPageContent() {
                 <GrantAccessModal
                     course={selectedCourseForGrant}
                     isOpen={showGrantAccessModal}
+                    initialMode={grantAccessMode}
                     onClose={() => {
                         setShowGrantAccessModal(false);
                         setSelectedCourseForGrant(null);
@@ -1726,6 +1737,7 @@ function AdminPageContent() {
                         onEditVideo={handleEditVideo}
                         onDeleteVideo={handleDeleteVideo}
                         onGrantAccess={handleGrantAccessClick}
+                        onRevokeAccess={handleRevokeAccessClick}
                     />
                 )}
 

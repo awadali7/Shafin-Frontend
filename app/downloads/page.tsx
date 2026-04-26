@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Download, Loader2, Package, Eye } from "lucide-react";
+import { Download, Loader2, Package, Eye, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { entitlementsApi } from "@/lib/api/entitlements";
 import { productExtraInfoApi } from "@/lib/api/product-extra-info";
@@ -29,11 +29,35 @@ export default function DownloadsPage() {
     const [downloadingSlug, setDownloadingSlug] = useState<string | null>(null);
     const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const apiBaseUrl = useMemo(
         () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api",
         []
     );
+
+    const filteredItems = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+
+        if (!query) {
+            return items;
+        }
+
+        return items.filter((ent) => {
+            const haystack = [
+                ent.name,
+                ent.slug,
+                ent.category,
+                ent.source,
+                ent.digital_file_format,
+            ]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+
+            return haystack.includes(query);
+        });
+    }, [items, searchQuery]);
 
     useEffect(() => {
         if (!authLoading && !isAuth) {
@@ -167,13 +191,25 @@ export default function DownloadsPage() {
 
     return (
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-            <div className="flex items-center justify-between gap-4 mb-6">
-                <h1 className="text-3xl font-bold text-slate-900">
-                    My Downloads
-                </h1>
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
+                <div className="flex-1 max-w-2xl">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-3">
+                        My Downloads
+                    </h1>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            placeholder="Search downloads by product, category, format..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent transition-all"
+                        />
+                    </div>
+                </div>
                 <Link
                     href="/orders"
-                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-slate-900 hover:bg-gray-50 transition-colors"
+                    className="self-start lg:self-auto px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-slate-900 hover:bg-gray-50 transition-colors"
                 >
                     My Orders
                 </Link>
@@ -192,6 +228,11 @@ export default function DownloadsPage() {
                         No downloads yet. After payment success (or admin
                         grant), your digital products will appear here.
                     </p>
+                    {searchQuery.trim() && (
+                        <p className="text-sm text-gray-400 mt-3">
+                            Search will start working as soon as downloads are available.
+                        </p>
+                    )}
                     <Link
                         href="/shop"
                         className="inline-flex mt-4 text-[#B00000] hover:underline text-sm font-medium"
@@ -199,9 +240,16 @@ export default function DownloadsPage() {
                         Go to Shop
                     </Link>
                 </div>
+            ) : filteredItems.length === 0 ? (
+                <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+                    <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-600">
+                        No downloads matched `{searchQuery}`.
+                    </p>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {items.map((ent) => (
+                    {filteredItems.map((ent) => (
                         <div
                             key={ent.entitlement_id}
                             className="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col"

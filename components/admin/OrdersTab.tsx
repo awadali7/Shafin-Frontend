@@ -27,7 +27,7 @@ function StatusPill({ status }: { status: string }) {
                             : "bg-gray-50 text-gray-700 border-gray-200";
     return (
         <span
-            className={`inline-flex px-2 py-1 text-xs font-medium border rounded-full ${styles}`}
+            className={`inline-flex px-2 py-0.5 text-[11px] font-medium border rounded-full ${styles}`}
         >
             {status.toUpperCase()}
         </span>
@@ -541,16 +541,16 @@ ${pages}
     };
 
     return (
-        <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-200">
+            <div className="px-5 py-3 border-b border-gray-200">
                 {/* Title row */}
-                <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap mb-2.5">
                     <div>
-                        <h2 className="text-lg font-semibold text-slate-900">Orders Management</h2>
-                        <p className="text-sm text-gray-500">View and manage customer orders</p>
+                        <h2 className="text-base font-semibold text-slate-900">Orders Management</h2>
+                        <p className="text-xs text-gray-500">View and manage customer orders</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                         <div className="relative">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                             <input
@@ -558,12 +558,12 @@ ${pages}
                                 placeholder="Search orders, customer…"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent w-56"
+                                className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent w-52"
                             />
                         </div>
                         <button
                             onClick={fetchOrders}
-                            className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-slate-900 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                            className="px-3.5 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-slate-900 hover:bg-gray-50 transition-colors whitespace-nowrap"
                         >
                             Refresh
                         </button>
@@ -571,16 +571,16 @@ ${pages}
                 </div>
 
                 {/* Batch print shipping labels toolbar */}
-                <div className="flex items-center gap-3 flex-wrap pt-3 border-t border-gray-100">
-                    <Printer className="w-4 h-4 text-gray-500 shrink-0" />
-                    <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Print Shipping Labels:</span>
+                <div className="flex items-center gap-2.5 flex-wrap pt-2.5 border-t border-gray-100">
+                    <Printer className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                    <span className="text-xs font-medium text-gray-700 whitespace-nowrap">Print Shipping Labels:</span>
                     <div className="flex items-center gap-2 text-sm">
                         <label className="text-gray-500 text-xs whitespace-nowrap">From</label>
                         <input
                             type="date"
                             value={labelFromDate}
                             onChange={(e) => setLabelFromDate(e.target.value)}
-                            className="px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                            className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                         />
                     </div>
                     <div className="flex items-center gap-2 text-sm">
@@ -589,13 +589,13 @@ ${pages}
                             type="date"
                             value={labelToDate}
                             onChange={(e) => setLabelToDate(e.target.value)}
-                            className="px-2 py-1 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                            className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                         />
                     </div>
                     <button
                         onClick={printBatchShippingLabels}
                         disabled={printingLabels}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#B00000] text-white rounded-lg text-sm font-medium hover:bg-red-800 transition-colors disabled:opacity-60 whitespace-nowrap"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#B00000] text-white rounded-lg text-xs font-medium hover:bg-red-800 transition-colors disabled:opacity-60 whitespace-nowrap"
                     >
                         {printingLabels ? (
                             <><Loader2 className="w-4 h-4 animate-spin" /> Preparing…</>
@@ -603,32 +603,32 @@ ${pages}
                             <><Printer className="w-4 h-4" /> Print Shipping Labels (2 per A4)</>
                         )}
                     </button>
-                    <span className="text-xs text-gray-400">Only physical orders • Cut A4 in half to get 2 labels</span>
+                    <span className="text-[11px] text-gray-400">Only physical orders • Cut A4 in half to get 2 labels</span>
                 </div>
             </div>
 
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-6 border-b border-gray-200">
-                <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-600 uppercase font-medium">Total Orders</p>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">{orders.length}</p>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 p-4 border-b border-gray-200">
+                <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-[11px] text-gray-600 uppercase font-medium">Total Orders</p>
+                    <p className="text-xl font-bold text-slate-900 mt-0.5">{orders.length}</p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-4">
-                    <p className="text-xs text-green-700 uppercase font-medium">Paid</p>
-                    <p className="text-2xl font-bold text-green-800 mt-1">{orders.filter((o) => o.status === "paid").length}</p>
+                <div className="bg-green-50 rounded-lg p-3">
+                    <p className="text-[11px] text-green-700 uppercase font-medium">Paid</p>
+                    <p className="text-xl font-bold text-green-800 mt-0.5">{orders.filter((o) => o.status === "paid").length}</p>
                 </div>
-                <div className="bg-indigo-50 rounded-lg p-4">
-                    <p className="text-xs text-indigo-700 uppercase font-medium">Shipped</p>
-                    <p className="text-2xl font-bold text-indigo-800 mt-1">{orders.filter((o) => o.status === "shipped" || o.status === "dispatched").length}</p>
+                <div className="bg-indigo-50 rounded-lg p-3">
+                    <p className="text-[11px] text-indigo-700 uppercase font-medium">Shipped</p>
+                    <p className="text-xl font-bold text-indigo-800 mt-0.5">{orders.filter((o) => o.status === "shipped" || o.status === "dispatched").length}</p>
                 </div>
-                <div className="bg-yellow-50 rounded-lg p-4">
-                    <p className="text-xs text-yellow-700 uppercase font-medium">Pending</p>
-                    <p className="text-2xl font-bold text-yellow-800 mt-1">{orders.filter((o) => o.status === "pending").length}</p>
+                <div className="bg-yellow-50 rounded-lg p-3">
+                    <p className="text-[11px] text-yellow-700 uppercase font-medium">Pending</p>
+                    <p className="text-xl font-bold text-yellow-800 mt-0.5">{orders.filter((o) => o.status === "pending").length}</p>
                 </div>
-                <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-xs text-blue-700 uppercase font-medium">Total Revenue</p>
-                    <p className="text-2xl font-bold text-blue-800 mt-1">
+                <div className="bg-blue-50 rounded-lg p-3 col-span-2 lg:col-span-1">
+                    <p className="text-[11px] text-blue-700 uppercase font-medium">Total Revenue</p>
+                    <p className="text-xl font-bold text-blue-800 mt-0.5">
                         ₹{orders.filter((o) => ["paid", "shipped", "dispatched"].includes(o.status)).reduce((sum, o) => sum + Number(o.total), 0).toFixed(2)}
                     </p>
                 </div>
@@ -645,26 +645,26 @@ ${pages}
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order & Items</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Order & Items</th>
+                            <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                            <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th className="px-4 py-2.5 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
                             <tr>
-                                <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
+                                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
                                     <p className="mt-2">Loading orders...</p>
                                 </td>
                             </tr>
                         ) : orders.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
+                                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                                     <Package className="w-12 h-12 mx-auto text-gray-300 mb-2" />
                                     <p>No orders yet</p>
                                 </td>
@@ -673,11 +673,11 @@ ${pages}
                             filteredOrders.map((order) => (
                                 <React.Fragment key={order.id}>
                                     <tr className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 py-3 align-top">
                                             <div className="text-sm font-mono font-medium text-slate-900">#{order.order_number || order.id.slice(0, 8)}</div>
                                             {/* Stacked item images */}
                                             {itemImagesMap[order.id] && itemImagesMap[order.id].length > 0 ? (
-                                                <div className="flex items-center mt-2">
+                                                <div className="flex items-center mt-1.5">
                                                     <div className="flex -space-x-2">
                                                         {itemImagesMap[order.id].slice(0, 3).map((item, i) => (
                                                             item.image ? (
@@ -686,20 +686,20 @@ ${pages}
                                                                     src={item.image}
                                                                     alt={item.name}
                                                                     title={item.name}
-                                                                    className="h-8 w-8 rounded-full object-cover border-2 border-white ring-1 ring-gray-200"
+                                                                    className="h-7 w-7 rounded-full object-cover border-2 border-white ring-1 ring-gray-200"
                                                                 />
                                                             ) : (
                                                                 <div
                                                                     key={i}
                                                                     title={item.name}
-                                                                    className="h-8 w-8 rounded-full bg-gray-100 border-2 border-white ring-1 ring-gray-200 flex items-center justify-center text-xs text-gray-400 font-medium"
+                                                                    className="h-7 w-7 rounded-full bg-gray-100 border-2 border-white ring-1 ring-gray-200 flex items-center justify-center text-[11px] text-gray-400 font-medium"
                                                                 >
                                                                     {item.name[0]}
                                                                 </div>
                                                             )
                                                         ))}
                                                         {itemImagesMap[order.id].length > 3 && (
-                                                            <div className="h-8 w-8 rounded-full bg-gray-200 border-2 border-white ring-1 ring-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
+                                                            <div className="h-7 w-7 rounded-full bg-gray-200 border-2 border-white ring-1 ring-gray-200 flex items-center justify-center text-[11px] font-semibold text-gray-600">
                                                                 +{itemImagesMap[order.id].length - 3}
                                                             </div>
                                                         )}
@@ -715,7 +715,7 @@ ${pages}
                                                 <div className="text-xs text-gray-400 mt-1">No items</div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-4 py-3 align-top">
                                             <div className="text-sm font-medium text-slate-900">{order.first_name} {order.last_name}</div>
                                             <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
                                                 {order.user_email}
@@ -724,27 +724,27 @@ ${pages}
                                                 </a>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-4 py-3 whitespace-nowrap align-top">
                                             <StatusPill status={order.status} />
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-4 py-3 whitespace-nowrap align-top">
                                             <div className="text-sm font-semibold text-[#B00000]">₹{Number(order.total).toFixed(2)}</div>
                                             <div className="text-xs text-gray-500">Subtotal: ₹{Number(order.subtotal).toFixed(2)}</div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-4 py-3 whitespace-nowrap align-top">
                                             <div className="flex items-center gap-2">
-                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[11px] font-medium">
                                                     <Package className="w-3 h-3" /> {Number(order.physical_items)} Physical
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[11px] font-medium">
                                                     <Download className="w-3 h-3" /> {Number(order.digital_items)} Digital
                                                 </span>
                                             </div>
                                             {Number(order.physical_items) > 0 && order.tracking_number && (
                                                 <div className="flex items-center gap-1 mt-1">
-                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded text-xs font-medium" title={`Tracking: ${order.tracking_number}`}>
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 rounded text-[11px] font-medium" title={`Tracking: ${order.tracking_number}`}>
                                                         <Truck className="w-3 h-3" /> Tracked
                                                     </span>
                                                 </div>
@@ -756,13 +756,13 @@ ${pages}
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(order.created_at)}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex items-center justify-end gap-2">
+                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 align-top">{formatDate(order.created_at)}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium align-top">
+                                            <div className="flex items-center justify-end gap-1.5">
                                                 <button
                                                     onClick={() => viewOrderDetails(order.id)}
                                                     disabled={loadingDetails && expandedOrderId !== order.id}
-                                                    className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60"
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-60 text-xs"
                                                 >
                                                     {loadingDetails && expandedOrderId === order.id ? (
                                                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -785,31 +785,31 @@ ${pages}
                                                                 el?.scrollIntoView({ behavior: 'smooth' });
                                                             }, 100);
                                                         }}
-                                                        className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs"
                                                     >
-                                                        <Truck className="w-4 h-4" />
+                                                        <Truck className="w-3.5 h-3.5" />
                                                         Dispatch
                                                     </button>
                                                 )}
                                                 {order.status === "shipped" || order.status === "dispatched" ? (
-                                                    <span className="inline-flex items-center gap-2 px-3 py-2 text-indigo-700 bg-indigo-50 rounded-lg">
-                                                        <Truck className="w-4 h-4" /> Shipped
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-indigo-700 bg-indigo-50 rounded-lg text-xs">
+                                                        <Truck className="w-3.5 h-3.5" /> Shipped
                                                     </span>
                                                 ) : order.status === "paid" ? (
-                                                    <span className="inline-flex items-center gap-2 px-3 py-2 text-green-700 bg-green-50 rounded-lg">
-                                                        <CheckCircle className="w-4 h-4" /> Paid
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-green-700 bg-green-50 rounded-lg text-xs">
+                                                        <CheckCircle className="w-3.5 h-3.5" /> Paid
                                                     </span>
                                                 ) : order.status === "delivered" ? (
-                                                    <span className="inline-flex items-center gap-2 px-3 py-2 text-emerald-700 bg-emerald-50 rounded-lg">
-                                                        <CheckCircle className="w-4 h-4" /> Delivered
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-emerald-700 bg-emerald-50 rounded-lg text-xs">
+                                                        <CheckCircle className="w-3.5 h-3.5" /> Delivered
                                                     </span>
                                                 ) : order.status === "pending" ? (
                                                     <button
                                                         onClick={() => markPaid(order.id)}
                                                         disabled={markingId === order.id}
-                                                        className="inline-flex items-center gap-2 px-3 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-60"
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors disabled:opacity-60 text-xs"
                                                     >
-                                                        {markingId === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                                        {markingId === order.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                                                         Mark Paid
                                                     </button>
                                                 ) : null}
@@ -820,19 +820,19 @@ ${pages}
                                     {/* Expanded Order Details */}
                                     {expandedOrderId === order.id && orderDetails && (
                                         <tr>
-                                            <td colSpan={7} className="px-6 py-4 bg-gray-50">
+                                            <td colSpan={7} className="px-4 py-3 bg-gray-50">
                                                 {/* Action Buttons */}
-                                                <div className="mb-4 flex justify-end gap-3">
+                                                <div className="mb-3 flex justify-end gap-2 flex-wrap">
                                                     <button
                                                         onClick={() => downloadInvoice(order)}
-                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-xs"
                                                     >
                                                         <FileText className="w-4 h-4" /> Download Invoice (A4)
                                                     </button>
                                                     {Number(order.physical_items) > 0 && (
                                                         <button
                                                             onClick={() => printShippingLabel(order)}
-                                                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors font-medium"
+                                                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#B00000] text-white rounded-lg hover:bg-red-800 transition-colors font-medium text-xs"
                                                         >
                                                             <Printer className="w-4 h-4" /> Print Shipping Label (A5)
                                                         </button>
@@ -841,11 +841,11 @@ ${pages}
 
                                                 {/* Tracking Section */}
                                                 {Number(order.physical_items) > 0 && (
-                                                    <div className="mb-6 bg-white rounded-lg p-4 border border-gray-200">
-                                                        <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                                                    <div className="mb-4 bg-white rounded-lg p-3 border border-gray-200">
+                                                        <h3 className="text-sm font-semibold text-slate-900 mb-2.5 flex items-center gap-2">
                                                             <Truck className="w-4 h-4" /> Shipping & Tracking Information
                                                         </h3>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                                                             <div>
                                                                 <label className="block text-xs font-medium text-gray-700 mb-1">Tracking Number</label>
                                                                 <input
@@ -853,7 +853,7 @@ ${pages}
                                                                     value={trackingForm.tracking_number}
                                                                     onChange={(e) => setTrackingForm({ ...trackingForm, tracking_number: e.target.value })}
                                                                     placeholder="Enter tracking number"
-                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                                                 />
                                                             </div>
                                                             <div>
@@ -862,18 +862,18 @@ ${pages}
                                                                     type="date"
                                                                     value={trackingForm.estimated_delivery_date}
                                                                     onChange={(e) => setTrackingForm({ ...trackingForm, estimated_delivery_date: e.target.value })}
-                                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                                                 />
                                                             </div>
                                                         </div>
-                                                        <div className="mb-4">
+                                                        <div className="mb-3">
                                                             <label className="block text-xs font-medium text-gray-700 mb-1">Tracking Link (Optional)</label>
                                                             <input
                                                                 type="url"
                                                                 value={trackingForm.tracking_url}
                                                                 onChange={(e) => setTrackingForm({ ...trackingForm, tracking_url: e.target.value })}
                                                                 placeholder="https://tracking.courierwebsite.com/track?id=..."
-                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                                             />
                                                                 <p className="text-xs text-gray-500 mt-1">Add external courier tracking URL for easy access</p>
                                                                 {orderDetails?.order?.tracking_url && (
@@ -884,7 +884,7 @@ ${pages}
                                                             </div>
 
                                                             {(orderDetails.order?.shipped_at || orderDetails.order?.delivered_at) && (
-                                                            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                                                            <div className="mb-3 p-2.5 bg-gray-50 rounded-lg">
                                                                 <div className="text-xs font-medium text-gray-700 mb-2">Shipment Status:</div>
                                                                 <div className="space-y-2">
                                                                     {orderDetails.order?.shipped_at && (
@@ -902,11 +902,11 @@ ${pages}
                                                                 </div>
                                                             </div>
                                                         )}
-                                                        <div className="flex gap-3">
+                                                        <div className="flex gap-2 flex-wrap">
                                                             <button
                                                                 onClick={() => saveTrackingInfo(order.id)}
                                                                 disabled={savingTracking}
-                                                                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-60 font-medium"
+                                                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-60 font-medium text-xs"
                                                             >
                                                                 {savingTracking ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : <><Save className="w-4 h-4" /> Update Tracking</>}
                                                             </button>
@@ -920,7 +920,7 @@ ${pages}
                                                                         saveTrackingInfo(order.id, 'shipped');
                                                                     }}
                                                                     disabled={savingTracking}
-                                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60 font-medium"
+                                                                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60 font-medium text-xs"
                                                                 >
                                                                     {savingTracking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Truck className="w-4 h-4" />}
                                                                     Mark as Shipped / Dispatch
@@ -932,7 +932,7 @@ ${pages}
                                                                         saveTrackingInfo(order.id, 'delivered');
                                                                     }}
                                                                     disabled={savingTracking}
-                                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-60 font-medium"
+                                                                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-60 font-medium text-xs"
                                                                 >
                                                                     {savingTracking ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                                                                     Mark as Delivered
@@ -942,31 +942,31 @@ ${pages}
                                                     </div>
                                                 )}
 
-                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                                     {/* Order Items */}
-                                                    <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                                        <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                                                    <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                        <h3 className="text-sm font-semibold text-slate-900 mb-2.5 flex items-center gap-2">
                                                             <Package className="w-4 h-4" /> Order Items
                                                         </h3>
-                                                        <div className="space-y-2">
+                                                        <div className="space-y-1.5">
                                                             {orderDetails.items && orderDetails.items.map((item: any) => (
-                                                                <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg gap-3">
+                                                                <div key={item.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg gap-3">
                                                                     {/* Thumbnail */}
                                                                     {item.cover_image ? (
                                                                         <img
                                                                             src={item.cover_image}
                                                                             alt={item.product_name}
-                                                                            className="h-12 w-12 rounded-lg object-cover border border-gray-200 shrink-0"
+                                                                            className="h-10 w-10 rounded-lg object-cover border border-gray-200 shrink-0"
                                                                         />
                                                                     ) : (
-                                                                        <div className="h-12 w-12 rounded-lg bg-gray-200 border border-gray-200 flex items-center justify-center shrink-0 text-sm font-bold text-gray-400">
+                                                                        <div className="h-10 w-10 rounded-lg bg-gray-200 border border-gray-200 flex items-center justify-center shrink-0 text-sm font-bold text-gray-400">
                                                                             {item.product_name?.[0] || "?"}
                                                                         </div>
                                                                     )}
                                                                     <div className="flex-1 min-w-0">
                                                                         <div className="text-sm font-medium text-slate-900 truncate">{item.product_name}</div>
                                                                         <div className="text-xs text-gray-500 mt-1">
-                                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded ${item.product_type === 'physical' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] ${item.product_type === 'physical' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
                                                                                 {item.product_type === 'physical' ? <Package className="w-3 h-3" /> : <Download className="w-3 h-3" />}
                                                                                 {item.product_type}
                                                                             </span>
@@ -982,10 +982,10 @@ ${pages}
                                                     </div>
 
                                                     {/* Shipping & Payment */}
-                                                    <div className="space-y-4">
+                                                    <div className="space-y-3">
                                                         {Number(order.physical_items) > 0 && (
-                                                            <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                                                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                                                            <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                                <h3 className="text-sm font-semibold text-slate-900 mb-2.5 flex items-center gap-2">
                                                                     <MapPin className="w-4 h-4" /> Shipping Address
                                                                 </h3>
                                                                 <div className="space-y-2 text-sm text-gray-700">
@@ -1020,8 +1020,8 @@ ${pages}
                                                                 </div>
                                                             </div>
                                                         )}
-                                                        <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                                            <h3 className="text-sm font-semibold text-slate-900 mb-3">Payment Details</h3>
+                                                            <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                            <h3 className="text-sm font-semibold text-slate-900 mb-2.5">Payment Details</h3>
                                                             <div className="space-y-2 text-sm">
                                                                 {orderDetails.order?.payment_provider && (
                                                                     <div className="flex justify-between">

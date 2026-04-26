@@ -101,4 +101,14 @@ export const coursesApi = {
     ): Promise<ApiResponse<any>> => {
         return apiClient.post<any>(`/courses/${courseId}/grant-access`, data);
     },
+
+    // Revoke course access from a user (Admin only)
+    revokeAccess: async (
+        courseId: string,
+        data: {
+            user_id: string;
+        }
+    ): Promise<ApiResponse<any>> => {
+        return apiClient.post<any>(`/courses/${courseId}/revoke-access`, data);
+    },
 };

@@ -148,6 +148,23 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
             }
             yPosition += 5;
             
+            addText("Additional Documents", 12, true);
+            if (kyc.back_side_id_proof_url) {
+                if (!kyc.back_side_id_proof_url.endsWith(".pdf")) {
+                    await addImage(
+                        `${BACKEND_BASE_URL}${kyc.back_side_id_proof_url}`,
+                        "Back Side ID Proof"
+                    );
+                } else {
+                    addText(
+                        `Back Side ID Proof: ${BACKEND_BASE_URL}${kyc.back_side_id_proof_url}`
+                    );
+                }
+            } else {
+                addText("Back Side ID Proof: Not uploaded");
+            }
+            yPosition += 5;
+
             // Business Proof Documents Section
             addText(`Business Proof Documents (${kyc.business_proofs?.length || 0})`, 12, true);
             if (kyc.business_proofs && kyc.business_proofs.length > 0) {
@@ -161,6 +178,22 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
                 }
             } else {
                 addText("No business proof documents uploaded");
+            }
+            yPosition += 5;
+
+            if (kyc.signature_url) {
+                if (!kyc.signature_url.endsWith(".pdf")) {
+                    await addImage(
+                        `${BACKEND_BASE_URL}${kyc.signature_url}`,
+                        "Signature"
+                    );
+                } else {
+                    addText(
+                        `Signature: ${BACKEND_BASE_URL}${kyc.signature_url}`
+                    );
+                }
+            } else {
+                addText("Signature: Not uploaded");
             }
             yPosition += 5;
             
@@ -227,8 +260,14 @@ WhatsApp Number: ${kyc.whatsapp_number}
 ID Proof Documents (${kyc.id_proofs?.length || 0}):
 ${idProofsList}
 
+Back Side ID Proof:
+${kyc.back_side_id_proof_url ? `  ${BACKEND_BASE_URL}${kyc.back_side_id_proof_url}` : "  Not uploaded"}
+
 Business Proof Documents (${kyc.business_proofs?.length || 0}):
 ${businessProofsList}
+
+Signature:
+${kyc.signature_url ? `  ${BACKEND_BASE_URL}${kyc.signature_url}` : "  Not uploaded"}
 ${kyc.status === "rejected" && kyc.rejection_reason ? `
 Rejection Information:
 ---------------------
@@ -420,9 +459,45 @@ Generated on: ${new Date().toLocaleString()}
                                     )}
                                 </div>
 
-                                {/* Business Proofs */}
-                                {kyc.business_proofs && kyc.business_proofs.length > 0 && (
+                                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
+                                        <label className="text-sm font-medium text-gray-600 mb-2 block">
+                                            Back Side ID Proof
+                                        </label>
+                                        {kyc.back_side_id_proof_url ? (
+                                            <a
+                                                href={`${BACKEND_BASE_URL}${kyc.back_side_id_proof_url}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block"
+                                            >
+                                                {kyc.back_side_id_proof_url.endsWith(".pdf") ? (
+                                                    <div className="w-full h-32 p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center justify-center hover:bg-gray-100 transition-colors">
+                                                        <p className="text-center text-slate-600 text-sm">
+                                                            PDF Document
+                                                        </p>
+                                                        <p className="text-center text-xs text-slate-500 mt-1">
+                                                            Click to view
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <img
+                                                        src={`${BACKEND_BASE_URL}${kyc.back_side_id_proof_url}`}
+                                                        alt="Back side ID proof"
+                                                        className="w-full h-32 object-contain border border-gray-200 rounded-lg bg-gray-50 hover:scale-105 transition-transform"
+                                                    />
+                                                )}
+                                            </a>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">
+                                                Not uploaded
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {kyc.business_proofs && kyc.business_proofs.length > 0 && (
+                                    <div className="mt-6">
                                         <label className="text-sm font-medium text-gray-600 mb-2 block">
                                             Business Proof Documents ({kyc.business_proofs.length})
                                         </label>
@@ -456,6 +531,43 @@ Generated on: ${new Date().toLocaleString()}
                                         </div>
                                     </div>
                                 )}
+
+                                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-600 mb-2 block">
+                                            Signature
+                                        </label>
+                                        {kyc.signature_url ? (
+                                            <a
+                                                href={`${BACKEND_BASE_URL}${kyc.signature_url}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block"
+                                            >
+                                                {kyc.signature_url.endsWith(".pdf") ? (
+                                                    <div className="w-full h-32 p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center justify-center hover:bg-gray-100 transition-colors">
+                                                        <p className="text-center text-slate-600 text-sm">
+                                                            PDF Document
+                                                        </p>
+                                                        <p className="text-center text-xs text-slate-500 mt-1">
+                                                            Click to view
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <img
+                                                        src={`${BACKEND_BASE_URL}${kyc.signature_url}`}
+                                                        alt="Signature"
+                                                        className="w-full h-32 object-contain border border-gray-200 rounded-lg bg-gray-50 hover:scale-105 transition-transform"
+                                                    />
+                                                )}
+                                            </a>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">
+                                                Not uploaded
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Rejection Reason (if rejected) */}
@@ -600,4 +712,3 @@ Generated on: ${new Date().toLocaleString()}
         </div>
     );
 };
-

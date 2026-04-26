@@ -11,6 +11,7 @@ import {
     Play,
     Loader2,
     UserPlus,
+    UserMinus,
     Search,
 } from "lucide-react";
 import { formatDate } from "./utils";
@@ -29,6 +30,7 @@ interface CoursesTabProps {
     onEditVideo: (video: Video) => void;
     onDeleteVideo: (video: Video) => void;
     onGrantAccess: (course: Course) => void;
+    onRevokeAccess: (course: Course) => void;
 }
 
 export const CoursesTab: React.FC<CoursesTabProps> = ({
@@ -44,6 +46,7 @@ export const CoursesTab: React.FC<CoursesTabProps> = ({
     onEditVideo,
     onDeleteVideo,
     onGrantAccess,
+    onRevokeAccess,
 }) => {
     const [search, setSearch] = useState("");
 
@@ -191,6 +194,15 @@ export const CoursesTab: React.FC<CoursesTabProps> = ({
                                                     title="Grant Access to User"
                                                 >
                                                     <UserPlus className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        onRevokeAccess(course)
+                                                    }
+                                                    className="text-amber-600 hover:text-amber-900 p-2 hover:bg-amber-50 rounded-lg transition-colors"
+                                                    title="Remove Access from User"
+                                                >
+                                                    <UserMinus className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() =>

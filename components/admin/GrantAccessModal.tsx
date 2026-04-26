@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Loader2, UserPlus, AlertCircle } from "lucide-react";
+import { X, Loader2, UserPlus, UserMinus, AlertCircle } from "lucide-react";
 import { adminApi } from "@/lib/api/admin";
 import type { User, Course } from "@/lib/api/types";
 
 interface GrantAccessModalProps {
     course: Course | null;
     isOpen: boolean;
+    initialMode?: "grant" | "remove";
     onClose: () => void;
     onSuccess: () => void;
 }
@@ -15,22 +16,25 @@ interface GrantAccessModalProps {
 export const GrantAccessModal: React.FC<GrantAccessModalProps> = ({
     course,
     isOpen,
+    initialMode = "grant",
     onClose,
     onSuccess,
 }) => {
+    const [mode, setMode] = useState<"grant" | "remove">(initialMode);
     const [users, setUsers] = useState<User[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string>("");
     const [accessStartDate, setAccessStartDate] = useState<string>("");
     const [accessEndDate, setAccessEndDate] = useState<string>("");
     const [searchQuery, setSearchQuery] = useState<string>("");
-    const [isGranting, setIsGranting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
     // Load users when modal opens
     useEffect(() => {
         if (isOpen && course) {
+            setMode(initialMode);
             fetchUsers();
             // Set default dates
             const today = new Date();
@@ -49,7 +53,7 @@ export const GrantAccessModal: React.FC<GrantAccessModalProps> = ({
             setSuccess(null);
             setSearchQuery("");
         }
-    }, [isOpen, course]);
+    }, [isOpen, course, initialMode]);
 
     const fetchUsers = async () => {
         setLoadingUsers(true);
@@ -96,7 +100,7 @@ export const GrantAccessModal: React.FC<GrantAccessModalProps> = ({
             return;
         }
 
-        setIsGranting(true);
+        setIsSubmitting(true);
         setError(null);
         setSuccess(null);
 
@@ -135,7 +139,49 @@ export const GrantAccessModal: React.FC<GrantAccessModalProps> = ({
                     "Failed to grant course access"
             );
         } finally {
-            setIsGranting(false);
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleRemoveAccess = async () => {
+        if (!course || !selectedUserId) {
+            setError("Please select a user");
+            return;
+        }
+
+        setIsSubmitting(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const { coursesApi } = await import("@/lib/api/courses");
+            const response = await coursesApi.revokeAccess(course.id, {
+                user_id: selectedUserId,
+            });
+
+            if (response.success) {
+                setSuccess("Course access removed successfully!");
+                setTimeout(() => {
+                    onSuccess();
+                    onClose();
+                    setSuccess(null);
+                    setError(null);
+                    setSelectedUserId("");
+                }, 1500);
+            } else {
+                setError(
+                    (response as any).message ||
+                        "Failed to remove course access"
+                );
+            }
+        } catch (err: any) {
+            setError(
+                err.response?.data?.message ||
+                    err.message ||
+                    "Failed to remove course access"
+            );
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -149,7 +195,7 @@ export const GrantAccessModal: React.FC<GrantAccessModalProps> = ({
             <div
                 className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300"
                 onClick={() => {
-                    if (!isGranting) {
+                    if (!isSubmitting) {
                         onClose();
                     }
                 }}
@@ -162,13 +208,19 @@ export const GrantAccessModal: React.FC<GrantAccessModalProps> = ({
                     <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
                         <div className="flex items-center space-x-3">
                             <div className="p-2 bg-[#B00000]/10 rounded-lg">
-                                <UserPlus className="w-6 h-6 text-[#B00000]" />
+                                {mode === "grant" ? (
+                                    <UserPlus className="w-6 h-6 text-[#B00000]" />
+                                ) : (
+                                    <UserMinus className="w-6 h-6 text-[#B00000]" />
+                                )}
                             </div>
                             <h2 className="text-xl font-bold text-slate-900">
-                                Grant Course Access
+                                {mode === "grant"
+                                    ? "Grant Course Access"
+                                    : "Remove Course Access"}
                             </h2>
                         </div>
-                        {!isGranting && (
+                        {!isSubmitting && (
                             <button
                                 onClick={onClose}
                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -203,6 +255,41 @@ export const GrantAccessModal: React.FC<GrantAccessModalProps> = ({
 
                         {!success && (
                             <>
+                                <div className="mb-6">
+                                    <div className="grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setMode("grant");
+                                                setError(null);
+                                                setSuccess(null);
+                                            }}
+                                            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                                                mode === "grant"
+                                                    ? "bg-white text-[#B00000] shadow-sm"
+                                                    : "text-gray-600 hover:text-slate-900"
+                                            }`}
+                                        >
+                                            Grant Access
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setMode("remove");
+                                                setError(null);
+                                                setSuccess(null);
+                                            }}
+                                            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                                                mode === "remove"
+                                                    ? "bg-white text-[#B00000] shadow-sm"
+                                                    : "text-gray-600 hover:text-slate-900"
+                                            }`}
+                                        >
+                                            Remove Access
+                                        </button>
+                                    </div>
+                                </div>
+
                                 {/* Course Info */}
                                 <div className="mb-6">
                                     <h3 className="text-lg font-semibold text-slate-900 mb-4">
@@ -283,49 +370,56 @@ export const GrantAccessModal: React.FC<GrantAccessModalProps> = ({
                                     )}
                                 </div>
 
-                                {/* Access Dates */}
-                                <div className="mb-6">
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                                        Access Period
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Start Date
-                                            </label>
-                                            <input
-                                                type="date"
-                                                value={accessStartDate}
-                                                onChange={(e) =>
-                                                    setAccessStartDate(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                            />
+                                {mode === "grant" ? (
+                                    <div className="mb-6">
+                                        <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                                            Access Period
+                                        </h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Start Date
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={accessStartDate}
+                                                    onChange={(e) =>
+                                                        setAccessStartDate(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    End Date
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    value={accessEndDate}
+                                                    onChange={(e) =>
+                                                        setAccessEndDate(
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    min={accessStartDate}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                />
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                End Date
-                                            </label>
-                                            <input
-                                                type="date"
-                                                value={accessEndDate}
-                                                onChange={(e) =>
-                                                    setAccessEndDate(
-                                                        e.target.value
-                                                    )
-                                                }
-                                                min={accessStartDate}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                            />
-                                        </div>
+                                        <p className="text-xs text-gray-500 mt-2">
+                                            Default: 6 months access period. You can
+                                            modify these dates as needed.
+                                        </p>
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-2">
-                                        Default: 6 months access period. You can
-                                        modify these dates as needed.
-                                    </p>
-                                </div>
+                                ) : (
+                                    <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                                        <p className="text-sm text-amber-800">
+                                            Remove the selected user&apos;s active access to this course immediately.
+                                        </p>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
@@ -336,25 +430,45 @@ export const GrantAccessModal: React.FC<GrantAccessModalProps> = ({
                             <>
                                 <button
                                     onClick={onClose}
-                                    disabled={isGranting}
+                                    disabled={isSubmitting}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={handleGrantAccess}
-                                    disabled={isGranting || !selectedUserId}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-[#B00000] rounded-lg hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                                    onClick={
+                                        mode === "grant"
+                                            ? handleGrantAccess
+                                            : handleRemoveAccess
+                                    }
+                                    disabled={isSubmitting || !selectedUserId}
+                                    className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 ${
+                                        mode === "grant"
+                                            ? "bg-[#B00000] hover:bg-red-800"
+                                            : "bg-amber-600 hover:bg-amber-700"
+                                    }`}
                                 >
-                                    {isGranting ? (
+                                    {isSubmitting ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            <span>Granting...</span>
+                                            <span>
+                                                {mode === "grant"
+                                                    ? "Granting..."
+                                                    : "Removing..."}
+                                            </span>
                                         </>
                                     ) : (
                                         <>
-                                            <UserPlus className="w-4 h-4" />
-                                            <span>Grant Access</span>
+                                            {mode === "grant" ? (
+                                                <UserPlus className="w-4 h-4" />
+                                            ) : (
+                                                <UserMinus className="w-4 h-4" />
+                                            )}
+                                            <span>
+                                                {mode === "grant"
+                                                    ? "Grant Access"
+                                                    : "Remove Access"}
+                                            </span>
                                         </>
                                     )}
                                 </button>
@@ -374,4 +488,3 @@ export const GrantAccessModal: React.FC<GrantAccessModalProps> = ({
         </>
     );
 };
-

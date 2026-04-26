@@ -34,6 +34,7 @@ type ProductFormState = {
     hindi_description: string;
     product_type: ProductType;
     price: number;
+    offer_price: number;
     stock_quantity: number;
     is_active: boolean;
     is_featured: boolean;
@@ -101,6 +102,7 @@ const defaultForm: ProductFormState = {
     hindi_description: "",
     product_type: "physical",
     price: 0,
+    offer_price: 0,
     stock_quantity: 0,
     is_active: true,
     is_featured: false,
@@ -244,6 +246,7 @@ export default function EditProductPage() {
                     hindi_description: product.hindi_description || "",
                     product_type: product.type,
                     price: Number(product.price),
+                    offer_price: Number(product.offer_price ?? 0),
                     weight: Number(product.weight ?? 0),
                     origin_city: product.origin_city || "",
                     origin_state: product.origin_state || "",
@@ -422,6 +425,10 @@ export default function EditProductPage() {
         const toastId = toast.loading("Updating product...");
 
         try {
+            if (form.offer_price > 0 && form.offer_price > form.price) {
+                throw new Error("Offer price must be less than or equal to regular price");
+            }
+
             const filteredCategories = form.categories.filter(c => c && c.trim());
 
             const validPricing = form.quantity_pricing
@@ -456,6 +463,7 @@ export default function EditProductPage() {
                 categories: filteredCategories.length > 0 ? filteredCategories : undefined,
                 product_type: form.product_type,
                 price: form.price,
+                offer_price: form.offer_price > 0 ? form.offer_price : 0,
                 stock_quantity: form.product_type === "physical" ? form.stock_quantity : 0,
                 weight: form.product_type === "physical" ? form.weight : undefined,
                 origin_city: form.product_type === "physical" ? form.origin_city.trim() || "" : "",
@@ -807,7 +815,7 @@ export default function EditProductPage() {
                         <h2 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-gray-200">
                             Pricing & Inventory
                         </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Price *
@@ -824,6 +832,26 @@ export default function EditProductPage() {
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                     placeholder="0.00"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Offer Price
+                                </label>
+                                <input
+                                    type="number"
+                                    value={form.offer_price}
+                                    onChange={(e) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            offer_price: Number(e.target.value),
+                                        }))
+                                    }
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                    placeholder="0.00"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Optional discounted price shown during offers.
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1342,7 +1370,7 @@ export default function EditProductPage() {
                                         className="w-full px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
                                     />
                                     <p className="text-xs text-blue-700 mt-1">
-                                        Copy the filename from the "Digital Files" tab.
+                                        Copy the filename from the &quot;Digital Files&quot; tab.
                                     </p>
                                 </div>
                             )}

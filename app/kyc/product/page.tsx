@@ -47,6 +47,12 @@ function ProductKYCContent() {
     const [businessProofPreviews, setBusinessProofPreviews] = useState<
         Array<{ file: File | null; preview: string }>
     >([]);
+    const [backSideIdProofFile, setBackSideIdProofFile] = useState<File | null>(
+        null
+    );
+    const [backSideIdProofPreview, setBackSideIdProofPreview] = useState("");
+    const [signatureFile, setSignatureFile] = useState<File | null>(null);
+    const [signaturePreview, setSignaturePreview] = useState("");
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -105,6 +111,26 @@ function ProductKYCContent() {
                                     preview: `${cleanBaseUrl}${url}`,
                                 })
                             )
+                        );
+                    }
+
+                    if (response.data.back_side_id_proof_url) {
+                        const baseUrl =
+                            process.env.NEXT_PUBLIC_API_URL ||
+                            "http://localhost:5001";
+                        const cleanBaseUrl = baseUrl.replace(/\/api$/, "");
+                        setBackSideIdProofPreview(
+                            `${cleanBaseUrl}${response.data.back_side_id_proof_url}`
+                        );
+                    }
+
+                    if (response.data.signature_url) {
+                        const baseUrl =
+                            process.env.NEXT_PUBLIC_API_URL ||
+                            "http://localhost:5001";
+                        const cleanBaseUrl = baseUrl.replace(/\/api$/, "");
+                        setSignaturePreview(
+                            `${cleanBaseUrl}${response.data.signature_url}`
                         );
                     }
                 }
@@ -228,6 +254,76 @@ function ProductKYCContent() {
         e.target.value = "";
     };
 
+    const validateSingleFile = (file: File) => {
+        const allowedTypes = [
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/webp",
+            "application/pdf",
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            toast.error(
+                "Invalid file type. Only JPEG, PNG, WebP images and PDF files are allowed."
+            );
+            return false;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error("File size must be less than 10MB per file");
+            return false;
+        }
+
+        return true;
+    };
+
+    const handleBackSideIdProofChange = (
+        e: React.ChangeEvent<HTMLInputElement>
+    ) => {
+        const file = e.target.files?.[0];
+        if (!file || !validateSingleFile(file)) {
+            e.target.value = "";
+            return;
+        }
+
+        setBackSideIdProofFile(file);
+
+        if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setBackSideIdProofPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setBackSideIdProofPreview("");
+        }
+
+        e.target.value = "";
+    };
+
+    const handleSignatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !validateSingleFile(file)) {
+            e.target.value = "";
+            return;
+        }
+
+        setSignatureFile(file);
+
+        if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSignaturePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setSignaturePreview("");
+        }
+
+        e.target.value = "";
+    };
+
     const removeIdProof = (index: number) => {
         setIdProofFiles((prev) => prev.filter((_, i) => i !== index));
         setIdProofPreviews((prev) => prev.filter((_, i) => i !== index));
@@ -236,6 +332,16 @@ function ProductKYCContent() {
     const removeBusinessProof = (index: number) => {
         setBusinessProofFiles((prev) => prev.filter((_, i) => i !== index));
         setBusinessProofPreviews((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const removeBackSideIdProof = () => {
+        setBackSideIdProofFile(null);
+        setBackSideIdProofPreview("");
+    };
+
+    const removeSignature = () => {
+        setSignatureFile(null);
+        setSignaturePreview("");
     };
 
     // Download Product KYC details as PDF
@@ -348,6 +454,23 @@ function ProductKYCContent() {
             }
             yPosition += 5;
             
+            addText("Additional Documents", 12, true);
+            if (kycData.back_side_id_proof_url) {
+                if (!kycData.back_side_id_proof_url.endsWith(".pdf")) {
+                    await addImage(
+                        `${cleanBaseUrl}${kycData.back_side_id_proof_url}`,
+                        "Back Side ID Proof"
+                    );
+                } else {
+                    addText(
+                        `Back Side ID Proof: ${cleanBaseUrl}${kycData.back_side_id_proof_url}`
+                    );
+                }
+            } else {
+                addText("Back Side ID Proof: Not uploaded");
+            }
+            yPosition += 5;
+
             // Business Proof Documents Section
             addText(`Business Proof Documents (${kycData.business_proofs?.length || 0})`, 12, true);
             if (kycData.business_proofs && kycData.business_proofs.length > 0) {
@@ -361,6 +484,22 @@ function ProductKYCContent() {
                 }
             } else {
                 addText("No business proof documents uploaded");
+            }
+            yPosition += 5;
+
+            if (kycData.signature_url) {
+                if (!kycData.signature_url.endsWith(".pdf")) {
+                    await addImage(
+                        `${cleanBaseUrl}${kycData.signature_url}`,
+                        "Signature"
+                    );
+                } else {
+                    addText(
+                        `Signature: ${cleanBaseUrl}${kycData.signature_url}`
+                    );
+                }
+            } else {
+                addText("Signature: Not uploaded");
             }
             yPosition += 5;
             
@@ -433,6 +572,16 @@ function ProductKYCContent() {
             return;
         }
 
+        if (!backSideIdProofFile && !kycData?.back_side_id_proof_url) {
+            toast.error("Back side ID proof document is required");
+            return;
+        }
+
+        if (!signatureFile && !kycData?.signature_url) {
+            toast.error("Signature document is required");
+            return;
+        }
+
         setSubmitting(true);
 
         try {
@@ -449,6 +598,17 @@ function ProductKYCContent() {
             businessProofFiles.forEach((file) => {
                 formDataToSend.append("business_proofs", file);
             });
+
+            if (backSideIdProofFile) {
+                formDataToSend.append(
+                    "back_side_id_proof",
+                    backSideIdProofFile
+                );
+            }
+
+            if (signatureFile) {
+                formDataToSend.append("signature", signatureFile);
+            }
 
             const response = await productKycApi.submit(formDataToSend);
 
@@ -816,10 +976,11 @@ function ProductKYCContent() {
                     </div>
                 </div>
 
-                {/* Document Upload - Side by Side */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* ID Proof Upload */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                {/* Document Upload */}
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* ID Proof Upload */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                         <h2 className="text-lg font-bold text-slate-900 mb-2">
                             ID Proof Documents <span className="text-red-500">*</span>
                         </h2>
@@ -922,118 +1083,266 @@ function ProductKYCContent() {
                             />
                         </label>
                     )}
-                    </div>
+                        </div>
 
-                    {/* Business Proof Upload - REQUIRED */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                        <h2 className="text-lg font-bold text-slate-900 mb-2">
-                            Business Proof Documents <span className="text-red-500">*</span>
-                        </h2>
-                        <p className="text-xs text-slate-600 mb-3">
-                            Upload business proof documents (GST, Shop license, Company registration, etc.)
-                        </p>
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                            <h2 className="text-lg font-bold text-slate-900 mb-2">
+                                Back Side ID Proof Document{" "}
+                                <span className="text-red-500">*</span>
+                            </h2>
+                            <p className="text-xs text-slate-600 mb-3">
+                                Upload the back side of your ID proof document.
+                            </p>
 
-                    {businessProofPreviews.length > 0 ? (
-                        <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                {businessProofPreviews.map(
-                                    (previewItem, index) => (
-                                        <div key={index} className="relative">
-                                            {previewItem.file?.type.startsWith(
-                                                "image/"
-                                            ) ||
-                                            (previewItem.preview &&
-                                                !previewItem.preview.includes(
-                                                    ".pdf"
-                                                )                                            ) ? (
-                                                <img
-                                                    src={previewItem.preview}
-                                                    alt={`Business Proof ${
-                                                        index + 1
-                                                    }`}
-                                                    className="w-full h-32 object-cover rounded-lg border border-gray-300"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-32 p-4 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
-                                                    <p className="text-center text-slate-600">
-                                                        PDF File
-                                                    </p>
-                                                    <p className="text-center text-sm text-slate-500 mt-2">
-                                                        {previewItem.file?.name}
-                                                    </p>
-                                                </div>
-                                            )}
-                                            {kycData?.status !== "verified" && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        removeBusinessProof(
-                                                            index
-                                                        )
-                                                    }
-                                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                            {kycData?.status !== "verified" && (
-                                <div className="flex justify-center">
-                                    <label
-                                        htmlFor="business_proofs_add"
-                                        className="flex items-center justify-center px-6 py-3 bg-white border-2 border-dashed border-[#B00000] rounded-lg cursor-pointer hover:bg-[#B00000] hover:text-white transition-all duration-200 group"
-                                    >
-                                        <Plus className="w-5 h-5 mr-2 text-[#B00000] group-hover:text-white transition-colors" />
-                                        <span className="text-sm font-semibold text-[#B00000] group-hover:text-white transition-colors">
-                                            Add More Business Documents
-                                        </span>
-                                        <input
-                                            id="business_proofs_add"
-                                            type="file"
-                                            className="hidden"
-                                            accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                                            onChange={handleBusinessProofChange}
-                                            multiple
+                            {backSideIdProofFile || backSideIdProofPreview ? (
+                                <div className="relative">
+                                    {backSideIdProofFile?.type.startsWith("image/") ||
+                                    (backSideIdProofPreview &&
+                                        !backSideIdProofPreview.includes(".pdf")) ? (
+                                        <img
+                                            src={backSideIdProofPreview}
+                                            alt="Back side ID proof"
+                                            className="w-full h-40 object-contain rounded-lg border border-gray-300 bg-gray-50"
                                         />
-                                    </label>
+                                    ) : (
+                                        <div className="w-full h-40 p-4 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                                            <p className="text-center text-slate-600">
+                                                PDF File
+                                            </p>
+                                            <p className="text-center text-sm text-slate-500 mt-2">
+                                                {backSideIdProofFile?.name ||
+                                                    "Uploaded back side ID proof"}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {kycData?.status !== "verified" && (
+                                        <button
+                                            type="button"
+                                            onClick={removeBackSideIdProof}
+                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
                                 </div>
+                            ) : (
+                                <label
+                                    htmlFor="back_side_id_proof"
+                                    className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                                        kycData?.status === "verified"
+                                            ? "border-gray-300 bg-gray-50 cursor-not-allowed"
+                                            : "border-gray-300 hover:border-[#B00000] hover:bg-gray-50"
+                                    }`}
+                                >
+                                    <div className="flex flex-col items-center justify-center py-3">
+                                        <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                        <p className="mb-1 text-sm text-gray-500">
+                                            <span className="font-semibold">
+                                                Click to upload
+                                            </span>{" "}
+                                            or drag and drop
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            1 file - JPEG, PNG, WebP, PDF (10MB max)
+                                        </p>
+                                    </div>
+                                    <input
+                                        id="back_side_id_proof"
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                                        onChange={handleBackSideIdProofChange}
+                                        disabled={kycData?.status === "verified"}
+                                    />
+                                </label>
                             )}
                         </div>
-                    ) : (
-                        <label
-                            htmlFor="business_proofs"
-                            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                                kycData?.status === "verified"
-                                    ? "border-gray-300 bg-gray-50 cursor-not-allowed"
-                                    : "border-gray-300 hover:border-[#B00000] hover:bg-gray-50"
-                            }`}
-                        >
-                            <div className="flex flex-col items-center justify-center py-3">
-                                <Upload className="w-8 h-8 mb-2 text-gray-400" />
-                                <p className="mb-1 text-sm text-gray-500">
-                                    <span className="font-semibold">
-                                        Click to upload
-                                    </span>{" "}
-                                    or drag and drop
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                    Min 1 file - JPEG, PNG, WebP, PDF (10MB max)
-                                </p>
-                            </div>
-                            <input
-                                id="business_proofs"
-                                type="file"
-                                className="hidden"
-                                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                                onChange={handleBusinessProofChange}
-                                multiple
-                                disabled={kycData?.status === "verified"}
-                            />
-                        </label>
-                    )}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Business Proof Upload - REQUIRED */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                            <h2 className="text-lg font-bold text-slate-900 mb-2">
+                                Business Proof Documents <span className="text-red-500">*</span>
+                            </h2>
+                            <p className="text-xs text-slate-600 mb-3">
+                                Upload business proof documents (GST, Shop license, Company registration, etc.)
+                            </p>
+
+                            {businessProofPreviews.length > 0 ? (
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {businessProofPreviews.map(
+                                            (previewItem, index) => (
+                                                <div key={index} className="relative">
+                                                    {previewItem.file?.type.startsWith(
+                                                        "image/"
+                                                    ) ||
+                                                    (previewItem.preview &&
+                                                        !previewItem.preview.includes(
+                                                            ".pdf"
+                                                        )                                            ) ? (
+                                                        <img
+                                                            src={previewItem.preview}
+                                                            alt={`Business Proof ${
+                                                                index + 1
+                                                            }`}
+                                                            className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-32 p-4 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                                                            <p className="text-center text-slate-600">
+                                                                PDF File
+                                                            </p>
+                                                            <p className="text-center text-sm text-slate-500 mt-2">
+                                                                {previewItem.file?.name}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    {kycData?.status !== "verified" && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                removeBusinessProof(
+                                                                    index
+                                                                )
+                                                            }
+                                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
+                                    {kycData?.status !== "verified" && (
+                                        <div className="flex justify-center">
+                                            <label
+                                                htmlFor="business_proofs_add"
+                                                className="flex items-center justify-center px-6 py-3 bg-white border-2 border-dashed border-[#B00000] rounded-lg cursor-pointer hover:bg-[#B00000] hover:text-white transition-all duration-200 group"
+                                            >
+                                                <Plus className="w-5 h-5 mr-2 text-[#B00000] group-hover:text-white transition-colors" />
+                                                <span className="text-sm font-semibold text-[#B00000] group-hover:text-white transition-colors">
+                                                    Add More Business Documents
+                                                </span>
+                                                <input
+                                                    id="business_proofs_add"
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                                                    onChange={handleBusinessProofChange}
+                                                    multiple
+                                                />
+                                            </label>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <label
+                                    htmlFor="business_proofs"
+                                    className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                                        kycData?.status === "verified"
+                                            ? "border-gray-300 bg-gray-50 cursor-not-allowed"
+                                            : "border-gray-300 hover:border-[#B00000] hover:bg-gray-50"
+                                    }`}
+                                >
+                                    <div className="flex flex-col items-center justify-center py-3">
+                                        <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                        <p className="mb-1 text-sm text-gray-500">
+                                            <span className="font-semibold">
+                                                Click to upload
+                                            </span>{" "}
+                                            or drag and drop
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            Min 1 file - JPEG, PNG, WebP, PDF (10MB max)
+                                        </p>
+                                    </div>
+                                    <input
+                                        id="business_proofs"
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                                        onChange={handleBusinessProofChange}
+                                        multiple
+                                        disabled={kycData?.status === "verified"}
+                                    />
+                                </label>
+                            )}
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                            <h2 className="text-lg font-bold text-slate-900 mb-2">
+                                Signature <span className="text-red-500">*</span>
+                            </h2>
+                            <p className="text-xs text-slate-600 mb-3">
+                                Upload your signature image or signed document.
+                            </p>
+
+                            {signatureFile || signaturePreview ? (
+                                <div className="relative">
+                                    {signatureFile?.type.startsWith("image/") ||
+                                    (signaturePreview &&
+                                        !signaturePreview.includes(".pdf")) ? (
+                                        <img
+                                            src={signaturePreview}
+                                            alt="Signature"
+                                            className="w-full h-40 object-contain rounded-lg border border-gray-300 bg-gray-50"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-40 p-4 border border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center">
+                                            <p className="text-center text-slate-600">
+                                                PDF File
+                                            </p>
+                                            <p className="text-center text-sm text-slate-500 mt-2">
+                                                {signatureFile?.name ||
+                                                    "Uploaded signature"}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {kycData?.status !== "verified" && (
+                                        <button
+                                            type="button"
+                                            onClick={removeSignature}
+                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <label
+                                    htmlFor="signature"
+                                    className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                                        kycData?.status === "verified"
+                                            ? "border-gray-300 bg-gray-50 cursor-not-allowed"
+                                            : "border-gray-300 hover:border-[#B00000] hover:bg-gray-50"
+                                    }`}
+                                >
+                                    <div className="flex flex-col items-center justify-center py-3">
+                                        <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                                        <p className="mb-1 text-sm text-gray-500">
+                                            <span className="font-semibold">
+                                                Click to upload
+                                            </span>{" "}
+                                            or drag and drop
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            1 file - JPEG, PNG, WebP, PDF (10MB max)
+                                        </p>
+                                    </div>
+                                    <input
+                                        id="signature"
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                                        onChange={handleSignatureChange}
+                                        disabled={kycData?.status === "verified"}
+                                    />
+                                </label>
+                            )}
+                        </div>
                     </div>
                 </div>
 

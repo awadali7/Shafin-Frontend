@@ -67,6 +67,7 @@ export const productsApi = {
         categories?: string[];
         product_type: ProductType;
         price: number;
+        offer_price?: number;
         stock_quantity?: number;
         weight?: number;
         origin_city?: string;
@@ -108,6 +109,9 @@ export const productsApi = {
         }
         form.append("product_type", data.product_type);
         form.append("price", String(data.price));
+        if (data.offer_price !== undefined) {
+            form.append("offer_price", String(data.offer_price));
+        }
         if (data.rating !== undefined)
             form.append("rating", String(data.rating));
         if (data.reviews_count !== undefined)
@@ -190,6 +194,7 @@ export const productsApi = {
             categories: string[];
             product_type: ProductType;
             price: number;
+            offer_price: number;
             stock_quantity: number;
             weight?: number;
             origin_city?: string;

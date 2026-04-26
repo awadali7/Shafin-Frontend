@@ -78,6 +78,34 @@ export default function CourseDetailPage() {
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [showCourseTermsModal, setShowCourseTermsModal] = useState(false);
 
+    const getBackendBaseUrl = () => {
+        const apiUrl =
+            process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+        return apiUrl.replace(/\/api\/?$/, "");
+    };
+
+    const normalizeCoursePdfUrl = (url?: string) => {
+        if (!url) return "#";
+
+        const backendBaseUrl = getBackendBaseUrl();
+
+        if (url.startsWith("/uploads/")) {
+            return `${backendBaseUrl}${url}`;
+        }
+
+        try {
+            const parsed = new URL(url);
+
+            if (parsed.pathname.startsWith("/uploads/")) {
+                return `${backendBaseUrl}${parsed.pathname}`;
+            }
+
+            return url;
+        } catch {
+            return url;
+        }
+    };
+
     // Inject CSS early to hide YouTube share button - must be at top level
     useEffect(() => {
         const styleId = "youtube-share-button-hide";
@@ -1045,8 +1073,10 @@ export default function CourseDetailPage() {
                                                     ) => (
                                                         <a
                                                             key={index}
-                                                            href={pdf.url}
+                                                            href={normalizeCoursePdfUrl(pdf.url)}
                                                             download
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
                                                             className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
                                                         >
                                                             <div className="flex items-center space-x-3">

@@ -27,6 +27,7 @@ type ShopProduct = {
     name: string;
     slug: string;
     price: number;
+    offerPrice?: number | null;
     image: string;
     category: string;
     categories?: string[];
@@ -64,6 +65,7 @@ function mapApiProductToShopProduct(p: Product): ShopProduct {
         name: p.name,
         slug: p.slug,
         price: Number(p.price),
+        offerPrice: p.offer_price ? Number(p.offer_price) : null,
         image: p.cover_image || FALLBACK_IMAGE,
         category: p.category || "Other",
         categories: p.categories || [],
@@ -92,6 +94,18 @@ function mapApiProductToShopProduct(p: Product): ShopProduct {
                 : undefined,
         quantity_pricing: p.quantity_pricing || p.tiered_pricing || undefined,
     };
+}
+
+function getValidOfferPrice(product: ShopProduct): number | null {
+    if (
+        typeof product.offerPrice === "number" &&
+        product.offerPrice > 0 &&
+        product.offerPrice < product.price
+    ) {
+        return product.offerPrice;
+    }
+
+    return null;
 }
 
 export default function ShopPage() {
@@ -476,13 +490,25 @@ export default function ShopPage() {
                                             }
 
                                             if (product.is_contact_only) {
+                                                const offerPrice = getValidOfferPrice(product);
                                                 return (
                                                     <>
                                                         <div>
                                                             {canShowPrice ? (
-                                                                <p className="text-lg font-bold text-[#B00000]">
-                                                                    ₹{product.price.toLocaleString()}
-                                                                </p>
+                                                                offerPrice ? (
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-lg font-bold text-[#B00000]">
+                                                                            ₹{offerPrice.toLocaleString()}
+                                                                        </p>
+                                                                        <p className="text-sm text-gray-400 line-through">
+                                                                            ₹{product.price.toLocaleString()}
+                                                                        </p>
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="text-lg font-bold text-[#B00000]">
+                                                                        ₹{product.price.toLocaleString()}
+                                                                    </p>
+                                                                )
                                                             ) : null}
                                                             <p className="text-xs text-gray-500">
                                                                 {product.type === "digital" ? "Digital" : "Physical"}
@@ -503,11 +529,30 @@ export default function ShopPage() {
                                             return (
                                                 <>
                                                     <div>
-                                                        {canShowPrice ? (
-                                                            <p className="text-lg font-bold text-[#B00000]">
-                                                                ₹{product.price.toLocaleString()}
-                                                            </p>
-                                                        ) : null}
+                                                        {(() => {
+                                                            const offerPrice = getValidOfferPrice(product);
+
+                                                            if (!canShowPrice) return null;
+
+                                                            if (offerPrice) {
+                                                                return (
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-lg font-bold text-[#B00000]">
+                                                                            ₹{offerPrice.toLocaleString()}
+                                                                        </p>
+                                                                        <p className="text-sm text-gray-400 line-through">
+                                                                            ₹{product.price.toLocaleString()}
+                                                                        </p>
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            return (
+                                                                <p className="text-lg font-bold text-[#B00000]">
+                                                                    ₹{product.price.toLocaleString()}
+                                                                </p>
+                                                            );
+                                                        })()}
                                                         <p className="text-xs text-gray-500">
                                                             {!showPriceAndAddToCart && product.requiresKyc
                                                                 ? "Business KYC required to purchase"
