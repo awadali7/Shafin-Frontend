@@ -53,14 +53,18 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
         try {
             const { jsPDF } = await import("jspdf");
             const pdf = new jsPDF();
-            
+
             let yPosition = 20;
             const pageWidth = pdf.internal.pageSize.getWidth();
             const margin = 20;
             const contentWidth = pageWidth - 2 * margin;
-            
+
             // Helper function to add text with word wrap
-            const addText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
+            const addText = (
+                text: string,
+                fontSize: number = 10,
+                isBold: boolean = false,
+            ) => {
                 pdf.setFontSize(fontSize);
                 pdf.setFont("helvetica", isBold ? "bold" : "normal");
                 const lines = pdf.splitTextToSize(text, contentWidth);
@@ -74,35 +78,42 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
                 });
                 yPosition += 3;
             };
-            
+
             // Helper function to add image
             const addImage = async (imageUrl: string, label: string) => {
                 try {
                     const response = await fetch(imageUrl);
                     const blob = await response.blob();
                     const reader = new FileReader();
-                    
+
                     return new Promise<void>((resolve) => {
                         reader.onloadend = () => {
                             const base64data = reader.result as string;
-                            
+
                             if (yPosition > 200) {
                                 pdf.addPage();
                                 yPosition = 20;
                             }
-                            
+
                             addText(label, 10, true);
-                            
+
                             try {
                                 const imgWidth = 80;
                                 const imgHeight = 60;
-                                pdf.addImage(base64data, "JPEG", margin, yPosition, imgWidth, imgHeight);
+                                pdf.addImage(
+                                    base64data,
+                                    "JPEG",
+                                    margin,
+                                    yPosition,
+                                    imgWidth,
+                                    imgHeight,
+                                );
                                 yPosition += imgHeight + 10;
                             } catch (err) {
                                 console.error("Error adding image:", err);
                                 addText(`[Image: ${label}]`, 9);
                             }
-                            
+
                             resolve();
                         };
                         reader.readAsDataURL(blob);
@@ -112,18 +123,18 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
                     addText(`[${label} - Unable to load image]`, 9);
                 }
             };
-            
+
             // Title
             addText("BUSINESS/PRODUCT KYC VERIFICATION DETAILS", 16, true);
             yPosition += 5;
-            
+
             // User Information Section
             addText("User Information", 12, true);
             addText(`User Email: ${kyc.user_email || "N/A"}`);
             addText(`Status: ${kyc.status}`);
             addText(`Submitted: ${formatDate(kyc.created_at || "")}`);
             yPosition += 5;
-            
+
             // Personal Information Section
             addText("Personal Information", 12, true);
             addText(`Full Name: ${kyc.full_name}`);
@@ -131,33 +142,42 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
             addText(`Contact Number: ${kyc.contact_number}`);
             addText(`WhatsApp Number: ${kyc.whatsapp_number}`);
             yPosition += 5;
-            
+
             // ID Proof Documents Section
-            addText(`ID Proof Documents (${kyc.id_proofs?.length || 0})`, 12, true);
+            addText(
+                `ID Proof Documents (${kyc.id_proofs?.length || 0})`,
+                12,
+                true,
+            );
             if (kyc.id_proofs && kyc.id_proofs.length > 0) {
                 for (let i = 0; i < kyc.id_proofs.length; i++) {
                     const url = kyc.id_proofs[i];
-                    if (!url.endsWith('.pdf')) {
-                        await addImage(`${BACKEND_BASE_URL}${url}`, `ID Proof Document ${i + 1}`);
+                    if (!url.endsWith(".pdf")) {
+                        await addImage(
+                            `${BACKEND_BASE_URL}${url}`,
+                            `ID Proof Document ${i + 1}`,
+                        );
                     } else {
-                        addText(`ID Proof Document ${i + 1}: ${BACKEND_BASE_URL}${url}`);
+                        addText(
+                            `ID Proof Document ${i + 1}: ${BACKEND_BASE_URL}${url}`,
+                        );
                     }
                 }
             } else {
                 addText("No ID proof documents uploaded");
             }
             yPosition += 5;
-            
+
             addText("Additional Documents", 12, true);
             if (kyc.back_side_id_proof_url) {
                 if (!kyc.back_side_id_proof_url.endsWith(".pdf")) {
                     await addImage(
                         `${BACKEND_BASE_URL}${kyc.back_side_id_proof_url}`,
-                        "Back Side ID Proof"
+                        "Back Side ID Proof",
                     );
                 } else {
                     addText(
-                        `Back Side ID Proof: ${BACKEND_BASE_URL}${kyc.back_side_id_proof_url}`
+                        `Back Side ID Proof: ${BACKEND_BASE_URL}${kyc.back_side_id_proof_url}`,
                     );
                 }
             } else {
@@ -166,14 +186,23 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
             yPosition += 5;
 
             // Business Proof Documents Section
-            addText(`Business Proof Documents (${kyc.business_proofs?.length || 0})`, 12, true);
+            addText(
+                `Business Proof Documents (${kyc.business_proofs?.length || 0})`,
+                12,
+                true,
+            );
             if (kyc.business_proofs && kyc.business_proofs.length > 0) {
                 for (let i = 0; i < kyc.business_proofs.length; i++) {
                     const url = kyc.business_proofs[i];
-                    if (!url.endsWith('.pdf')) {
-                        await addImage(`${BACKEND_BASE_URL}${url}`, `Business Proof Document ${i + 1}`);
+                    if (!url.endsWith(".pdf")) {
+                        await addImage(
+                            `${BACKEND_BASE_URL}${url}`,
+                            `Business Proof Document ${i + 1}`,
+                        );
                     } else {
-                        addText(`Business Proof Document ${i + 1}: ${BACKEND_BASE_URL}${url}`);
+                        addText(
+                            `Business Proof Document ${i + 1}: ${BACKEND_BASE_URL}${url}`,
+                        );
                     }
                 }
             } else {
@@ -185,25 +214,25 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
                 if (!kyc.signature_url.endsWith(".pdf")) {
                     await addImage(
                         `${BACKEND_BASE_URL}${kyc.signature_url}`,
-                        "Signature"
+                        "Signature",
                     );
                 } else {
                     addText(
-                        `Signature: ${BACKEND_BASE_URL}${kyc.signature_url}`
+                        `Signature: ${BACKEND_BASE_URL}${kyc.signature_url}`,
                     );
                 }
             } else {
                 addText("Signature: Not uploaded");
             }
             yPosition += 5;
-            
+
             // Rejection Information (if rejected)
             if (kyc.status === "rejected" && kyc.rejection_reason) {
                 addText("Rejection Information", 12, true);
                 addText(`Rejection Reason: ${kyc.rejection_reason}`);
                 yPosition += 5;
             }
-            
+
             // Verification Information (if verified)
             if (kyc.status === "verified") {
                 addText("Verification Information", 12, true);
@@ -211,7 +240,7 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
                 addText(`Verified At: ${formatDate(kyc.verified_at || "")}`);
                 yPosition += 5;
             }
-            
+
             // Footer
             if (yPosition > 250) {
                 pdf.addPage();
@@ -220,10 +249,16 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
             yPosition += 10;
             pdf.setFontSize(8);
             pdf.setTextColor(128);
-            pdf.text(`Generated on: ${new Date().toLocaleString()}`, margin, yPosition);
-            
+            pdf.text(
+                `Generated on: ${new Date().toLocaleString()}`,
+                margin,
+                yPosition,
+            );
+
             // Save PDF
-            pdf.save(`Product_KYC_${kyc.user_email || kyc.id}_${Date.now()}.pdf`);
+            pdf.save(
+                `Product_KYC_${kyc.user_email || kyc.id}_${Date.now()}.pdf`,
+            );
         } catch (error) {
             console.error("Error generating PDF:", error);
         }
@@ -231,13 +266,25 @@ export const ProductKYCModal: React.FC<ProductKYCModalProps> = ({
 
     // Old text file download function (kept for reference but not used)
     const handleDownloadKYCOld = () => {
-        const idProofsList = kyc.id_proofs && kyc.id_proofs.length > 0
-            ? kyc.id_proofs.map((url, idx) => `  ${idx + 1}. ${BACKEND_BASE_URL}${url}`).join('\n')
-            : "  No ID proofs uploaded";
+        const idProofsList =
+            kyc.id_proofs && kyc.id_proofs.length > 0
+                ? kyc.id_proofs
+                      .map(
+                          (url, idx) =>
+                              `  ${idx + 1}. ${BACKEND_BASE_URL}${url}`,
+                      )
+                      .join("\n")
+                : "  No ID proofs uploaded";
 
-        const businessProofsList = kyc.business_proofs && kyc.business_proofs.length > 0
-            ? kyc.business_proofs.map((url, idx) => `  ${idx + 1}. ${BACKEND_BASE_URL}${url}`).join('\n')
-            : "  No business proofs uploaded";
+        const businessProofsList =
+            kyc.business_proofs && kyc.business_proofs.length > 0
+                ? kyc.business_proofs
+                      .map(
+                          (url, idx) =>
+                              `  ${idx + 1}. ${BACKEND_BASE_URL}${url}`,
+                      )
+                      .join("\n")
+                : "  No business proofs uploaded";
 
         const kycData = `
 ========================================
@@ -257,6 +304,7 @@ Address: ${kyc.address}
 Contact Number: ${kyc.contact_number}
 WhatsApp Number: ${kyc.whatsapp_number}
 
+
 ID Proof Documents (${kyc.id_proofs?.length || 0}):
 ${idProofsList}
 
@@ -268,17 +316,25 @@ ${businessProofsList}
 
 Signature:
 ${kyc.signature_url ? `  ${BACKEND_BASE_URL}${kyc.signature_url}` : "  Not uploaded"}
-${kyc.status === "rejected" && kyc.rejection_reason ? `
+${
+    kyc.status === "rejected" && kyc.rejection_reason
+        ? `
 Rejection Information:
 ---------------------
 Rejection Reason: ${kyc.rejection_reason}
-` : ""}
-${kyc.status === "verified" ? `
+`
+        : ""
+}
+${
+    kyc.status === "verified"
+        ? `
 Verification Information:
 ------------------------
 Verified By: ${kyc.verifier_email || "N/A"}
 Verified At: ${formatDate(kyc.verified_at || "")}
-` : ""}
+`
+        : ""
+}
 
 ========================================
 Generated on: ${new Date().toLocaleString()}
@@ -417,40 +473,47 @@ Generated on: ${new Date().toLocaleString()}
                                 <h3 className="text-lg font-semibold text-slate-900 mb-4">
                                     Documents
                                 </h3>
-                                
+
                                 {/* ID Proofs */}
                                 <div className="mb-6">
                                     <label className="text-sm font-medium text-gray-600 mb-2 block">
-                                        ID Proof Documents ({kyc.id_proofs?.length || 0})
+                                        ID Proof Documents (
+                                        {kyc.id_proofs?.length || 0})
                                     </label>
-                                    {kyc.id_proofs && kyc.id_proofs.length > 0 ? (
+                                    {kyc.id_proofs &&
+                                    kyc.id_proofs.length > 0 ? (
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            {kyc.id_proofs.map((url: string, idx: number) => (
-                                                <a
-                                                    key={idx}
-                                                    href={`${BACKEND_BASE_URL}${url}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="block"
-                                                >
-                                                    {url.endsWith('.pdf') ? (
-                                                        <div className="w-full h-32 p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center justify-center hover:bg-gray-100 transition-colors">
-                                                            <p className="text-center text-slate-600 text-sm">
-                                                                PDF Document
-                                                            </p>
-                                                            <p className="text-center text-xs text-slate-500 mt-1">
-                                                                Click to view
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <img
-                                                            src={`${BACKEND_BASE_URL}${url}`}
-                                                            alt={`ID Proof ${idx + 1}`}
-                                                            className="w-full h-32 object-contain border border-gray-200 rounded-lg bg-gray-50 hover:scale-105 transition-transform"
-                                                        />
-                                                    )}
-                                                </a>
-                                            ))}
+                                            {kyc.id_proofs.map(
+                                                (url: string, idx: number) => (
+                                                    <a
+                                                        key={idx}
+                                                        href={`${BACKEND_BASE_URL}${url}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="block"
+                                                    >
+                                                        {url.endsWith(
+                                                            ".pdf",
+                                                        ) ? (
+                                                            <div className="w-full h-32 p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center justify-center hover:bg-gray-100 transition-colors">
+                                                                <p className="text-center text-slate-600 text-sm">
+                                                                    PDF Document
+                                                                </p>
+                                                                <p className="text-center text-xs text-slate-500 mt-1">
+                                                                    Click to
+                                                                    view
+                                                                </p>
+                                                            </div>
+                                                        ) : (
+                                                            <img
+                                                                src={`${BACKEND_BASE_URL}${url}`}
+                                                                alt={`ID Proof ${idx + 1}`}
+                                                                className="w-full h-32 object-contain border border-gray-200 rounded-lg bg-gray-50 hover:scale-105 transition-transform"
+                                                            />
+                                                        )}
+                                                    </a>
+                                                ),
+                                            )}
                                         </div>
                                     ) : (
                                         <p className="text-sm text-gray-500">
@@ -471,7 +534,9 @@ Generated on: ${new Date().toLocaleString()}
                                                 rel="noopener noreferrer"
                                                 className="block"
                                             >
-                                                {kyc.back_side_id_proof_url.endsWith(".pdf") ? (
+                                                {kyc.back_side_id_proof_url.endsWith(
+                                                    ".pdf",
+                                                ) ? (
                                                     <div className="w-full h-32 p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center justify-center hover:bg-gray-100 transition-colors">
                                                         <p className="text-center text-slate-600 text-sm">
                                                             PDF Document
@@ -496,41 +561,52 @@ Generated on: ${new Date().toLocaleString()}
                                     </div>
                                 </div>
 
-                                {kyc.business_proofs && kyc.business_proofs.length > 0 && (
-                                    <div className="mt-6">
-                                        <label className="text-sm font-medium text-gray-600 mb-2 block">
-                                            Business Proof Documents ({kyc.business_proofs.length})
-                                        </label>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                            {kyc.business_proofs.map((url: string, idx: number) => (
-                                                <a
-                                                    key={idx}
-                                                    href={`${BACKEND_BASE_URL}${url}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="block"
-                                                >
-                                                    {url.endsWith('.pdf') ? (
-                                                        <div className="w-full h-32 p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center justify-center hover:bg-gray-100 transition-colors">
-                                                            <p className="text-center text-slate-600 text-sm">
-                                                                PDF Document
-                                                            </p>
-                                                            <p className="text-center text-xs text-slate-500 mt-1">
-                                                                Click to view
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <img
-                                                            src={`${BACKEND_BASE_URL}${url}`}
-                                                            alt={`Business Proof ${idx + 1}`}
-                                                            className="w-full h-32 object-contain border border-gray-200 rounded-lg bg-gray-50 hover:scale-105 transition-transform"
-                                                        />
-                                                    )}
-                                                </a>
-                                            ))}
+                                {kyc.business_proofs &&
+                                    kyc.business_proofs.length > 0 && (
+                                        <div className="mt-6">
+                                            <label className="text-sm font-medium text-gray-600 mb-2 block">
+                                                Business Proof Documents (
+                                                {kyc.business_proofs.length})
+                                            </label>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                                {kyc.business_proofs.map(
+                                                    (
+                                                        url: string,
+                                                        idx: number,
+                                                    ) => (
+                                                        <a
+                                                            key={idx}
+                                                            href={`${BACKEND_BASE_URL}${url}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="block"
+                                                        >
+                                                            {url.endsWith(
+                                                                ".pdf",
+                                                            ) ? (
+                                                                <div className="w-full h-32 p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center justify-center hover:bg-gray-100 transition-colors">
+                                                                    <p className="text-center text-slate-600 text-sm">
+                                                                        PDF
+                                                                        Document
+                                                                    </p>
+                                                                    <p className="text-center text-xs text-slate-500 mt-1">
+                                                                        Click to
+                                                                        view
+                                                                    </p>
+                                                                </div>
+                                                            ) : (
+                                                                <img
+                                                                    src={`${BACKEND_BASE_URL}${url}`}
+                                                                    alt={`Business Proof ${idx + 1}`}
+                                                                    className="w-full h-32 object-contain border border-gray-200 rounded-lg bg-gray-50 hover:scale-105 transition-transform"
+                                                                />
+                                                            )}
+                                                        </a>
+                                                    ),
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
                                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
@@ -544,7 +620,9 @@ Generated on: ${new Date().toLocaleString()}
                                                 rel="noopener noreferrer"
                                                 className="block"
                                             >
-                                                {kyc.signature_url.endsWith(".pdf") ? (
+                                                {kyc.signature_url.endsWith(
+                                                    ".pdf",
+                                                ) ? (
                                                     <div className="w-full h-32 p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col items-center justify-center hover:bg-gray-100 transition-colors">
                                                         <p className="text-center text-slate-600 text-sm">
                                                             PDF Document
@@ -603,7 +681,7 @@ Generated on: ${new Date().toLocaleString()}
                                                 value={rejectionReason}
                                                 onChange={(e) =>
                                                     onRejectionReasonChange(
-                                                        e.target.value
+                                                        e.target.value,
                                                     )
                                                 }
                                                 rows={4}
@@ -615,8 +693,9 @@ Generated on: ${new Date().toLocaleString()}
                                     {kycAction === "verify" && (
                                         <p className="text-sm text-gray-600 mb-4">
                                             Are you sure you want to verify this
-                                            Product KYC application? This will allow the
-                                            user to purchase products that require KYC.
+                                            Product KYC application? This will
+                                            allow the user to purchase products
+                                            that require KYC.
                                         </p>
                                     )}
                                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from 'react-markdown';
@@ -452,14 +452,14 @@ export default function ProductDetailPage() {
                         />
                     </div>
 
-                    {/* Image Thumbnails */}
+                    {/* Image Thumbnails — horizontal scroll so any number fits */}
                     {product.images && product.images.length > 1 && (
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="flex gap-2 overflow-x-auto pb-1">
                             {product.images.map((img, index) => (
                                 <button
                                     key={index}
                                     onClick={() => setSelectedImageIndex(index)}
-                                    className={`relative border-2 rounded-lg overflow-hidden aspect-square ${selectedImageIndex === index
+                                    className={`shrink-0 w-16 h-16 border-2 rounded-lg overflow-hidden ${selectedImageIndex === index
                                         ? "border-[#B00000]"
                                         : "border-gray-200 hover:border-gray-300"
                                         }`}

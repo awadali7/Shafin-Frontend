@@ -6,12 +6,6 @@ import { ordersApi } from "@/lib/api/orders";
 import type { AdminOrderSummary } from "@/lib/api/types";
 import { toast } from "sonner";
 
-function formatDate(dateString: string) {
-    const d = new Date(dateString);
-    if (Number.isNaN(d.getTime())) return dateString;
-    return d.toLocaleString();
-}
-
 function StatusPill({ status }: { status: string }) {
     const styles =
         status === "paid"
@@ -650,21 +644,20 @@ ${pages}
                             <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                             <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            <th className="px-4 py-2.5 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th className="px-4 py-2.5 text-right text-[11px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
                             <tr>
-                                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
                                     <p className="mt-2">Loading orders...</p>
                                 </td>
                             </tr>
                         ) : orders.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                                     <Package className="w-12 h-12 mx-auto text-gray-300 mb-2" />
                                     <p>No orders yet</p>
                                 </td>
@@ -756,7 +749,6 @@ ${pages}
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 align-top">{formatDate(order.created_at)}</td>
                                         <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium align-top">
                                             <div className="flex items-center justify-end gap-1.5">
                                                 <button
@@ -820,7 +812,7 @@ ${pages}
                                     {/* Expanded Order Details */}
                                     {expandedOrderId === order.id && orderDetails && (
                                         <tr>
-                                            <td colSpan={7} className="px-4 py-3 bg-gray-50">
+                                            <td colSpan={6} className="px-4 py-3 bg-gray-50">
                                                 {/* Action Buttons */}
                                                 <div className="mb-3 flex justify-end gap-2 flex-wrap">
                                                     <button

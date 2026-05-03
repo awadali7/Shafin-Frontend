@@ -14,7 +14,6 @@ import {
     UserMinus,
     Search,
 } from "lucide-react";
-import { formatDate } from "./utils";
 import type { Course, Video } from "@/lib/api/types";
 
 interface CoursesTabProps {
@@ -104,9 +103,6 @@ export const CoursesTab: React.FC<CoursesTabProps> = ({
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Videos
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Created
-                            </th>
                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Actions
                             </th>
@@ -180,9 +176,6 @@ export const CoursesTab: React.FC<CoursesTabProps> = ({
                                                     <ChevronDown className="w-4 h-4" />
                                                 )}
                                             </button>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {formatDate(course.created_at)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex items-center justify-end space-x-2">

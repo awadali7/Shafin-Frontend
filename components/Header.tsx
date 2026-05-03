@@ -93,13 +93,13 @@ export default function Header() {
 
                 {/* Left Section - Logo */}
                 <Link href="/" className="flex items-center space-x-3 group">
-                    <div className="relative h-8 transition-all duration-300 transform group-hover:scale-105">
+                    <div className="relative h-12 sm:h-14 transition-all duration-300 transform group-hover:scale-105">
                         <Image
                             src="/images/logo/header-logo.png"
                             alt="DIAGTOOLS"
                             width={1000}
                             height={1000}
-                            className="h-12 w-[90%] object-contain"
+                            className="h-12 sm:h-14 w-auto object-contain"
                             priority
                         />
                     </div>
@@ -175,19 +175,6 @@ export default function Header() {
                         Blog
                         {(pathname === "/blog" ||
                             pathname?.startsWith("/blog/")) && (
-                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B00000]"></span>
-                        )}
-                    </Link>
-                    <Link
-                        href="/gallery"
-                        className={`font-medium transition-all duration-200 relative pb-1 ${
-                            pathname === "/gallery"
-                                ? "text-[#B00000]"
-                                : "text-gray-700 hover:text-[#B00000]"
-                        }`}
-                    >
-                        Gallery
-                        {pathname === "/gallery" && (
                             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#B00000]"></span>
                         )}
                     </Link>
@@ -583,20 +570,6 @@ export default function Header() {
                                     >
                                         Blog
                                     </Link>
-                                    <Link
-                                        href="/gallery"
-                                        onClick={() =>
-                                            setIsMobileMenuOpen(false)
-                                        }
-                                        className={`block px-6 py-3 text-base font-medium transition-colors ${
-                                            pathname === "/gallery"
-                                                ? "text-[#B00000] bg-red-50"
-                                                : "text-gray-700 hover:text-[#B00000] hover:bg-gray-50"
-                                        }`}
-                                    >
-                                        Gallery
-                                    </Link>
-
                                     {/* User Links (if authenticated) */}
                                     {isAuth && user && (
                                         <>
