@@ -97,7 +97,7 @@ export default function CheckoutPage() {
         Boolean(
             formData.city.trim() &&
             formData.state.trim() &&
-            formData.pincode.trim()
+            /^\d{6}$/.test(formData.pincode.trim())
         );
     const quotePayload = {
         items: items.map((item) => ({
@@ -237,6 +237,8 @@ export default function CheckoutPage() {
             }
             if (!formData.pincode.trim()) {
                 newErrors.pincode = "Pincode is required";
+            } else if (!/^\d{6}$/.test(formData.pincode.trim())) {
+                newErrors.pincode = "Enter a valid 6-digit pincode";
             }
         }
 
