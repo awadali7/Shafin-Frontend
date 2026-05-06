@@ -364,7 +364,7 @@ export default function LandingPage() {
                                         "Reliable diagnostic tools, programmers, and workshop solutions trusted by professionals.",
                                 },
                                 {
-                                    image: "/images/technical-training.png",
+                                    image: "/images/male-colleagues-working-project.jpg",
                                     title: "Expert-Led Technical Training",
                                     description:
                                         "Practical online training designed for real-world diagnostic and repair challenges.",
@@ -750,7 +750,7 @@ export default function LandingPage() {
                             ].map((partner, index) => (
                                 <div
                                     key={index}
-                                    className="relative w-full h-56 md:h-72 lg:h-80 flex items-center justify-center group"
+                                    className="relative w-full h-72 md:h-72 lg:h-80 flex items-center justify-center group"
                                 >
                                     <div className="absolute inset-0 bg-linear-to-br from-gray-50 to-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                     <Image

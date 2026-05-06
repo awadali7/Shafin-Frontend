@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useDeferredValue, useEffect, useState } from "react";
-import { Plus, X, Upload, FileText, ArrowLeft, Loader2, Calendar, Eye, Image as ImageIcon, Search, Trash2 } from "lucide-react";
+import { Plus, X, Upload, FileText, ArrowLeft, Loader2, Calendar, Eye, Image as ImageIcon, Search, Trash2, UserPlus, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 import { productExtraInfoApi, ProductExtraInfo } from "@/lib/api/product-extra-info";
 import { adminApi } from "@/lib/api/admin";
@@ -26,8 +26,9 @@ export const ProductExtraInfoTab: React.FC = () => {
     const [pdfs, setPdfs] = useState<File[]>([]);
     const [error, setError] = useState("");
 
-    // Grant access state
+    // Grant/Remove access state
     const [showGrantModal, setShowGrantModal] = useState(false);
+    const [modalMode, setModalMode] = useState<"grant" | "remove">("grant");
     const [selectedInfo, setSelectedInfo] = useState<ProductExtraInfo | null>(null);
     const [users, setUsers] = useState<User[]>([]);
     const [selectedUserId, setSelectedUserId] = useState("");
@@ -173,6 +174,31 @@ export const ProductExtraInfoTab: React.FC = () => {
                 setGrantProductName("");
             } else {
                 toast.error(res.message || "Failed to grant access");
+            }
+        } catch (e: any) {
+            toast.error(e.message || "An error occurred");
+        } finally {
+            setIsGranting(false);
+        }
+    };
+
+    const handleRemoveAccess = async () => {
+        if (!selectedInfo || !selectedUserId) {
+            toast.error("Please select a user");
+            return;
+        }
+        setIsGranting(true);
+        try {
+            const res = await productExtraInfoApi.removeAccess({
+                product_extra_info_id: selectedInfo.id,
+                user_id: selectedUserId,
+            });
+            if (res.success) {
+                toast.success("Access removed successfully!");
+                setShowGrantModal(false);
+                setSelectedUserId("");
+            } else {
+                toast.error(res.message || "Failed to remove access");
             }
         } catch (e: any) {
             toast.error(e.message || "An error occurred");
@@ -580,10 +606,14 @@ export const ProductExtraInfoTab: React.FC = () => {
                                     <button
                                         onClick={() => {
                                             setSelectedInfo(info);
+                                            setModalMode("grant");
+                                            setSelectedUserId("");
+                                            setGrantProductName("");
                                             setShowGrantModal(true);
                                         }}
-                                        className="text-sm px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
+                                        className="inline-flex items-center gap-1 text-sm px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors"
                                     >
+                                        <UserPlus className="w-4 h-4" />
                                         Grant Access
                                     </button>
                                     <button

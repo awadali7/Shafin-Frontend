@@ -78,6 +78,14 @@ export const productExtraInfoApi = {
         return apiClient.post<any>("/product-extra-info/grant", data);
     },
 
+    // Remove access from a user
+    removeAccess: async (data: {
+        product_extra_info_id: string;
+        user_id: string;
+    }): Promise<ApiResponse<any>> => {
+        return apiClient.post<any>("/product-extra-info/remove-access", data);
+    },
+
     // Get user accesses
     getMyAccesses: async (): Promise<ApiResponse<any[]>> => {
         return apiClient.get<any[]>("/product-extra-info/my/access");
