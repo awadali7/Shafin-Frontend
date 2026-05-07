@@ -228,7 +228,7 @@ export const productsApi = {
         Object.entries(data).forEach(([k, v]) => {
             if (v === undefined || v === null) return;
             if (v instanceof File) return;
-            if (k === "images" || k === "existing_image_urls" || k === "videos" || k === "categories" || k === "quantity_pricing") {
+            if (k === "images" || k === "existing_image_urls" || k === "videos" || k === "categories" || k === "quantity_pricing" || k === "digital_file_name" || k === "product_extra_info_id") {
                 // Skip these, handle separately
                 return;
             }
