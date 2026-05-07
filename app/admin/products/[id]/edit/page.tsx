@@ -425,14 +425,7 @@ export default function EditProductPage() {
             return;
         }
 
-        if (form.product_type === "digital" && !form.digital_file && !form.digital_file_name_input?.trim()) {
-            toast.error("Validation Error", {
-                description: "Digital products require a file (upload or link from library)"
-            });
-            return;
-        }
-
-        setIsSubmitting(true);
+setIsSubmitting(true);
         const toastId = toast.loading("Updating product...");
 
         try {
