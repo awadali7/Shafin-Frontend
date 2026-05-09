@@ -435,6 +435,22 @@ setIsSubmitting(true);
 
             const filteredCategories = form.categories.filter(c => c && c.trim());
 
+            const hasAnyCourierCharge = (tier: typeof form.quantity_pricing[0]) =>
+                [tier.courier_charge_a, tier.courier_charge_b, tier.courier_charge_c,
+                 tier.courier_charge_d, tier.courier_charge_e, tier.courier_charge_f]
+                .some(v => v !== "" && v != null);
+
+            const incompleteTiers = form.quantity_pricing.filter(
+                tier => hasAnyCourierCharge(tier) && (tier.min_qty === "" || tier.price_per_item === "")
+            );
+            if (incompleteTiers.length > 0) {
+                toast.error("Incomplete Pricing Tier", {
+                    description: "You have courier charges filled but Min Qty or Price Per Item is missing. Fill in both fields or the courier charges will not be saved.",
+                });
+                setIsSubmitting(false);
+                return;
+            }
+
             const toCharge = (v: number | string | undefined) =>
                 v !== "" && v != null ? Number(v) : null;
             const validPricing = form.quantity_pricing
@@ -477,13 +493,9 @@ setIsSubmitting(true);
                 price: form.price,
                 offer_price: form.offer_price > 0 ? form.offer_price : 0,
                 stock_quantity: form.product_type === "physical" ? form.stock_quantity : 0,
-                weight: form.product_type === "physical" ? form.weight : undefined,
                 origin_city: form.product_type === "physical" ? form.origin_city.trim() || "" : "",
                 origin_state: form.product_type === "physical" ? form.origin_state.trim() || "" : "",
                 origin_pincode: form.product_type === "physical" ? form.origin_pincode.trim() || "" : "",
-                length: form.product_type === "physical" ? form.length : undefined,
-                width: form.product_type === "physical" ? form.width : undefined,
-                height: form.product_type === "physical" ? form.height : undefined,
                 extra_shipping_charge: form.product_type === "physical" ? form.extra_shipping_charge : undefined,
                 is_active: form.is_active,
                 is_featured: form.is_featured,
@@ -835,12 +847,24 @@ setIsSubmitting(true);
                                 <input
                                     type="number"
                                     value={form.price}
-                                    onChange={(e) =>
-                                        setForm((p) => ({
-                                            ...p,
-                                            price: Number(e.target.value),
-                                        }))
-                                    }
+                                    onChange={(e) => {
+                                        const newPrice = Number(e.target.value);
+                                        setForm((p) => {
+                                            const newPricing = [...p.quantity_pricing];
+                                            if (newPricing[0]) {
+                                                const tier = newPricing[0];
+                                                const prevAuto = p.offer_price > 0 ? p.offer_price : p.price;
+                                                const wasAuto = tier.price_per_item === "" || Number(tier.price_per_item) === prevAuto;
+                                                const autoPrice = p.offer_price > 0 ? p.offer_price : newPrice;
+                                                newPricing[0] = {
+                                                    ...tier,
+                                                    min_qty: tier.min_qty === "" ? "1" : tier.min_qty,
+                                                    price_per_item: wasAuto ? autoPrice : tier.price_per_item,
+                                                };
+                                            }
+                                            return { ...p, price: newPrice, quantity_pricing: newPricing };
+                                        });
+                                    }}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                     placeholder="0.00"
                                 />
@@ -852,12 +876,24 @@ setIsSubmitting(true);
                                 <input
                                     type="number"
                                     value={form.offer_price}
-                                    onChange={(e) =>
-                                        setForm((p) => ({
-                                            ...p,
-                                            offer_price: Number(e.target.value),
-                                        }))
-                                    }
+                                    onChange={(e) => {
+                                        const newOfferPrice = Number(e.target.value);
+                                        setForm((p) => {
+                                            const newPricing = [...p.quantity_pricing];
+                                            if (newPricing[0]) {
+                                                const tier = newPricing[0];
+                                                const prevAuto = p.offer_price > 0 ? p.offer_price : p.price;
+                                                const wasAuto = tier.price_per_item === "" || Number(tier.price_per_item) === prevAuto;
+                                                const autoPrice = newOfferPrice > 0 ? newOfferPrice : p.price;
+                                                newPricing[0] = {
+                                                    ...tier,
+                                                    min_qty: tier.min_qty === "" ? "1" : tier.min_qty,
+                                                    price_per_item: wasAuto ? autoPrice : tier.price_per_item,
+                                                };
+                                            }
+                                            return { ...p, offer_price: newOfferPrice, quantity_pricing: newPricing };
+                                        });
+                                    }}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                     placeholder="0.00"
                                 />
@@ -883,65 +919,11 @@ setIsSubmitting(true);
                                     placeholder="0"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Weight (grams)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={form.weight}
-                                    onChange={(e) =>
-                                        setForm((p) => ({
-                                            ...p,
-                                            weight: Number(e.target.value),
-                                        }))
-                                    }
-                                    disabled={form.product_type !== "physical"}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent disabled:bg-gray-50"
-                                    placeholder="0"
-                                />
-                            </div>
                         </div>
 
-                        {/* Dimensions & Extra Shipping */}
+                        {/* Extra Shipping & Origin */}
                         {form.product_type === "physical" && (
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Length (cm)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={form.length}
-                                        onChange={(e) => setForm((p) => ({ ...p, length: Number(e.target.value) }))}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                        placeholder="0"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Width (cm)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={form.width}
-                                        onChange={(e) => setForm((p) => ({ ...p, width: Number(e.target.value) }))}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                        placeholder="0"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Height (cm)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={form.height}
-                                        onChange={(e) => setForm((p) => ({ ...p, height: Number(e.target.value) }))}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
-                                        placeholder="0"
-                                    />
-                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Extra Charge (₹)
@@ -954,12 +936,6 @@ setIsSubmitting(true);
                                         placeholder="0"
                                     />
                                     <p className="text-xs text-gray-500 mt-1">Special handling/packaging fee</p>
-                                </div>
-                                <div className="col-span-4 bg-blue-50 border border-blue-100 p-3 rounded-lg flex items-center justify-between">
-                                    <span className="text-sm text-blue-800 font-medium">Calculated Volumetric Weight:</span>
-                                    <span className="text-base text-blue-900 font-bold">
-                                        {Math.ceil((form.length * form.width * form.height) / 5000)} grams
-                                    </span>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1086,6 +1062,15 @@ setIsSubmitting(true);
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            {[tier.courier_charge_a, tier.courier_charge_b, tier.courier_charge_c,
+                                               tier.courier_charge_d, tier.courier_charge_e, tier.courier_charge_f]
+                                               .some(v => v !== "" && v != null) &&
+                                               (tier.min_qty === "" || tier.price_per_item === "") && (
+                                                <p className="text-xs text-red-500 mt-2">
+                                                    Min Qty and Price Per Item are required — courier charges will not be saved without them.
+                                                </p>
+                                            )}
 
                                             {/* Per-zone courier charges */}
                                             <div className="mt-3">

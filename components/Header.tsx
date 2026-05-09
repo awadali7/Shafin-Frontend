@@ -69,6 +69,8 @@ export default function Header() {
         : "Guest";
     const displayEmail = user?.email || "";
 
+    const isShopPage = pathname === "/shop" || pathname?.startsWith("/shop/");
+
     const userTypeLabel = React.useMemo(() => {
         if (!user) return "Guest";
         if (user.role === "admin") return "Admin";
@@ -81,32 +83,30 @@ export default function Header() {
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white border-b border-gray-200">
-            <div className="flex items-center justify-between px-4 lg:px-8 py-4">
-                {/* Menu Button (Visible on all screens now) */}
+            <div className="flex items-center px-3 lg:px-8 h-14 lg:h-[72px] gap-1 lg:gap-0">
+                {/* Menu Button */}
                 <button
                     onClick={() => setIsMobileMenuOpen(true)}
-                    className="p-2 text-gray-700 hover:text-[#B00000] transition-colors mr-2"
+                    className="shrink-0 p-2 text-gray-700 hover:text-[#B00000] transition-colors"
                     aria-label="Open Menu"
                 >
                     <Menu className="w-6 h-6" />
                 </button>
 
-                {/* Left Section - Logo */}
-                <Link href="/" className="flex items-center space-x-3 group">
-                    <div className="relative h-12 sm:h-14 transition-all duration-300 transform group-hover:scale-105">
-                        <Image
-                            src="/images/logo/header-logo.png"
-                            alt="DIAGTOOLS"
-                            width={1000}
-                            height={1000}
-                            className="h-12 sm:h-14 w-auto object-contain"
-                            priority
-                        />
-                    </div>
+                {/* Logo — centered on mobile, left-aligned on desktop */}
+                <Link href="/" className="flex-1 lg:flex-none flex justify-center lg:justify-start items-center mx-1 lg:mx-0 lg:mr-8 group">
+                    <Image
+                        src="/images/logo/header-logo.png"
+                        alt="DIAGTOOLS"
+                        width={1000}
+                        height={1000}
+                        className="h-9 lg:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                        priority
+                    />
                 </Link>
 
-                {/* Middle Section - Public Navigation (always visible) */}
-                <nav className="hidden lg:flex items-center space-x-8">
+                {/* Middle Section - Public Navigation (desktop only) */}
+                <nav className="hidden lg:flex flex-1 justify-center items-center space-x-8">
                     <Link
                         href="/"
                         className={`font-medium transition-all duration-200 relative pb-1 ${
@@ -181,9 +181,9 @@ export default function Header() {
                 </nav>
 
                 {/* Right Section - Auth Buttons or User Profile */}
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-0.5 lg:gap-3 shrink-0">
                     {/* Country Indicator */}
-                    <div className="flex items-center cursor-default group/flag">
+                    <div className="hidden lg:flex items-center cursor-default group/flag">
                         <div className="relative w-12 h-12 overflow-hidden rounded-full transition-transform duration-300">
                             <Image
                                 src="/images/made-in-india.png"
@@ -196,7 +196,7 @@ export default function Header() {
                     {/* Shopping Cart */}
                     <button
                         onClick={() => setIsOpen(true)}
-                        className="relative p-2 text-gray-700 hover:text-[#B00000] transition-colors"
+                        className={`relative p-2 text-gray-700 hover:text-[#B00000] transition-colors${!isShopPage ? " hidden lg:block" : ""}`}
                         aria-label="Shopping Cart"
                     >
                         <ShoppingCart className="w-5 h-5" />
@@ -207,7 +207,11 @@ export default function Header() {
                         )}
                     </button>
                     {/* Notification Bell */}
-                    {isAuth && <NotificationBell />}
+                    {isAuth && (
+                        <span className={isShopPage ? "hidden lg:inline-flex" : ""}>
+                            <NotificationBell />
+                        </span>
+                    )}
                     {loading ? (
                         <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse"></div>
                     ) : isAuth && user ? (
@@ -230,7 +234,7 @@ export default function Header() {
                                     </p>
                                 </div>
                                 <ChevronDown
-                                    className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${
+                                    className={`hidden lg:block w-4 h-4 text-gray-600 transition-transform duration-200 ${
                                         isProfileOpen ? "rotate-180" : ""
                                     }`}
                                 />

@@ -13,6 +13,8 @@ import RegisterDrawer from "@/components/RegisterDrawer";
 import BusinessUpgradeModal from "@/components/BusinessUpgradeModal";
 import ProductTermsModal from "@/components/ProductTermsModal";
 import { setRedirectPath, shouldPreserveRedirect } from "@/lib/utils/redirect";
+import SearchableDropdown from "@/components/ui/SearchableDropdown";
+import { INDIAN_STATES } from "@/lib/indianLocations";
 import type { OrderQuote } from "@/lib/api/types";
 
 type RazorpaySuccessResponse = {
@@ -84,9 +86,31 @@ export default function CheckoutPage() {
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [pincodeLoading, setPincodeLoading] = useState(false);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [quote, setQuote] = useState<OrderQuote | null>(null);
     const [isQuoteLoading, setIsQuoteLoading] = useState(false);
+
+
+    useEffect(() => {
+        const pin = formData.pincode.trim();
+        if (!/^\d{6}$/.test(pin)) return;
+        setPincodeLoading(true);
+        fetch(`https://api.postalpincode.in/pincode/${pin}`)
+            .then(r => r.json())
+            .then(data => {
+                const po = data?.[0]?.PostOffice?.[0];
+                if (po) {
+                    setFormData(prev => ({
+                        ...prev,
+                        state: po.State || prev.state,
+                        city: po.District || prev.city,
+                    }));
+                }
+            })
+            .catch(() => {})
+            .finally(() => setPincodeLoading(false));
+    }, [formData.pincode]);
 
     const hasPhysicalItems = items.some((item) => item.type === "physical");
     const hasDigitalItems = items.some(
@@ -591,6 +615,43 @@ export default function CheckoutPage() {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Pincode *
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    name="pincode"
+                                                    value={formData.pincode}
+                                                    onChange={handleInputChange}
+                                                    maxLength={6}
+                                                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.pincode ? "border-red-300" : "border-gray-300"}`}
+                                                    placeholder="6-digit pincode"
+                                                />
+                                                {pincodeLoading && (
+                                                    <span className="absolute right-3 top-2.5 text-xs text-gray-400">Fetching...</span>
+                                                )}
+                                            </div>
+                                            {errors.pincode && (
+                                                <p className="text-xs text-red-600 mt-1">{errors.pincode}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                State *
+                                            </label>
+                                            <SearchableDropdown
+                                                options={INDIAN_STATES}
+                                                value={formData.state}
+                                                onChange={(val) => setFormData(p => ({ ...p, state: val, city: "" }))}
+                                                placeholder="Auto-filled from pincode"
+                                                error={!!errors.state}
+                                            />
+                                            {errors.state && (
+                                                <p className="text-xs text-red-600 mt-1">{errors.state}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
                                                 City *
                                             </label>
                                             <input
@@ -598,55 +659,11 @@ export default function CheckoutPage() {
                                                 name="city"
                                                 value={formData.city}
                                                 onChange={handleInputChange}
-                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.city
-                                                    ? "border-red-300"
-                                                    : "border-gray-300"
-                                                    }`}
+                                                placeholder="Auto-filled from pincode"
+                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.city ? "border-red-300" : "border-gray-300"}`}
                                             />
                                             {errors.city && (
-                                                <p className="text-xs text-red-600 mt-1">
-                                                    {errors.city}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                State *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="state"
-                                                value={formData.state}
-                                                onChange={handleInputChange}
-                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.state
-                                                    ? "border-red-300"
-                                                    : "border-gray-300"
-                                                    }`}
-                                            />
-                                            {errors.state && (
-                                                <p className="text-xs text-red-600 mt-1">
-                                                    {errors.state}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Pincode *
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="pincode"
-                                                value={formData.pincode}
-                                                onChange={handleInputChange}
-                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${errors.pincode
-                                                    ? "border-red-300"
-                                                    : "border-gray-300"
-                                                    }`}
-                                            />
-                                            {errors.pincode && (
-                                                <p className="text-xs text-red-600 mt-1">
-                                                    {errors.pincode}
-                                                </p>
+                                                <p className="text-xs text-red-600 mt-1">{errors.city}</p>
                                             )}
                                         </div>
                                     </div>

@@ -6,10 +6,7 @@ import {
     Package,
     Search,
     X,
-    Grid3x3,
-    List,
     ShieldCheck,
-    SlidersHorizontal,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { productsApi, PaginationInfo } from "@/lib/api/products";
@@ -119,13 +116,11 @@ export default function ShopPage() {
     const [selectedCategoryPath, setSelectedCategoryPath] = useState<string[]>(
         []
     );
+    const [sortBy, setSortBy] = useState<SortOption>("name");
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
-    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-    const [sortBy, setSortBy] = useState<SortOption>("name");
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
     const itemsPerPage = 20;
     const { addToCart, setIsOpen } = useCart();
 
@@ -239,21 +234,14 @@ export default function ShopPage() {
     }, [isAuth, user]);
 
     const filteredProducts = useMemo(() => {
-        // Backend now handles category filtering, we only need to sort client-side
         const sorted = [...products];
-
         sorted.sort((a, b) => {
             switch (sortBy) {
-                case "price-asc":
-                    return a.price - b.price;
-                case "price-desc":
-                    return b.price - a.price;
-                case "name":
-                default:
-                    return a.name.localeCompare(b.name);
+                case "price-asc": return a.price - b.price;
+                case "price-desc": return b.price - a.price;
+                default: return a.name.localeCompare(b.name);
             }
         });
-
         return sorted;
     }, [products, sortBy]);
 
@@ -288,9 +276,9 @@ export default function ShopPage() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="flex gap-6">
 
-                    {/* ── Desktop sidebar ── */}
-                    <aside className="hidden lg:block w-52 shrink-0">
-                        <div className="sticky top-6 rounded-lg border border-gray-200 bg-white p-4 max-h-[calc(100vh-3rem)] overflow-y-auto">
+                    {/* ── Filters sidebar ── */}
+                    <aside className="w-40 sm:w-52 shrink-0">
+                        <div className="sticky top-20 rounded-lg border border-gray-200 bg-white p-3 sm:p-4 max-h-[calc(100vh-6rem)] overflow-y-auto">
                             <MultiLevelCategoryMenu
                                 products={categoryProducts.length > 0 ? categoryProducts : products}
                                 selectedPath={selectedCategoryPath}
@@ -303,63 +291,17 @@ export default function ShopPage() {
                     <div className="flex-1 min-w-0">
 
                         {/* Controls bar */}
-                        <div className="mb-5 flex flex-wrap items-center gap-3">
-
-                            {/* Mobile: Filters button */}
-                            <button
-                                type="button"
-                                onClick={() => setMobileFiltersOpen(true)}
-                                className={`lg:hidden inline-flex items-center gap-2 h-10 px-3 text-sm rounded-md border transition-colors ${
-                                    selectedCategoryPath.length > 0
-                                        ? "border-[#B00000] bg-[#B00000] text-white"
-                                        : "border-gray-300 text-gray-700 hover:border-gray-400"
-                                }`}
-                            >
-                                <SlidersHorizontal className="w-4 h-4" />
-                                Filters
-                                {selectedCategoryPath.length > 0 && (
-                                    <span className="ml-0.5 bg-white text-[#B00000] text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                                        {selectedCategoryPath.length}
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* View Toggle */}
-                            <div className="flex items-center gap-1 border border-gray-300 rounded p-1">
-                                <button
-                                    onClick={() => setViewMode("grid")}
-                                    className={`p-2 rounded ${viewMode === "grid" ? "bg-[#B00000] text-white" : "text-gray-600 hover:bg-gray-100"}`}
-                                >
-                                    <Grid3x3 className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => setViewMode("list")}
-                                    className={`p-2 rounded ${viewMode === "list" ? "bg-[#B00000] text-white" : "text-gray-600 hover:bg-gray-100"}`}
-                                >
-                                    <List className="w-4 h-4" />
-                                </button>
-                            </div>
-
-                            {/* Sort */}
-                            <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                                className="px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#B00000] focus:ring-1 focus:ring-[#B00000]"
-                            >
-                                <option value="name">Name (A-Z)</option>
-                                <option value="price-asc">Price: Low to High</option>
-                                <option value="price-desc">Price: High to Low</option>
-                            </select>
+                        <div className="mb-5 flex items-center gap-2">
 
                             {/* Search */}
-                            <div className="relative ml-auto min-w-[200px] max-w-sm">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
                                 <input
                                     type="search"
                                     placeholder="Search products…"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full h-10 pl-10 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#B00000] focus:ring-1 focus:ring-[#B00000]"
+                                    className="w-full h-10 pl-10 pr-9 text-sm bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:bg-white focus:border-[#B00000] focus:ring-1 focus:ring-[#B00000] transition-colors"
                                 />
                                 {searchQuery.trim().length > 0 && (
                                     <button
@@ -371,41 +313,24 @@ export default function ShopPage() {
                                 )}
                             </div>
 
+                            {/* Sort */}
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                                className="h-10 px-3 text-sm bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-[#B00000] focus:ring-1 focus:ring-[#B00000] transition-colors shrink-0"
+                            >
+                                <option value="name">A – Z</option>
+                                <option value="price-asc">Price ↑</option>
+                                <option value="price-desc">Price ↓</option>
+                            </select>
+
                             {/* Count */}
                             {pagination && (
-                                <span className="text-sm text-gray-500">
+                                <span className="text-sm text-gray-500 shrink-0 whitespace-nowrap hidden sm:inline">
                                     {filteredProducts.length} of {pagination.total}
                                 </span>
                             )}
                         </div>
-
-                        {/* Mobile: active filter chips */}
-                        {selectedCategoryPath.length > 0 && (
-                            <div className="lg:hidden mb-4 flex flex-wrap items-center gap-2">
-                                <span className="text-xs text-gray-500">Filtered by:</span>
-                                {selectedCategoryPath.map((item, i) => (
-                                    <span
-                                        key={i}
-                                        className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-xs text-[#B00000] font-medium"
-                                    >
-                                        {item}
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedCategoryPath(selectedCategoryPath.slice(0, i))}
-                                        >
-                                            <X className="w-2.5 h-2.5" />
-                                        </button>
-                                    </span>
-                                ))}
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedCategoryPath([])}
-                                    className="text-xs text-gray-400 hover:text-[#B00000]"
-                                >
-                                    Clear all
-                                </button>
-                            </div>
-                        )}
 
                         {/* Error */}
                         {error && (
@@ -414,21 +339,21 @@ export default function ShopPage() {
                             </div>
                         )}
 
-                        {/* Products Grid / List */}
+                        {/* Products Grid */}
                         {loading ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                                 {Array.from({ length: 8 }).map((_, idx) => (
-                                    <div key={idx} className="border border-gray-200 rounded overflow-hidden animate-pulse">
-                                        <div className="h-48 bg-gray-200" />
-                                        <div className="p-4 space-y-2">
-                                            <div className="h-4 bg-gray-200 rounded w-3/4" />
-                                            <div className="h-4 bg-gray-200 rounded w-1/2" />
+                                    <div key={idx} className="border border-gray-200 rounded-xl overflow-hidden animate-pulse">
+                                        <div className="h-32 sm:h-48 bg-gray-200" />
+                                        <div className="p-3 sm:p-4 space-y-2">
+                                            <div className="h-3 sm:h-4 bg-gray-200 rounded w-3/4" />
+                                            <div className="h-3 sm:h-4 bg-gray-200 rounded w-1/2" />
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : filteredProducts.length === 0 ? (
-                            <div className="border border-gray-200 rounded p-12 text-center">
+                            <div className="border border-gray-200 rounded-xl p-12 text-center">
                                 <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                                 <p className="text-gray-600 mb-4">No products found</p>
                                 {(searchQuery || selectedCategoryPath.length > 0) && (
@@ -441,59 +366,46 @@ export default function ShopPage() {
                                 )}
                             </div>
                         ) : (
-                            <div className={
-                                viewMode === "grid"
-                                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                                    : "flex flex-col gap-4"
-                            }>
+                            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                                 {filteredProducts.map((product) => (
                                     <article
                                         key={product.id}
-                                        className={`border border-gray-200 rounded overflow-hidden hover:shadow-md transition-shadow group ${viewMode === "list" ? "flex" : ""}`}
+                                        className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-200 group bg-white flex flex-col"
                                     >
                                 {/* Product Image */}
-                                <Link
-                                    href={`/shop/${product.slug}`}
-                                    className={viewMode === "list" ? "w-48 shrink-0" : ""}
-                                >
-                                    <div
-                                        className={`bg-white ${viewMode === "list" ? "h-full" : "h-48 w-full"
-                                            }`}
-                                    >
+                                <Link href={`/shop/${product.slug}`} className="block overflow-hidden">
+                                    <div className="bg-gray-50 h-32 sm:h-48 w-full">
                                         <img
                                             src={product.image}
                                             alt={product.name}
-                                            className="w-full h-full object-contain"
+                                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                                         />
                                     </div>
                                 </Link>
 
                                 {/* Product Info */}
-                                <div
-                                    className={`p-4 ${viewMode === "list" ? "flex-1 flex flex-col" : ""
-                                        }`}
-                                >
+                                <div className="p-2.5 sm:p-4 flex flex-col flex-1">
                                     {/* Product Title */}
                                     <Link href={`/shop/${product.slug}`}>
-                                        <h3 className="font-medium text-gray-900 mb-2 line-clamp-2 hover:text-[#B00000]">
+                                        <h3 className="text-xs sm:text-sm font-medium text-gray-900 mb-1.5 line-clamp-2 hover:text-[#B00000] leading-snug">
                                             {product.name}
                                         </h3>
                                     </Link>
 
                                     {/* Badges */}
-                                    <div className="mb-3 flex items-center gap-2 flex-wrap text-xs">
+                                    <div className="mb-2 flex items-center gap-1 flex-wrap">
                                         {product.isComingSoon && (
-                                            <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">
-                                                Coming Soon
+                                            <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded text-[10px] sm:text-xs">
+                                                Soon
                                             </span>
                                         )}
                                         {(product.requiresKyc || product.requiresKycMultiple) && (
-                                            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded">
+                                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] sm:text-xs">
                                                 {product.requiresKyc ? "KYC" : "Bulk KYC"}
                                             </span>
                                         )}
                                         <span
-                                            className={`px-2 py-1 rounded ${product.type === "digital"
+                                            className={`px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${product.type === "digital"
                                                 ? "bg-blue-100 text-blue-700"
                                                 : "bg-green-100 text-green-700"
                                                 }`}
@@ -503,11 +415,7 @@ export default function ShopPage() {
                                     </div>
 
                                     {/* Price and Action Button */}
-                                    <div
-                                        className={`flex items-center justify-between pt-3 border-t border-gray-200 ${viewMode === "list" ? "mt-auto" : ""
-                                            }`}
-                                    >
-                                        {/* Verify KYC conditions */}
+                                    <div className="mt-auto pt-2 border-t border-gray-100">
                                         {(() => {
                                             const showPriceAndAddToCart = !product.requiresKyc || (
                                                 user?.user_type === "business_owner" &&
@@ -519,14 +427,14 @@ export default function ShopPage() {
 
                                             if (!canShowPrice) {
                                                 return (
-                                                    <div className="flex flex-col w-full gap-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <ShieldCheck className="w-4 h-4 text-amber-600" />
-                                                            <p className="text-xs text-amber-700 font-medium">Business KYC Required</p>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <div className="flex items-center gap-1">
+                                                            <ShieldCheck className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600 shrink-0" />
+                                                            <p className="text-[10px] sm:text-xs text-amber-700 font-medium">Business KYC Required</p>
                                                         </div>
                                                         <Link
                                                             href="/kyc/product"
-                                                            className="w-full text-center px-4 py-2 bg-amber-600 text-white text-sm rounded hover:bg-amber-700 transition-colors"
+                                                            className="w-full text-center px-2 py-1.5 bg-amber-500 text-white text-[10px] sm:text-xs rounded-lg hover:bg-amber-600 transition-colors"
                                                         >
                                                             Update Business KYC
                                                         </Link>
@@ -537,70 +445,64 @@ export default function ShopPage() {
                                             if (product.is_contact_only) {
                                                 const offerPrice = getValidOfferPrice(product);
                                                 return (
-                                                    <>
+                                                    <div className="flex items-end justify-between gap-1">
                                                         <div>
-                                                            {canShowPrice ? (
+                                                            {canShowPrice && (
                                                                 offerPrice ? (
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-lg font-bold text-[#B00000]">
+                                                                    <div>
+                                                                        <p className="text-sm sm:text-base font-bold text-[#B00000] leading-none">
                                                                             ₹{offerPrice.toLocaleString()}
                                                                         </p>
-                                                                        <p className="text-sm text-gray-400 line-through">
+                                                                        <p className="text-[10px] sm:text-xs text-gray-400 line-through">
                                                                             ₹{product.price.toLocaleString()}
                                                                         </p>
                                                                     </div>
                                                                 ) : (
-                                                                    <p className="text-lg font-bold text-[#B00000]">
+                                                                    <p className="text-sm sm:text-base font-bold text-[#B00000]">
                                                                         ₹{product.price.toLocaleString()}
                                                                     </p>
                                                                 )
-                                                            ) : null}
-                                                            <p className="text-xs text-gray-500">
-                                                                {product.type === "digital" ? "Digital" : "Physical"}
-                                                            </p>
+                                                            )}
                                                         </div>
                                                         <a
                                                             href="https://wa.me/918714388741"
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                                                            className="shrink-0 px-2 py-1.5 sm:px-3 sm:py-2 bg-green-600 text-white text-[10px] sm:text-xs rounded-lg hover:bg-green-700 transition-colors"
                                                         >
                                                             WhatsApp
                                                         </a>
-                                                    </>
+                                                    </div>
                                                 );
                                             }
 
                                             return (
-                                                <>
+                                                <div className="flex items-end justify-between gap-1">
                                                     <div>
                                                         {(() => {
                                                             const offerPrice = getValidOfferPrice(product);
-
                                                             if (!canShowPrice) return null;
-
                                                             if (offerPrice) {
                                                                 return (
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-lg font-bold text-[#B00000]">
+                                                                    <div>
+                                                                        <p className="text-sm sm:text-base font-bold text-[#B00000] leading-none">
                                                                             ₹{offerPrice.toLocaleString()}
                                                                         </p>
-                                                                        <p className="text-sm text-gray-400 line-through">
+                                                                        <p className="text-[10px] sm:text-xs text-gray-400 line-through">
                                                                             ₹{product.price.toLocaleString()}
                                                                         </p>
                                                                     </div>
                                                                 );
                                                             }
-
                                                             return (
-                                                                <p className="text-lg font-bold text-[#B00000]">
+                                                                <p className="text-sm sm:text-base font-bold text-[#B00000]">
                                                                     ₹{product.price.toLocaleString()}
                                                                 </p>
                                                             );
                                                         })()}
-                                                        <p className="text-xs text-gray-500">
+                                                        <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
                                                             {!showPriceAndAddToCart && product.requiresKyc
-                                                                ? "Business KYC required to purchase"
+                                                                ? "KYC required"
                                                                 : product.type === "digital"
                                                                 ? "Digital"
                                                                 : product.inStock
@@ -608,26 +510,26 @@ export default function ShopPage() {
                                                                     : "Out of Stock"}
                                                         </p>
                                                     </div>
-                                                    <button
-                                                        onClick={() => {
-                                                            if (showPriceAndAddToCart) {
-                                                                handleAddToCart(product);
+                                                    {!showPriceAndAddToCart ? (
+                                                        <Link
+                                                            href="/kyc/product"
+                                                            className="shrink-0 px-2 py-1.5 sm:px-3 sm:py-2 bg-amber-500 text-white text-[10px] sm:text-xs rounded-lg hover:bg-amber-600 transition-colors whitespace-nowrap"
+                                                        >
+                                                            Update KYC
+                                                        </Link>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleAddToCart(product)}
+                                                            disabled={
+                                                                product.isComingSoon ||
+                                                                (product.type === "physical" && !product.inStock)
                                                             }
-                                                        }}
-                                                        disabled={
-                                                            !showPriceAndAddToCart ||
-                                                            product.isComingSoon ||
-                                                            (product.type === "physical" && !product.inStock)
-                                                        }
-                                                        className="px-4 py-2 bg-[#B00000] text-white text-sm rounded hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                    >
-                                                        {!showPriceAndAddToCart
-                                                            ? "KYC Required"
-                                                            : product.isComingSoon
-                                                                ? "Soon"
-                                                                : "Add to Cart"}
-                                                    </button>
-                                                </>
+                                                            className="shrink-0 px-2 py-1.5 sm:px-3 sm:py-2 bg-[#B00000] text-white text-[10px] sm:text-xs rounded-lg hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                        >
+                                                            {product.isComingSoon ? "Soon" : "Add"}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             );
                                         })()}
                                     </div>
@@ -652,50 +554,6 @@ export default function ShopPage() {
                 </div>{/* end flex row */}
             </div>{/* end max-w container */}
 
-            {/* ── Mobile filter drawer ── */}
-            {mobileFiltersOpen && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-                        onClick={() => setMobileFiltersOpen(false)}
-                    />
-                    {/* Drawer */}
-                    <div className="fixed inset-y-0 left-0 w-72 bg-white z-50 lg:hidden flex flex-col shadow-xl">
-                        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
-                            <h2 className="font-semibold text-gray-900">Filter by Category</h2>
-                            <button
-                                type="button"
-                                onClick={() => setMobileFiltersOpen(false)}
-                                className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-4">
-                            <MultiLevelCategoryMenu
-                                products={categoryProducts.length > 0 ? categoryProducts : products}
-                                selectedPath={selectedCategoryPath}
-                                onFilterChange={(path) => {
-                                    setSelectedCategoryPath(path);
-                                    if (path.length > 0) setMobileFiltersOpen(false);
-                                }}
-                            />
-                        </div>
-                        {selectedCategoryPath.length > 0 && (
-                            <div className="px-4 py-3 border-t border-gray-200">
-                                <button
-                                    type="button"
-                                    onClick={() => { setSelectedCategoryPath([]); setMobileFiltersOpen(false); }}
-                                    className="w-full py-2 text-sm text-[#B00000] border border-[#B00000] rounded-md hover:bg-red-50 transition-colors"
-                                >
-                                    Clear all filters
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </>
-            )}
         </div>
     );
 }

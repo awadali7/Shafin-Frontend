@@ -35,6 +35,7 @@ type ShopProductDetails = {
     name: string;
     slug: string;
     price: number;
+    offer_price?: number | null;
     image: string;
     images?: string[];
     videos?: Array<{
@@ -132,6 +133,7 @@ function mapApiProductToDetails(p: Product): ShopProductDetails {
                 }
                 : undefined,
         quantity_pricing: p.tiered_pricing || p.quantity_pricing || undefined,
+        offer_price: p.offer_price ? Number(p.offer_price) : null,
     };
 }
 
@@ -305,6 +307,13 @@ export default function ProductDetailPage() {
         (product.requiresKyc ||
             (product.requiresKycMultiple && quantity > 1));
 
+    const showPriceAndAddToCartGlobal = product
+        ? (!requiresKycForSelectedQuantity || (
+            user?.user_type === "business_owner" &&
+            userKycStatus?.status === "verified"
+          ))
+        : false;
+
     const handleCopyLink = async () => {
         const url = window.location.href;
         try {
@@ -424,22 +433,22 @@ export default function ProductDetailPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 pb-24 lg:pb-10">
             {/* Back Button */}
             <Link
                 href="/shop"
-                className="inline-flex items-center text-gray-600 hover:text-[#B00000] mb-4 transition-colors text-sm"
+                className="inline-flex items-center text-gray-500 hover:text-[#B00000] mb-3 transition-colors text-sm"
             >
-                <ArrowLeft className="w-4 h-4 mr-1.5" />
+                <ArrowLeft className="w-4 h-4 mr-1" />
                 Back to Shop
             </Link>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
                 {/* Product Images */}
                 <div className="space-y-3">
                     {/* Main Image - Click to open gallery */}
                     <div
-                        className="bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:border-[#B00000] transition-colors"
+                        className="bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:border-[#B00000] transition-colors"
                         onClick={() => setIsGalleryOpen(true)}
                     >
                         <img
@@ -448,7 +457,7 @@ export default function ProductDetailPage() {
                                 product.image
                             }
                             alt={product.name}
-                            className="w-full h-96 object-contain"
+                            className="w-full h-60 sm:h-80 lg:h-96 object-contain"
                         />
                     </div>
 
@@ -475,7 +484,7 @@ export default function ProductDetailPage() {
                     )}
 
                     {/* Click to view hint */}
-                    <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500 py-1.5">
+                    <div className="hidden sm:flex items-center justify-center gap-1.5 text-xs text-gray-400 py-1">
                         <svg
                             className="w-3.5 h-3.5"
                             fill="none"
@@ -504,7 +513,7 @@ export default function ProductDetailPage() {
                     <div>
                         {/* Product Title */}
                         <div className="flex items-start justify-between gap-3 mb-3">
-                            <h1 className="text-2xl font-bold text-slate-900">
+                            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 leading-snug">
                                 {product.name}
                             </h1>
 
@@ -611,7 +620,7 @@ export default function ProductDetailPage() {
                                             <>
                                                 {canShowPrice ? (
                                                     <div className="flex items-baseline gap-2">
-                                                        <p className="text-3xl font-bold text-[#B00000]">
+                                                        <p className="text-2xl sm:text-3xl font-bold text-[#B00000]">
                                                             ₹{product.price.toLocaleString("en-IN")}
                                                         </p>
                                                     </div>
@@ -625,9 +634,14 @@ export default function ProductDetailPage() {
                                             <>
                                                 {canShowPrice ? (
                                                     <div className="flex items-baseline gap-2">
-                                                        <p className="text-3xl font-bold text-[#B00000]">
-                                                            ₹{product.price.toLocaleString("en-IN")}
+                                                        <p className="text-2xl sm:text-3xl font-bold text-[#B00000]">
+                                                            ₹{(product.offer_price && product.offer_price > 0 ? product.offer_price : product.price).toLocaleString("en-IN")}
                                                         </p>
+                                                        {product.offer_price && product.offer_price > 0 && product.offer_price < product.price && (
+                                                            <span className="text-base text-gray-400 line-through">
+                                                                ₹{product.price.toLocaleString("en-IN")}
+                                                            </span>
+                                                        )}
                                                         {product.type !== "digital" && quantity > 1 && (
                                                             <span className="text-xs text-gray-500">
                                                                 per item
@@ -656,7 +670,8 @@ export default function ProductDetailPage() {
                                     {canShowPrice &&
                                         product.type !== "digital" &&
                                         product.quantity_pricing &&
-                                        product.quantity_pricing.length > 0 && (
+                                        product.quantity_pricing.length > 0 &&
+                                        (product.quantity_pricing.length > 1 || Number(product.quantity_pricing[0]?.min_qty || 1) > 1) && (
                                             <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
                                                 <h3 className="font-semibold text-green-900 text-sm mb-2">
                                                     Bulk Discounts Available
@@ -879,7 +894,7 @@ export default function ProductDetailPage() {
                                                             <span className="text-sm font-semibold text-gray-800">
                                                                 Total:
                                                             </span>
-                                                            <span className="text-xl font-bold text-[#B00000]">
+                                                            <span className="text-lg sm:text-xl font-bold text-[#B00000]">
                                                                 ₹
                                                                 {calculatedPrice.toLocaleString(
                                                                     "en-IN"
@@ -887,7 +902,7 @@ export default function ProductDetailPage() {
                                                             </span>
                                                         </div>
 
-                                                        {appliedTier && (product.price * quantity) - (appliedTier.price_per_item * quantity) > 0 && (
+                                                        {appliedTier && Number(appliedTier.min_qty || 1) > 1 && (product.price * quantity) - (appliedTier.price_per_item * quantity) > 0 && (
                                                             <div className="text-xs text-green-600 mt-2 flex items-center gap-1 bg-green-50 p-1.5 rounded-md border border-green-100">
                                                                 <span className="font-semibold">
                                                                     Discount applied
@@ -1119,6 +1134,32 @@ export default function ProductDetailPage() {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Mobile sticky bottom CTA */}
+            {product && !product.isContactOnly && (
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-4 py-3 flex items-center gap-3 shadow-lg">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500 truncate">{product.name}</p>
+                        {showPriceAndAddToCartGlobal ? (
+                            <p className="text-base font-bold text-[#B00000]">₹{product.price.toLocaleString("en-IN")}</p>
+                        ) : (
+                            <p className="text-xs text-amber-700 font-medium">KYC Required</p>
+                        )}
+                    </div>
+                    {product.isComingSoon ? (
+                        <span className="px-4 py-2.5 bg-gray-200 text-gray-500 text-sm font-medium rounded-xl">Coming Soon</span>
+                    ) : product.isContactOnly ? null : (
+                        <button
+                            onClick={() => { if (showPriceAndAddToCartGlobal) handleAddToCart(); }}
+                            disabled={!showPriceAndAddToCartGlobal || (product.type === "physical" && !product.inStock)}
+                            className="shrink-0 px-5 py-2.5 bg-[#B00000] text-white text-sm font-medium rounded-xl hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        >
+                            <ShoppingCart className="w-4 h-4" />
+                            {!showPriceAndAddToCartGlobal ? "KYC Required" : product.type === "physical" && !product.inStock ? "Out of Stock" : "Add to Cart"}
+                        </button>
+                    )}
+                </div>
             )}
 
             {/* Specifications and Features */}
