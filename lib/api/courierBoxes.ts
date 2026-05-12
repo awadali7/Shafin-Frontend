@@ -4,6 +4,7 @@ import type { ApiResponse } from "./types";
 export interface CourierBox {
     id: string;
     name: string;
+    weight_grams: number;
     charge_a: number;
     charge_b: number;
     charge_c: number;

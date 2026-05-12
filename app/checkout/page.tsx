@@ -830,19 +830,20 @@ export default function CheckoutPage() {
                                     </div>
                                     {hasPhysicalItems && (
                                         <>
-                                            {shippingGroups.length > 1 && shippingGroups.map((group) => (
-                                                <div
-                                                    key={group.key}
-                                                    className="flex items-center justify-between text-sm"
-                                                >
+                                            {quote?.selected_courier_box && (
+                                                <div className="flex items-center justify-between text-sm">
                                                     <span className="text-gray-500 pl-2">
-                                                        ↳ {group.origin_city}, {group.origin_state} ({group.zone})
-                                                    </span>
-                                                    <span className="text-slate-900">
-                                                        Rs. {group.slabCost.toFixed(2)}
+                                                        ↳ {quote.selected_courier_box.name}
+                                                        {quote.total_weight_grams > 0 && (
+                                                            <span className="text-gray-400 ml-1">
+                                                                ({quote.total_weight_grams >= 1000
+                                                                    ? `${(quote.total_weight_grams / 1000).toFixed(2)}kg`
+                                                                    : `${quote.total_weight_grams}g`} · Zone {quote.zone})
+                                                            </span>
+                                                        )}
                                                     </span>
                                                 </div>
-                                            ))}
+                                            )}
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-gray-600">Courier Charges</span>
                                                 <span className="text-slate-900">

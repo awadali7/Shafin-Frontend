@@ -6,7 +6,6 @@ import { ArrowLeft, Trash, ImageIcon, Video, Save, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { productsApi } from "@/lib/api/products";
 import { productExtraInfoApi, ProductExtraInfo } from "@/lib/api/product-extra-info";
-import { courierBoxesApi, CourierBox } from "@/lib/api/courierBoxes";
 import type { ProductType } from "@/lib/api/types";
 import { generateSlug } from "@/components/admin/utils";
 import { ImageCropper } from "@/components/ui/ImageCropper";
@@ -64,7 +63,6 @@ type ProductFormState = {
         min_qty: number | string;
         max_qty: number | string | null;
         price_per_item: number | string;
-        courier_box_id?: string;
     }>;
     shipping_zones_config: {
         local_base_rate?: string | number;
@@ -130,7 +128,6 @@ const defaultForm: ProductFormState = {
     videos: [],
     quantity_pricing: [{
         min_qty: "", max_qty: "", price_per_item: "",
-        courier_box_id: "",
     }],
     shipping_zones_config: {
         local_base_rate: "",
@@ -163,7 +160,6 @@ export default function EditProductPage() {
     const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
     const [existingCategories, setExistingCategories] = useState<string[][]>([]);
     const [extraInfos, setExtraInfos] = useState<ProductExtraInfo[]>([]);
-    const [courierBoxes, setCourierBoxes] = useState<CourierBox[]>([]);
     const [showCategoryDropdown, setShowCategoryDropdown] = useState<number | null>(null);
     const [existingCoverImageUrl, setExistingCoverImageUrl] = useState<string | null>(null);
 
@@ -227,9 +223,8 @@ export default function EditProductPage() {
                         min_qty: qp.min_qty || "",
                         max_qty: qp.max_qty || "",
                         price_per_item: qp.price_per_item || "",
-                        courier_box_id: qp.courier_box_id || "",
                     }))
-                    : [{ min_qty: "", max_qty: "", price_per_item: "", courier_box_id: "" }];
+                    : [{ min_qty: "", max_qty: "", price_per_item: "" }];
 
                 setExistingCoverImageUrl(product.cover_image || null);
 
@@ -288,9 +283,6 @@ export default function EditProductPage() {
     useEffect(() => {
         fetchExistingCategories();
         fetchExtraInfos();
-        courierBoxesApi.list().then(res => {
-            if (res.data) setCourierBoxes(Array.isArray(res.data) ? res.data : []);
-        }).catch(() => {});
     }, []);
 
     const fetchExtraInfos = async () => {
@@ -431,7 +423,6 @@ setIsSubmitting(true);
                     min_qty: Number(tier.min_qty),
                     max_qty: tier.max_qty && tier.max_qty !== "" ? Number(tier.max_qty) : null,
                     price_per_item: Number(tier.price_per_item),
-                    courier_box_id: tier.courier_box_id || null,
                 }))
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
 
@@ -460,6 +451,7 @@ setIsSubmitting(true);
                 price: form.price,
                 offer_price: form.offer_price > 0 ? form.offer_price : 0,
                 stock_quantity: form.product_type === "physical" ? form.stock_quantity : 0,
+                weight: form.product_type === "physical" ? form.weight : undefined,
                 origin_city: form.product_type === "physical" ? form.origin_city.trim() || "" : "",
                 origin_state: form.product_type === "physical" ? form.origin_state.trim() || "" : "",
                 origin_pincode: form.product_type === "physical" ? form.origin_pincode.trim() || "" : "",
@@ -806,7 +798,7 @@ setIsSubmitting(true);
                         <h2 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-gray-200">
                             Pricing & Inventory
                         </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Price *
@@ -867,6 +859,26 @@ setIsSubmitting(true);
                                 <p className="text-xs text-gray-500 mt-1">
                                     Optional discounted price shown during offers.
                                 </p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Weight (grams) *
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={form.weight}
+                                    onChange={(e) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            weight: Number(e.target.value),
+                                        }))
+                                    }
+                                    disabled={form.product_type !== "physical"}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent disabled:bg-gray-50"
+                                    placeholder="e.g. 500"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Used to auto-select courier box</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1030,27 +1042,6 @@ setIsSubmitting(true);
                                                 </div>
                                             </div>
 
-                                            {/* Courier Box selector */}
-                                            <div className="mt-3">
-                                                <label className="block text-[11px] text-gray-500 mb-1">Courier Box (shipping rate card)</label>
-                                                <select
-                                                    value={tier.courier_box_id ?? ""}
-                                                    onChange={(e) => {
-                                                        const newPricing = [...form.quantity_pricing];
-                                                        newPricing[index] = { ...newPricing[index], courier_box_id: e.target.value };
-                                                        setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                    }}
-                                                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000] bg-white"
-                                                >
-                                                    <option value="">— No shipping charge —</option>
-                                                    {courierBoxes.map(box => (
-                                                        <option key={box.id} value={box.id}>
-                                                            {box.name} (A:₹{Number(box.charge_a).toFixed(0)} B:₹{Number(box.charge_b).toFixed(0)} C:₹{Number(box.charge_c).toFixed(0)} D:₹{Number(box.charge_d).toFixed(0)} E:₹{Number(box.charge_e).toFixed(0)} F:₹{Number(box.charge_f).toFixed(0)})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
                                             {/* Savings & Delete */}
                                             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
                                                 <div className="flex flex-col gap-1">
@@ -1072,7 +1063,7 @@ setIsSubmitting(true);
                                                         const newPricing = form.quantity_pricing.filter((_, i) => i !== index);
                                                         setForm(p => ({
                                                             ...p,
-                                                            quantity_pricing: newPricing.length > 0 ? newPricing : [{ min_qty: "", max_qty: "", price_per_item: "", courier_box_id: "" }]
+                                                            quantity_pricing: newPricing.length > 0 ? newPricing : [{ min_qty: "", max_qty: "", price_per_item: "" }]
                                                         }));
                                                     }}
                                                     className="inline-flex items-center gap-1 px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded border border-red-200"
@@ -1090,7 +1081,7 @@ setIsSubmitting(true);
                                     onClick={() => {
                                         setForm(p => ({
                                             ...p,
-                                            quantity_pricing: [...p.quantity_pricing, { min_qty: "", max_qty: "", price_per_item: "", courier_box_id: "" }]
+                                            quantity_pricing: [...p.quantity_pricing, { min_qty: "", max_qty: "", price_per_item: "" }]
                                         }));
                                     }}
                                     className="w-full px-4 py-3 text-sm border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#B00000] hover:text-[#B00000] hover:bg-red-50 transition-colors"
@@ -1100,7 +1091,7 @@ setIsSubmitting(true);
 
                                 <div className="mt-3 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
                                     <strong>💡 Example:</strong> For 1-5 items: ₹100/item | For 6-10 items: ₹90/item<br />
-                                    <span className="text-blue-600">Zones — A: Same City · B: Same State · C: Metro↔Metro · D: Rest of India · E: Northeast · F: Remote</span>
+                                    <span className="text-blue-600">Courier charges are auto-selected based on total cart weight and delivery zone.</span>
                                 </div>
                             </div>
                         </div>

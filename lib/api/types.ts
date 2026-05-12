@@ -612,13 +612,10 @@ export interface OrderQuoteItem {
     zone?: "local" | "regional" | "national";
 }
 
-export interface OrderQuoteGroup {
-    key: string;
-    origin_city: string;
-    origin_state: string;
-    zone: "local" | "regional" | "national";
-    totalWeight: number;
-    slabCost: number;
+export interface SelectedCourierBox {
+    id: string;
+    name: string;
+    weight_grams: number;
 }
 
 export interface OrderQuote {
@@ -627,7 +624,10 @@ export interface OrderQuote {
     shipping_cost: number;
     total: number;
     items: OrderQuoteItem[];
-    shipping_groups: OrderQuoteGroup[];
+    shipping_groups: never[];
+    total_weight_grams: number;
+    zone: string;
+    selected_courier_box: SelectedCourierBox | null;
 }
 
 export interface Order {

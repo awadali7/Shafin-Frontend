@@ -20,6 +20,7 @@ const ZONES: { field: keyof CourierBoxInput; label: string }[] = [
 
 const emptyForm = (): CourierBoxInput => ({
     name: "",
+    weight_grams: 0,
     charge_a: 0,
     charge_b: 0,
     charge_c: 0,
@@ -63,6 +64,7 @@ export const CourierBoxesTab: React.FC = () => {
         setEditingId(box.id);
         setForm({
             name: box.name,
+            weight_grams: Number(box.weight_grams),
             charge_a: Number(box.charge_a),
             charge_b: Number(box.charge_b),
             charge_c: Number(box.charge_c),
@@ -161,6 +163,11 @@ export const CourierBoxesTab: React.FC = () => {
                             <div className="flex-1 min-w-0">
                                 <p className="font-medium text-gray-900 truncate">
                                     {box.name}
+                                    <span className="ml-2 text-xs font-normal text-gray-500">
+                                        {Number(box.weight_grams) >= 1000
+                                            ? `${Number(box.weight_grams) / 1000}kg`
+                                            : `${Number(box.weight_grams)}g`} capacity
+                                    </span>
                                 </p>
                                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
                                     {ZONES.map((z) => (
@@ -239,9 +246,29 @@ export const CourierBoxesTab: React.FC = () => {
                                             name: e.target.value,
                                         }))
                                     }
-                                    placeholder="e.g. Small Parcel, Heavy Box"
+                                    placeholder="e.g. 1kg Box, Heavy Box"
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Weight Capacity (grams)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={form.weight_grams}
+                                    onChange={(e) =>
+                                        setForm((p) => ({
+                                            ...p,
+                                            weight_grams: e.target.value === "" ? 0 : Number(e.target.value),
+                                        }))
+                                    }
+                                    placeholder="e.g. 1000 for 1kg box"
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                />
+                                <p className="text-xs text-gray-400 mt-1">Auto-selected when cart weight ≤ this value</p>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-700 mb-2">

@@ -47,12 +47,6 @@ type ProductFormState = {
         min_qty: number | string;
         max_qty: number | string | null;
         price_per_item: number | string;
-        courier_charge_a?: number | string;
-        courier_charge_b?: number | string;
-        courier_charge_c?: number | string;
-        courier_charge_d?: number | string;
-        courier_charge_e?: number | string;
-        courier_charge_f?: number | string;
     }>;
 };
 
@@ -93,12 +87,6 @@ const defaultForm: ProductFormState = {
         min_qty: "",
         max_qty: "",
         price_per_item: "",
-        courier_charge_a: "",
-        courier_charge_b: "",
-        courier_charge_c: "",
-        courier_charge_d: "",
-        courier_charge_e: "",
-        courier_charge_f: "",
     }],
 };
 
@@ -257,20 +245,12 @@ export const ProductsTab: React.FC = () => {
             const filteredCategories = form.categories.filter(cat => cat && cat.trim());
 
             // Filter and prepare tiered pricing
-            const toCharge = (v: number | string | undefined) =>
-                v !== "" && v != null ? Number(v) : null;
             const quantityPricing = form.quantity_pricing
                 .filter(tier => tier.min_qty && tier.price_per_item)
                 .map(tier => ({
                     min_qty: Number(tier.min_qty),
                     max_qty: tier.max_qty && tier.max_qty !== "" ? Number(tier.max_qty) : null,
                     price_per_item: Number(tier.price_per_item),
-                    courier_charge_a: toCharge(tier.courier_charge_a),
-                    courier_charge_b: toCharge(tier.courier_charge_b),
-                    courier_charge_c: toCharge(tier.courier_charge_c),
-                    courier_charge_d: toCharge(tier.courier_charge_d),
-                    courier_charge_e: toCharge(tier.courier_charge_e),
-                    courier_charge_f: toCharge(tier.courier_charge_f),
                 }))
                 .filter(tier => !isNaN(tier.min_qty) && !isNaN(tier.price_per_item) && tier.min_qty > 0 && tier.price_per_item > 0);
 
@@ -956,41 +936,6 @@ export const ProductsTab: React.FC = () => {
                                                         </div>
                                                     </div>
 
-                                                    {/* Per-zone courier charges */}
-                                                    <div className="mt-2">
-                                                        <p className="text-[10px] text-gray-500 mb-1">Courier charge by zone (₹) — leave blank to use weight slab</p>
-                                                        <div className="grid grid-cols-3 gap-1">
-                                                            {([
-                                                                { field: 'courier_charge_a', label: 'A · Same City' },
-                                                                { field: 'courier_charge_b', label: 'B · Same State' },
-                                                                { field: 'courier_charge_c', label: 'C · Metro↔Metro' },
-                                                                { field: 'courier_charge_d', label: 'D · Rest of India' },
-                                                                { field: 'courier_charge_e', label: 'E · Northeast' },
-                                                                { field: 'courier_charge_f', label: 'F · Remote' },
-                                                            ] as const).map(({ field, label }) => (
-                                                                <div key={field}>
-                                                                    <label className="block text-[9px] text-gray-400 mb-0.5">{label}</label>
-                                                                    <div className="flex items-center gap-0.5">
-                                                                        <span className="text-gray-400 text-[10px]">₹</span>
-                                                                        <input
-                                                                            type="number"
-                                                                            step="0.01"
-                                                                            min="0"
-                                                                            placeholder="—"
-                                                                            value={tier[field] ?? ""}
-                                                                            onChange={(e) => {
-                                                                                const newPricing = [...form.quantity_pricing];
-                                                                                newPricing[index] = { ...newPricing[index], [field]: e.target.value };
-                                                                                setForm(p => ({ ...p, quantity_pricing: newPricing }));
-                                                                            }}
-                                                                            className="w-full px-1.5 py-0.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-[#B00000]"
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
                                                     <div className="flex items-center justify-between mt-2">
                                                         <div className="text-[10px] text-gray-500 italic">
                                                             {savingsPerItem > 0 && (
@@ -1005,8 +950,6 @@ export const ProductsTab: React.FC = () => {
                                                                     ...p,
                                                                     quantity_pricing: newPricing.length > 0 ? newPricing : [{
                                                                         min_qty: "", max_qty: "", price_per_item: "",
-                                                                        courier_charge_a: "", courier_charge_b: "", courier_charge_c: "",
-                                                                        courier_charge_d: "", courier_charge_e: "", courier_charge_f: "",
                                                                     }]
                                                                 }));
                                                             }}
@@ -1026,8 +969,6 @@ export const ProductsTab: React.FC = () => {
                                                     ...p,
                                                     quantity_pricing: [...p.quantity_pricing, {
                                                         min_qty: "", max_qty: "", price_per_item: "",
-                                                        courier_charge_a: "", courier_charge_b: "", courier_charge_c: "",
-                                                        courier_charge_d: "", courier_charge_e: "", courier_charge_f: "",
                                                     }]
                                                 }));
                                             }}
@@ -1037,7 +978,7 @@ export const ProductsTab: React.FC = () => {
                                         </button>
 
                                         <div className="mt-3 p-2 bg-blue-50 rounded text-[10px] text-blue-800 italic text-center">
-                                            A: Same City · B: Same State · C: Metro↔Metro · D: Rest of India · E: Northeast · F: Remote
+                                            Courier charges are auto-selected based on total cart weight and delivery zone.
                                         </div>
                                     </div>
                                 </div>
