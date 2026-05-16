@@ -1142,7 +1142,9 @@ export default function ProductDetailPage() {
                     <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-500 truncate">{product.name}</p>
                         {showPriceAndAddToCartGlobal ? (
-                            <p className="text-base font-bold text-[#B00000]">₹{product.price.toLocaleString("en-IN")}</p>
+                            <p className="text-base font-bold text-[#B00000]">
+                                ₹{(product.offer_price && product.offer_price > 0 && product.offer_price < product.price ? product.offer_price : product.price).toLocaleString("en-IN")}
+                            </p>
                         ) : (
                             <p className="text-xs text-amber-700 font-medium">KYC Required</p>
                         )}
