@@ -65,6 +65,31 @@ export const productExtraInfoApi = {
         return apiClient.post<ProductExtraInfo>("/product-extra-info", form);
     },
 
+    update: async (
+        id: string,
+        data: {
+            title: string;
+            body?: string;
+            existingImages?: ProductExtraInfoFile[];
+            existingPdfs?: ProductExtraInfoFile[];
+            images?: File[];
+            pdfs?: File[];
+        }
+    ): Promise<ApiResponse<ProductExtraInfo>> => {
+        const form = new FormData();
+        form.append("title", data.title);
+        if (data.body !== undefined) form.append("body", data.body);
+        if (data.existingImages) form.append("existing_images", JSON.stringify(data.existingImages));
+        if (data.existingPdfs) form.append("existing_pdfs", JSON.stringify(data.existingPdfs));
+        if (data.images && data.images.length > 0) {
+            data.images.forEach((img) => form.append("images", img));
+        }
+        if (data.pdfs && data.pdfs.length > 0) {
+            data.pdfs.forEach((pdf) => form.append("pdfs", pdf));
+        }
+        return apiClient.put<ProductExtraInfo>(`/product-extra-info/${id}`, form);
+    },
+
     delete: async (id: string): Promise<ApiResponse<null>> => {
         return apiClient.delete<null>(`/product-extra-info/${id}`);
     },
