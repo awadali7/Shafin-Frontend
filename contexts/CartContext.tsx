@@ -21,6 +21,7 @@ export interface CartItem {
     image?: string;
     type: "physical" | "digital" | "course";
     quantity: number;
+    stock_quantity?: number | null;
     slug?: string;
     quantity_pricing?: Array<{ 
         min_qty: number; 

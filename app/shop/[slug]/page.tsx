@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { Syne } from "next/font/google";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -27,6 +28,13 @@ import { authApi } from "@/lib/api/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Product, UserDashboardData } from "@/lib/api/types";
 
+// Display font for this page only — the rest of the site keeps Bricolage Grotesque
+const syne = Syne({
+    subsets: ["latin"],
+    weight: ["700", "800"],
+    display: "swap",
+});
+
 type ProductType = "physical" | "digital";
 type DigitalFileFormat = "zip" | "rar";
 
@@ -49,6 +57,7 @@ type ShopProductDetails = {
     rating: number;
     reviews: number;
     inStock?: boolean; // physical only
+    stockQuantity?: number | null; // physical only
     isComingSoon?: boolean;
     isContactOnly?: boolean;
     requiresKyc?: boolean;
@@ -105,6 +114,7 @@ function mapApiProductToDetails(p: Product): ShopProductDetails {
             p.type === "digital"
                 ? true
                 : p.in_stock ?? (p.stock_quantity ?? 0) > 0,
+        stockQuantity: p.type === "digital" ? null : (p.stock_quantity ?? 0),
         isComingSoon: p.is_coming_soon || false,
         isContactOnly: p.is_contact_only || false,
         requiresKyc: p.requires_kyc || false,
@@ -146,6 +156,7 @@ export default function ProductDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
+    const [stockNotice, setStockNotice] = useState<string | null>(null);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [selectedVideo, setSelectedVideo] = useState<{
         title: string;
@@ -177,9 +188,9 @@ export default function ProductDetailPage() {
                     return;
                 }
                 setProduct(mapApiProductToDetails(resp.data));
-            } catch (e: any) {
+            } catch (e) {
                 if (!mounted) return;
-                setError(e?.message || "Failed to load product");
+                setError(e instanceof Error ? e.message : "Failed to load product");
                 setProduct(null);
             } finally {
                 if (!mounted) return;
@@ -274,12 +285,33 @@ export default function ProductDetailPage() {
         return ["Quality checked", "Fast shipping", "Support available"];
     }, [product]);
 
+    // For physical products with tracked stock, customers can never select more
+    // than what's currently available.
+    const maxOrderableQuantity =
+        product?.type === "physical" && typeof product.stockQuantity === "number"
+            ? Math.max(product.stockQuantity, 0)
+            : Infinity;
+
     const handleAddToCart = () => {
         if (!product) return;
         const finalQty = product.type === "digital" ? 1 : quantity;
         const isPhysicalInStock =
             product.type !== "physical" ? true : !!product.inStock;
-        if (!isPhysicalInStock) return;
+        if (!isPhysicalInStock) {
+            setStockNotice("This product is currently out of stock.");
+            return;
+        }
+
+        if (product.type === "physical" && finalQty > maxOrderableQuantity) {
+            setStockNotice(
+                maxOrderableQuantity > 0
+                    ? `Only ${maxOrderableQuantity} unit${maxOrderableQuantity === 1 ? "" : "s"} left in stock. Please reduce the quantity.`
+                    : "This product is currently out of stock."
+            );
+            return;
+        }
+
+        setStockNotice(null);
 
         addToCart({
             id: product.id,
@@ -296,6 +328,7 @@ export default function ProductDetailPage() {
             origin_state: product.origin_state || undefined,
             origin_pincode: product.origin_pincode || undefined,
             quantity_pricing: product.quantity_pricing,
+            stock_quantity: product.stockQuantity ?? undefined,
         });
 
         // Open the cart drawer
@@ -396,16 +429,16 @@ export default function ProductDetailPage() {
     if (loading) {
         return (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-                    <div className="h-4 w-32 bg-gray-100 rounded mb-3" />
+                <div className="bg-white rounded-2xl border border-[#E5E7EB] p-6 animate-pulse">
+                    <div className="h-4 w-32 bg-[#F8F9FC] rounded mb-3" />
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="h-80 bg-gray-100 rounded-lg" />
+                        <div className="h-80 bg-[#F8F9FC] rounded-lg" />
                         <div className="space-y-3">
-                            <div className="h-3 w-24 bg-gray-100 rounded" />
-                            <div className="h-6 w-3/4 bg-gray-100 rounded" />
-                            <div className="h-8 w-32 bg-gray-100 rounded" />
-                            <div className="h-20 bg-gray-100 rounded" />
-                            <div className="h-10 bg-gray-100 rounded" />
+                            <div className="h-3 w-24 bg-[#F8F9FC] rounded" />
+                            <div className="h-6 w-3/4 bg-[#F8F9FC] rounded" />
+                            <div className="h-8 w-32 bg-[#F8F9FC] rounded" />
+                            <div className="h-20 bg-[#F8F9FC] rounded" />
+                            <div className="h-10 bg-[#F8F9FC] rounded" />
                         </div>
                     </div>
                 </div>
@@ -416,14 +449,14 @@ export default function ProductDetailPage() {
     if (error || !product) {
         return (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                    <p className="text-sm text-red-600">
+                <div className="bg-[#C41E3A]/5 border border-[#C41E3A]/20 rounded-xl p-3 mb-4">
+                    <p className="text-sm text-[#C41E3A]">
                         {error || "Product not found"}
                     </p>
                 </div>
                 <Link
                     href="/shop"
-                    className="inline-flex items-center text-[#B00000] hover:underline text-sm"
+                    className="inline-flex items-center text-[#C41E3A] hover:underline text-sm"
                 >
                     <ArrowLeft className="w-4 h-4 mr-1.5" />
                     Back to Shop
@@ -437,7 +470,7 @@ export default function ProductDetailPage() {
             {/* Back Button */}
             <Link
                 href="/shop"
-                className="inline-flex items-center text-gray-500 hover:text-[#B00000] mb-3 transition-colors text-sm"
+                className="inline-flex items-center text-[#6B7280] hover:text-[#C41E3A] mb-3 transition-colors text-sm"
             >
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 Back to Shop
@@ -448,7 +481,7 @@ export default function ProductDetailPage() {
                 <div className="space-y-3">
                     {/* Main Image - Click to open gallery */}
                     <div
-                        className="bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:border-[#B00000] transition-colors"
+                        className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden cursor-pointer hover:border-[#C41E3A] transition-colors"
                         onClick={() => setIsGalleryOpen(true)}
                     >
                         <img
@@ -469,8 +502,8 @@ export default function ProductDetailPage() {
                                     key={index}
                                     onClick={() => setSelectedImageIndex(index)}
                                     className={`shrink-0 w-16 h-16 border-2 rounded-lg overflow-hidden ${selectedImageIndex === index
-                                        ? "border-[#B00000]"
-                                        : "border-gray-200 hover:border-gray-300"
+                                        ? "border-[#C41E3A]"
+                                        : "border-[#E5E7EB] hover:border-[#E5E7EB]"
                                         }`}
                                 >
                                     <img
@@ -513,7 +546,7 @@ export default function ProductDetailPage() {
                     <div>
                         {/* Product Title */}
                         <div className="flex items-start justify-between gap-3 mb-3">
-                            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 leading-snug">
+                            <h1 className={`${syne.className} text-lg sm:text-2xl font-bold tracking-[-0.5px] text-[#0D0D14] leading-snug`}>
                                 {product.name}
                             </h1>
 
@@ -521,21 +554,21 @@ export default function ProductDetailPage() {
                             <div className="flex items-center gap-2 shrink-0">
                                 <button
                                     onClick={handleCopyLink}
-                                    className="p-2 rounded-lg border border-gray-300 hover:border-[#B00000] hover:bg-red-50 transition-colors"
+                                    className="p-2 rounded-lg border border-[#E5E7EB] hover:border-[#C41E3A] hover:bg-[#C41E3A]/5 transition-colors"
                                     title="Copy link"
                                 >
                                     {copied ? (
                                         <Check className="w-4 h-4 text-green-600" />
                                     ) : (
-                                        <Link2 className="w-4 h-4 text-gray-600" />
+                                        <Link2 className="w-4 h-4 text-[#6B7280]" />
                                     )}
                                 </button>
                                 <button
                                     onClick={handleShare}
-                                    className="p-2 rounded-lg border border-gray-300 hover:border-[#B00000] hover:bg-red-50 transition-colors"
+                                    className="p-2 rounded-lg border border-[#E5E7EB] hover:border-[#C41E3A] hover:bg-[#C41E3A]/5 transition-colors"
                                     title="Share"
                                 >
-                                    <Share2 className="w-4 h-4 text-gray-600" />
+                                    <Share2 className="w-4 h-4 text-[#6B7280]" />
                                 </button>
                             </div>
                         </div>
@@ -614,18 +647,18 @@ export default function ProductDetailPage() {
                             return (
                                 <>
                                     {/* Price */}
-                                    <div className="mb-3 pb-3 border-b border-gray-200">
+                                    <div className="mb-3 pb-3 border-b border-[#E5E7EB]">
                                         {product.isContactOnly ? (
                                             // Contact Only Product
                                             <>
                                                 {canShowPrice ? (
                                                     <div className="flex items-baseline gap-2">
-                                                        <p className="text-2xl sm:text-3xl font-bold text-[#B00000]">
+                                                        <p className="text-2xl sm:text-3xl font-bold text-[#C41E3A]">
                                                             ₹{product.price.toLocaleString("en-IN")}
                                                         </p>
                                                     </div>
                                                 ) : null}
-                                                <p className="text-xs text-gray-600 mt-1">
+                                                <p className="text-xs text-[#6B7280] mt-1">
                                                     {product.type === "digital" ? "Digital Product" : "Physical Product"} • Please contact us via WhatsApp
                                                 </p>
                                             </>
@@ -634,7 +667,7 @@ export default function ProductDetailPage() {
                                             <>
                                                 {canShowPrice ? (
                                                     <div className="flex items-baseline gap-2">
-                                                        <p className="text-2xl sm:text-3xl font-bold text-[#B00000]">
+                                                        <p className="text-2xl sm:text-3xl font-bold text-[#C41E3A]">
                                                             ₹{(product.offer_price && product.offer_price > 0 ? product.offer_price : product.price).toLocaleString("en-IN")}
                                                         </p>
                                                         {product.offer_price && product.offer_price > 0 && product.offer_price < product.price && (
@@ -643,13 +676,13 @@ export default function ProductDetailPage() {
                                                             </span>
                                                         )}
                                                         {product.type !== "digital" && quantity > 1 && (
-                                                            <span className="text-xs text-gray-500">
+                                                            <span className="text-xs text-[#6B7280]">
                                                                 per item
                                                             </span>
                                                         )}
                                                     </div>
                                                 ) : null}
-                                                <p className="text-xs text-gray-600 mt-1">
+                                                <p className="text-xs text-[#6B7280] mt-1">
                                                     {!showPriceAndAddToCart && requiresKycForSelectedQuantity
                                                         ? product.requiresKycMultiple && !product.requiresKyc
                                                             ? "Business KYC required for quantities above 1"
@@ -706,7 +739,7 @@ export default function ProductDetailPage() {
                                                                     key={idx}
                                                                     className="flex justify-between items-center text-sm"
                                                                 >
-                                                                    <span className="text-gray-700">
+                                                                    <span className="text-[#6B7280]">
                                                                         {rangeText} items
                                                                     </span>
                                                                     <div className="flex items-center gap-2">
@@ -739,14 +772,14 @@ export default function ProductDetailPage() {
                                         {/* Language Selector - Only show if multi-language descriptions exist */}
                                         {(product.english_description || product.malayalam_description || product.hindi_description) && (
                                             <div className="flex items-center gap-2 mb-3">
-                                                <span className="text-xs font-medium text-gray-500">Language:</span>
+                                                <span className="text-xs font-medium text-[#6B7280]">Language:</span>
                                                 <div className="flex gap-1">
                                                     {product.english_description && (
                                                         <button
                                                             onClick={() => setSelectedLanguage('en')}
                                                             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${selectedLanguage === 'en'
-                                                                ? 'bg-[#B00000] text-white'
-                                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                ? 'bg-[#C41E3A] text-white'
+                                                                : 'bg-gray-100 text-[#6B7280] hover:bg-gray-200'
                                                                 }`}
                                                         >
                                                             English
@@ -756,8 +789,8 @@ export default function ProductDetailPage() {
                                                         <button
                                                             onClick={() => setSelectedLanguage('ml')}
                                                             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${selectedLanguage === 'ml'
-                                                                ? 'bg-[#B00000] text-white'
-                                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                ? 'bg-[#C41E3A] text-white'
+                                                                : 'bg-gray-100 text-[#6B7280] hover:bg-gray-200'
                                                                 }`}
                                                         >
                                                             മലയാളം
@@ -767,8 +800,8 @@ export default function ProductDetailPage() {
                                                         <button
                                                             onClick={() => setSelectedLanguage('hi')}
                                                             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${selectedLanguage === 'hi'
-                                                                ? 'bg-[#B00000] text-white'
-                                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                ? 'bg-[#C41E3A] text-white'
+                                                                : 'bg-gray-100 text-[#6B7280] hover:bg-gray-200'
                                                                 }`}
                                                         >
                                                             हिन्दी
@@ -779,21 +812,21 @@ export default function ProductDetailPage() {
                                         )}
 
                                         {/* Description Text */}
-                                        <div className="prose prose-sm max-w-none text-gray-600">
+                                        <div className="prose prose-sm max-w-none text-[#6B7280]">
                                             <ReactMarkdown
                                                 remarkPlugins={[remarkGfm]}
                                                 rehypePlugins={[rehypeRaw]}
                                                 components={{
-                                                    h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-2 text-gray-900" {...props} />,
-                                                    h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 text-gray-900" {...props} />,
-                                                    h3: ({ node, ...props }) => <h3 className="text-base font-bold mb-1 text-gray-900" {...props} />,
+                                                    h1: ({ node, ...props }) => <h1 className="text-xl font-bold mb-2 text-[#0D0D14]" {...props} />,
+                                                    h2: ({ node, ...props }) => <h2 className="text-lg font-bold mb-2 text-[#0D0D14]" {...props} />,
+                                                    h3: ({ node, ...props }) => <h3 className="text-base font-bold mb-1 text-[#0D0D14]" {...props} />,
                                                     p: ({ node, ...props }) => <p className="mb-2 leading-relaxed" {...props} />,
                                                     ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-2 space-y-1" {...props} />,
                                                     ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-2 space-y-1" {...props} />,
                                                     li: ({ node, ...props }) => <li className="ml-4" {...props} />,
-                                                    strong: ({ node, ...props }) => <strong className="font-bold text-gray-900" {...props} />,
+                                                    strong: ({ node, ...props }) => <strong className="font-bold text-[#0D0D14]" {...props} />,
                                                     em: ({ node, ...props }) => <em className="italic" {...props} />,
-                                                    a: ({ node, ...props }) => <a className="text-[#B00000] hover:underline" {...props} />,
+                                                    a: ({ node, ...props }) => <a className="text-[#C41E3A] hover:underline" {...props} />,
                                                 }}
                                             >
                                                 {selectedLanguage === 'en' && product.english_description
@@ -836,25 +869,26 @@ export default function ProductDetailPage() {
                                         <>
                                             {/* Quantity / Delivery */}
                                             {product.type === "digital" ? (
-                                                <div className="mb-4 flex items-center gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
-                                                    <Download className="w-4 h-4 text-[#B00000] shrink-0" />
-                                                    <p className="text-sm text-gray-700">
+                                                <div className="mb-4 flex items-center gap-2 p-3 border border-[#E5E7EB] rounded-lg bg-[#F8F9FC]">
+                                                    <Download className="w-4 h-4 text-[#C41E3A] shrink-0" />
+                                                    <p className="text-sm text-[#6B7280]">
                                                         Digital download after payment
                                                     </p>
                                                 </div>
                                             ) : (
                                                 <div className="mb-4">
-                                                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                                                    <label className="block text-xs font-medium text-[#6B7280] mb-2">
                                                         Quantity
                                                     </label>
                                                     <div className="flex items-center space-x-2 mb-2">
                                                         <button
-                                                            onClick={() =>
+                                                            onClick={() => {
+                                                                setStockNotice(null);
                                                                 setQuantity(
                                                                     Math.max(1, quantity - 1)
-                                                                )
-                                                            }
-                                                            className="w-9 h-9 border border-gray-300 rounded hover:bg-gray-50 text-sm"
+                                                                );
+                                                            }}
+                                                            className="w-9 h-9 border border-[#E5E7EB] rounded hover:bg-[#F8F9FC] text-sm"
                                                         >
                                                             -
                                                         </button>
@@ -862,14 +896,34 @@ export default function ProductDetailPage() {
                                                             {quantity}
                                                         </span>
                                                         <button
-                                                            onClick={() =>
-                                                                setQuantity(quantity + 1)
-                                                            }
-                                                            className="w-9 h-9 border border-gray-300 rounded hover:bg-gray-50 text-sm"
+                                                            onClick={() => {
+                                                                if (quantity >= maxOrderableQuantity) {
+                                                                    setStockNotice(
+                                                                        `Only ${maxOrderableQuantity} unit${maxOrderableQuantity === 1 ? "" : "s"} available in stock.`
+                                                                    );
+                                                                    return;
+                                                                }
+                                                                setStockNotice(null);
+                                                                setQuantity(quantity + 1);
+                                                            }}
+                                                            disabled={quantity >= maxOrderableQuantity}
+                                                            className="w-9 h-9 border border-[#E5E7EB] rounded hover:bg-[#F8F9FC] text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
                                                             +
                                                         </button>
                                                     </div>
+
+                                                    {Number.isFinite(maxOrderableQuantity) && maxOrderableQuantity > 0 && (
+                                                        <p className="mb-2 text-xs text-[#6B7280]">
+                                                            Only {maxOrderableQuantity} unit{maxOrderableQuantity === 1 ? "" : "s"} left in stock
+                                                        </p>
+                                                    )}
+
+                                                    {stockNotice && (
+                                                        <p className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                                                            {stockNotice}
+                                                        </p>
+                                                    )}
 
                                                     {product.requiresKycMultiple && !product.requiresKyc && (
                                                         <p className="mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -878,23 +932,23 @@ export default function ProductDetailPage() {
                                                     )}
 
                                                     {/* Total Price with Discount Display */}
-                                                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                                        <div className="flex justify-between items-center text-sm text-gray-600 mb-1">
+                                                    <div className="p-3 bg-[#F8F9FC] rounded-lg border border-[#E5E7EB]">
+                                                        <div className="flex justify-between items-center text-sm text-[#6B7280] mb-1">
                                                             <span>Subtotal:</span>
-                                                            <span className="font-medium text-slate-800">
+                                                            <span className="font-medium text-[#0D0D14]">
                                                                 ₹
                                                                 {((appliedTier ? appliedTier.price_per_item : product.price) * quantity).toLocaleString(
                                                                     "en-IN"
                                                                 )}
                                                             </span>
                                                         </div>
-                                                        <div className="mb-2 pb-2 border-b border-gray-200" />
+                                                        <div className="mb-2 pb-2 border-b border-[#E5E7EB]" />
 
                                                         <div className="flex justify-between items-center">
-                                                            <span className="text-sm font-semibold text-gray-800">
+                                                            <span className="text-sm font-semibold text-[#0D0D14]">
                                                                 Total:
                                                             </span>
-                                                            <span className="text-lg sm:text-xl font-bold text-[#B00000]">
+                                                            <span className="text-lg sm:text-xl font-bold text-[#C41E3A]">
                                                                 ₹
                                                                 {calculatedPrice.toLocaleString(
                                                                     "en-IN"
@@ -918,12 +972,12 @@ export default function ProductDetailPage() {
                                                     </div>
 
                                                     {/* Delivery Estimates */}
-                                                    <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                                                        <p className="text-xs font-semibold text-slate-900 mb-1.5 flex items-center gap-1.5">
-                                                            <Truck className="w-3.5 h-3.5 text-[#B00000]" />
+                                                    <div className="mt-3 p-3 bg-[#F8F9FC] border border-[#E5E7EB] rounded-lg">
+                                                        <p className="text-xs font-semibold text-[#0D0D14] mb-1.5 flex items-center gap-1.5">
+                                                            <Truck className="w-3.5 h-3.5 text-[#C41E3A]" />
                                                             Estimated Delivery
                                                         </p>
-                                                        <ul className="text-[11px] text-slate-600 space-y-1">
+                                                        <ul className="text-[11px] text-[#6B7280] space-y-1">
                                                             <li className="flex justify-between">
                                                                 <span>Within Kerala:</span>
                                                                 <span className="font-medium">2–3 business days</span>
@@ -953,7 +1007,7 @@ export default function ProductDetailPage() {
                                                     (product.type === "physical" &&
                                                         !product.inStock)
                                                 }
-                                                className="w-full px-4 py-2.5 bg-[#B00000] text-white rounded-lg text-sm font-medium hover:bg-red-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="w-full px-4 py-3 bg-[#C41E3A] text-white rounded-xl text-sm font-semibold hover:bg-[#8B0000] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <ShoppingCart className="w-4 h-4" />
                                                 <span>
@@ -980,28 +1034,28 @@ export default function ProductDetailPage() {
                                 {product.isComingSoon ? (
                                     <>
                                         <div className="w-2 h-2 bg-orange-500 rounded-full" />
-                                        <span className="text-xs text-gray-600">
+                                        <span className="text-xs text-[#6B7280]">
                                             Coming Soon
                                         </span>
                                     </>
                                 ) : product.type === "digital" ? (
                                     <>
                                         <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                        <span className="text-xs text-gray-600">
+                                        <span className="text-xs text-[#6B7280]">
                                             Digital product
                                         </span>
                                     </>
                                 ) : product.inStock ? (
                                     <>
                                         <div className="w-2 h-2 bg-green-500 rounded-full" />
-                                        <span className="text-xs text-gray-600">
+                                        <span className="text-xs text-[#6B7280]">
                                             In Stock
                                         </span>
                                     </>
                                 ) : (
                                     <>
                                         <div className="w-2 h-2 bg-red-500 rounded-full" />
-                                        <span className="text-xs text-gray-600">
+                                        <span className="text-xs text-[#6B7280]">
                                             Out of Stock
                                         </span>
                                     </>
@@ -1011,26 +1065,26 @@ export default function ProductDetailPage() {
 
                         {/* Product Documents - Brochure */}
                         {product.product_detail_pdf && (
-                            <div className="mt-6 pt-4 border-t border-gray-200">
-                                <h3 className="text-sm font-medium text-gray-900 mb-3">Product Documents</h3>
+                            <div className="mt-6 pt-4 border-t border-[#E5E7EB]">
+                                <h3 className="text-sm font-medium text-[#0D0D14] mb-3">Product Documents</h3>
                                 <a
                                     href={product.product_detail_pdf}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg hover:border-[#B00000] hover:bg-red-50 transition-all group"
+                                    className="flex items-center gap-3 p-3 bg-[#F8F9FC] border border-[#E5E7EB] rounded-lg hover:border-[#C41E3A] hover:bg-[#C41E3A]/5 transition-all group"
                                 >
-                                    <div className="p-2 bg-white rounded-md border border-gray-200 group-hover:border-red-200">
-                                        <FileText className="w-5 h-5 text-[#B00000]" />
+                                    <div className="p-2 bg-white rounded-md border border-[#E5E7EB] group-hover:border-[#C41E3A]/30">
+                                        <FileText className="w-5 h-5 text-[#C41E3A]" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-gray-900 group-hover:text-[#B00000]">
+                                        <p className="text-sm font-medium text-[#0D0D14] group-hover:text-[#C41E3A]">
                                             Download Product Brochure
                                         </p>
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-[#6B7280]">
                                             PDF Specification Sheet
                                         </p>
                                     </div>
-                                    <Download className="w-4 h-4 text-gray-400 ml-auto group-hover:text-[#B00000]" />
+                                    <Download className="w-4 h-4 text-gray-400 ml-auto group-hover:text-[#C41E3A]" />
                                 </a>
                             </div>
                         )}
@@ -1041,7 +1095,7 @@ export default function ProductDetailPage() {
             {/* Videos Section */}
             {product.videos && product.videos.length > 0 && (
                 <div className="mt-8">
-                    <h2 className="text-lg font-bold text-slate-900 mb-4">
+                    <h2 className="text-lg font-bold text-[#0D0D14] mb-4">
                         Product Videos
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1053,7 +1107,7 @@ export default function ProductDetailPage() {
                                 <button
                                     key={index}
                                     onClick={() => setSelectedVideo(video)}
-                                    className="group relative bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-[#B00000] transition-colors"
+                                    className="group relative bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden hover:border-[#C41E3A] transition-colors"
                                 >
                                     <div className="relative aspect-video bg-gray-900">
                                         {thumbnailUrl ? (
@@ -1089,7 +1143,7 @@ export default function ProductDetailPage() {
                                         </div>
                                     </div>
                                     <div className="p-4">
-                                        <h3 className="text-sm font-medium text-slate-900 text-left line-clamp-2">
+                                        <h3 className="text-sm font-medium text-[#0D0D14] text-left line-clamp-2">
                                             {video.title}
                                         </h3>
                                     </div>
@@ -1105,7 +1159,7 @@ export default function ProductDetailPage() {
                 <>
                     {/* Backdrop Overlay */}
                     <div
-                        className="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
                         onClick={() => setSelectedVideo(null)}
                     />
 
@@ -1116,7 +1170,7 @@ export default function ProductDetailPage() {
                                 onClick={() => setSelectedVideo(null)}
                                 className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
                             >
-                                <X className="w-5 h-5 text-gray-700" />
+                                <X className="w-5 h-5 text-[#6B7280]" />
                             </button>
                             <div className="aspect-video">
                                 <iframe
@@ -1127,7 +1181,7 @@ export default function ProductDetailPage() {
                                 />
                             </div>
                             <div className="p-6">
-                                <h3 className="text-xl font-semibold text-slate-900">
+                                <h3 className="text-xl font-semibold text-[#0D0D14]">
                                     {selectedVideo.title}
                                 </h3>
                             </div>
@@ -1138,11 +1192,11 @@ export default function ProductDetailPage() {
 
             {/* Mobile sticky bottom CTA */}
             {product && !product.isContactOnly && (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-4 py-3 flex items-center gap-3 shadow-lg">
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#E5E7EB] px-4 py-3 flex items-center gap-3 shadow-lg">
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-500 truncate">{product.name}</p>
+                        <p className="text-xs text-[#6B7280] truncate">{product.name}</p>
                         {showPriceAndAddToCartGlobal ? (
-                            <p className="text-base font-bold text-[#B00000]">
+                            <p className="text-base font-bold text-[#C41E3A]">
                                 ₹{(product.offer_price && product.offer_price > 0 && product.offer_price < product.price ? product.offer_price : product.price).toLocaleString("en-IN")}
                             </p>
                         ) : (
@@ -1150,12 +1204,12 @@ export default function ProductDetailPage() {
                         )}
                     </div>
                     {product.isComingSoon ? (
-                        <span className="px-4 py-2.5 bg-gray-200 text-gray-500 text-sm font-medium rounded-xl">Coming Soon</span>
+                        <span className="px-4 py-2.5 bg-gray-200 text-[#6B7280] text-sm font-medium rounded-xl">Coming Soon</span>
                     ) : product.isContactOnly ? null : (
                         <button
                             onClick={() => { if (showPriceAndAddToCartGlobal) handleAddToCart(); }}
                             disabled={!showPriceAndAddToCartGlobal || (product.type === "physical" && !product.inStock)}
-                            className="shrink-0 px-5 py-2.5 bg-[#B00000] text-white text-sm font-medium rounded-xl hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                            className="shrink-0 px-5 py-2.5 bg-[#C41E3A] text-white text-sm font-medium rounded-xl hover:bg-[#8B0000] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                         >
                             <ShoppingCart className="w-4 h-4" />
                             {!showPriceAndAddToCartGlobal ? "KYC Required" : product.type === "physical" && !product.inStock ? "Out of Stock" : "Add to Cart"}
@@ -1166,8 +1220,8 @@ export default function ProductDetailPage() {
 
             {/* Specifications and Features */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                    <h2 className="text-sm font-semibold text-slate-900 mb-3">
+                <div className="bg-white rounded-2xl border border-[#E5E7EB] p-4">
+                    <h2 className="text-sm font-semibold text-[#0D0D14] mb-3">
                         Specifications
                     </h2>
                     <ul className="space-y-1.5">
@@ -1177,18 +1231,18 @@ export default function ProductDetailPage() {
                                 className="flex items-start gap-2 text-sm"
                             >
                                 {product.type === "digital" ? (
-                                    <Download className="w-3.5 h-3.5 text-[#B00000] mt-0.5 shrink-0" />
+                                    <Download className="w-3.5 h-3.5 text-[#C41E3A] mt-0.5 shrink-0" />
                                 ) : (
-                                    <Package className="w-3.5 h-3.5 text-[#B00000] mt-0.5 shrink-0" />
+                                    <Package className="w-3.5 h-3.5 text-[#C41E3A] mt-0.5 shrink-0" />
                                 )}
-                                <span className="text-gray-600">{spec}</span>
+                                <span className="text-[#6B7280]">{spec}</span>
                             </li>
                         ))}
                     </ul>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                    <h2 className="text-sm font-semibold text-slate-900 mb-3">
+                <div className="bg-white rounded-2xl border border-[#E5E7EB] p-4">
+                    <h2 className="text-sm font-semibold text-[#0D0D14] mb-3">
                         Features
                     </h2>
                     <ul className="space-y-1.5">
@@ -1198,11 +1252,11 @@ export default function ProductDetailPage() {
                                 className="flex items-start gap-2 text-sm"
                             >
                                 {product.type === "digital" ? (
-                                    <Download className="w-3.5 h-3.5 text-[#B00000] mt-0.5 shrink-0" />
+                                    <Download className="w-3.5 h-3.5 text-[#C41E3A] mt-0.5 shrink-0" />
                                 ) : (
-                                    <Star className="w-3.5 h-3.5 text-[#B00000] mt-0.5 shrink-0" />
+                                    <Star className="w-3.5 h-3.5 text-[#C41E3A] mt-0.5 shrink-0" />
                                 )}
-                                <span className="text-gray-600">{feature}</span>
+                                <span className="text-[#6B7280]">{feature}</span>
                             </li>
                         ))}
                     </ul>
@@ -1306,7 +1360,7 @@ export default function ProductDetailPage() {
                                                 setSelectedImageIndex(index);
                                             }}
                                             className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === index
-                                                ? "border-[#B00000] scale-110"
+                                                ? "border-[#C41E3A] scale-110"
                                                 : "border-white/30 hover:border-white/60"
                                                 }`}
                                         >

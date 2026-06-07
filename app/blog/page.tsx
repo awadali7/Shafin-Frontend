@@ -2,9 +2,23 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { Syne } from "next/font/google";
 import { blogsApi } from "@/lib/api";
 import type { BlogPost } from "@/lib/api/types";
 import { Search, Calendar, User, ArrowRight, Eye, Clock } from "lucide-react";
+
+// Display font for this page only — the rest of the site keeps Bricolage Grotesque
+const syne = Syne({
+    subsets: ["latin"],
+    weight: ["700", "800"],
+    display: "swap",
+});
+
+const HERO_PARTICLES = Array.from({ length: 14 }, (_, i) => ({
+    left: `${(i * 41) % 100}%`,
+    top: `${(i * 59) % 100}%`,
+    delay: `${(i % 6) * 0.9}s`,
+}));
 
 export default function BlogPage() {
     const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -73,9 +87,9 @@ export default function BlogPage() {
             } else {
                 setError(response.message || "Failed to load blog posts");
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error("Error fetching blog posts:", err);
-            setError(err.message || "Failed to load blog posts");
+            setError(err instanceof Error ? err.message : "Failed to load blog posts");
         } finally {
             setLoading(false);
         }
@@ -101,38 +115,97 @@ export default function BlogPage() {
 
     return (
         <div className="bg-white min-h-screen">
-            {/* Minimal Header Section */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-4">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 pb-12">
-                    <div className="max-w-xl">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-[1px] bg-[#B00000]"></div>
-                            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400">Updates & Insights</span>
-                        </div>
-                        <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
-                            BLOG
-                        </h1>
-                    </div>
+            {/* Hero — dark cinematic */}
+            <section
+                className="relative flex min-h-[36vh] items-center overflow-hidden bg-[#0A0A0F] py-16"
+                aria-label="Blog hero"
+            >
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background:
+                            "radial-gradient(ellipse at 20% 50%, rgba(139,0,0,0.4) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(196,30,58,0.2) 0%, transparent 40%), #0A0A0F",
+                    }}
+                    aria-hidden="true"
+                />
+                <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                    {HERO_PARTICLES.map((p, i) => (
+                        <span
+                            key={i}
+                            className="blog-particle"
+                            style={{ left: p.left, top: p.top, animationDelay: p.delay }}
+                        />
+                    ))}
+                </div>
 
-                    {/* Minimal Search Bar */}
-                    <div className="relative w-full max-w-[240px]">
-                        <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none">
-                            <Search className="h-3.5 w-3.5 text-gray-300" />
+                <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-[#C41E3A]/40 bg-[#C41E3A]/10 px-4 py-2 text-xs font-semibold tracking-[0.5px] text-white/90 uppercase">
+                        Updates &amp; Insights
+                    </span>
+                    <h1
+                        className={`${syne.className} mt-6 text-4xl leading-[1.1] font-bold tracking-[-1.5px] text-white sm:text-5xl lg:text-[56px] lg:leading-16 lg:tracking-[-2px]`}
+                    >
+                        Stories from the
+                        <br />
+                        <span className="bg-linear-to-r from-[#C41E3A] to-[#F59E0B] bg-clip-text text-transparent">
+                            Workshop Floor
+                        </span>
+                    </h1>
+                    <p className="mx-auto mt-6 max-w-2xl text-lg leading-7 text-gray-400">
+                        Practical guides, product updates, and stories from
+                        India&rsquo;s automotive diagnostic community.
+                    </p>
+                </div>
+            </section>
+
+            <style jsx>{`
+                .blog-particle {
+                    position: absolute;
+                    width: 3px;
+                    height: 3px;
+                    border-radius: 9999px;
+                    background: rgba(255, 255, 255, 0.5);
+                    animation: blog-twinkle 6s ease-in-out infinite;
+                }
+                @keyframes blog-twinkle {
+                    0%,
+                    100% {
+                        opacity: 0.05;
+                        transform: scale(1);
+                    }
+                    50% {
+                        opacity: 0.25;
+                        transform: scale(1.6);
+                    }
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    .blog-particle {
+                        animation: none;
+                    }
+                }
+            `}</style>
+
+            {/* Search */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+                <div className="flex justify-end">
+                    <div className="relative w-full max-w-[260px]">
+                        <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-1">
+                            <Search className="h-3.5 w-3.5 text-[#6B7280]" />
                         </div>
                         <input
                             type="text"
                             placeholder="Search articles..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="block w-full pl-6 pr-4 py-2 text-xs border-b border-gray-50 focus:border-gray-900 text-gray-900 placeholder-gray-400 focus:outline-none transition-all duration-300"
+                            className="block w-full pl-7 pr-4 py-2 text-sm border-b border-[#E5E7EB] focus:border-[#C41E3A] text-[#0D0D14] placeholder-gray-400 focus:outline-none transition-colors duration-300"
                         />
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 {error && (
-                    <div className="mb-12 p-4 bg-gray-50 border border-gray-100 rounded text-sm text-gray-600">
+                    <div className="mb-12 p-4 bg-[#C41E3A]/5 border border-[#C41E3A]/20 rounded-xl text-sm text-[#C41E3A]">
                         {error}
                     </div>
                 )}
@@ -142,11 +215,11 @@ export default function BlogPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16">
                         {[1, 2, 3].map((i) => (
                             <div key={i} className="space-y-6">
-                                <div className="aspect-[16/10] bg-gray-50 rounded-sm animate-pulse"></div>
+                                <div className="aspect-[16/10] bg-[#F8F9FC] rounded-2xl animate-pulse"></div>
                                 <div className="space-y-3">
-                                    <div className="h-4 bg-gray-50 rounded w-1/4 animate-pulse"></div>
-                                    <div className="h-7 bg-gray-50 rounded w-3/4 animate-pulse"></div>
-                                    <div className="h-4 bg-gray-50 rounded w-full animate-pulse"></div>
+                                    <div className="h-4 bg-[#F8F9FC] rounded w-1/4 animate-pulse"></div>
+                                    <div className="h-7 bg-[#F8F9FC] rounded w-3/4 animate-pulse"></div>
+                                    <div className="h-4 bg-[#F8F9FC] rounded w-full animate-pulse"></div>
                                 </div>
                             </div>
                         ))}
@@ -156,8 +229,8 @@ export default function BlogPage() {
                 {/* Empty State */}
                 {!loading && !error && posts.length === 0 && (
                     <div className="py-20 text-center">
-                        <h3 className="text-xl font-medium text-gray-900 mb-2">No articles found</h3>
-                        <p className="text-gray-500">Try adjusting your filter or search terms.</p>
+                        <h3 className="text-xl font-medium text-[#0D0D14] mb-2">No articles found</h3>
+                        <p className="text-[#6B7280]">Try adjusting your filter or search terms.</p>
                     </div>
                 )}
 
@@ -171,38 +244,38 @@ export default function BlogPage() {
                                 className="group flex flex-col h-full"
                             >
                                 {/* Image Container */}
-                                <div className="relative aspect-[16/10] w-full overflow-hidden bg-gray-50 rounded-sm mb-8 transition-opacity group-hover:opacity-90">
+                                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-[#F8F9FC] mb-8 transition-all duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_16px_48px_rgba(196,30,58,0.12)]">
                                     {post.cover_image ? (
                                         <img
                                             src={post.cover_image}
                                             alt={post.title}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                         />
                                     ) : (
-                                        <div className="w-full h-full border border-gray-100 flex items-center justify-center">
-                                            <span className="text-gray-200 text-sm font-medium tracking-widest uppercase">Shafin</span>
+                                        <div className="w-full h-full border border-[#E5E7EB] flex items-center justify-center">
+                                            <span className="text-gray-200 text-sm font-medium tracking-widest uppercase">DiagTools</span>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Meta */}
-                                <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-4">
+                                <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest text-[#6B7280] mb-4">
                                     <span>{formatDate(post.published_at || post.created_at)}</span>
-                                    <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
+                                    <span className="w-1 h-1 bg-[#E5E7EB] rounded-full"></span>
                                     <span>{getReadingTime(post.content)}</span>
                                 </div>
 
                                 {/* Title */}
-                                <h2 className="text-2xl font-bold text-gray-900 mb-4 leading-tight group-hover:text-gray-600 transition-colors">
+                                <h2 className={`${syne.className} text-2xl font-bold tracking-[-0.5px] text-[#0D0D14] mb-4 leading-tight group-hover:text-[#C41E3A] transition-colors`}>
                                     {post.title}
                                 </h2>
 
                                 {/* Excerpt */}
-                                <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed mb-6">
+                                <p className="text-[#6B7280] text-sm line-clamp-2 leading-relaxed mb-6">
                                     {(post.content || "").replace(/<[^>]*>/g, "")}
                                 </p>
 
-                                <div className="mt-auto flex items-center text-xs font-bold uppercase tracking-widest text-gray-900 transform translate-x-0 group-hover:translate-x-1 transition-transform">
+                                <div className="mt-auto flex items-center text-xs font-bold uppercase tracking-widest text-[#0D0D14] transition-all group-hover:translate-x-1 group-hover:text-[#C41E3A]">
                                     Read more <ArrowRight className="w-3.5 h-3.5 ml-2" />
                                 </div>
                             </Link>
@@ -221,7 +294,7 @@ export default function BlogPage() {
                                 }));
                             }}
                             disabled={loading}
-                            className="px-10 py-4 border border-gray-200 text-sm font-bold uppercase tracking-widest text-gray-900 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                            className="rounded-xl border border-[#C41E3A]/50 px-10 py-4 text-sm font-bold uppercase tracking-widest text-[#0D0D14] transition-colors hover:bg-[#C41E3A]/5 hover:text-[#C41E3A] disabled:opacity-50"
                         >
                             {loading ? "Loading..." : "Load more entries"}
                         </button>

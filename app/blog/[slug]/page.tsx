@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { Syne } from "next/font/google";
 import { ArrowLeft } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -11,6 +12,13 @@ import remarkBreaks from "remark-breaks";
 import { blogsApi } from "@/lib/api";
 import type { BlogPost } from "@/lib/api/types";
 import { Calendar, User, Eye, Clock, Share2, Bookmark, MessageCircle, FileText, Download } from "lucide-react";
+
+// Display font for this page only — the rest of the site keeps Bricolage Grotesque
+const syne = Syne({
+    subsets: ["latin"],
+    weight: ["700", "800"],
+    display: "swap",
+});
 
 export default function BlogPostPage() {
     const params = useParams();
@@ -38,9 +46,9 @@ export default function BlogPostPage() {
             } else {
                 setError(response.message || "Blog post not found");
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error("Error fetching blog post:", err);
-            setError(err.message || "Failed to load blog post");
+            setError(err instanceof Error ? err.message : "Failed to load blog post");
         } finally {
             setLoading(false);
         }
@@ -110,7 +118,7 @@ export default function BlogPostPage() {
     }, [post?.content, loading]);
 
     // Sub-component for images within content to handle individual orientation
-    const ResponsiveContentImage = (props: any) => {
+    const ResponsiveContentImage = (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
         const [port, setPort] = useState(false);
         const onImgLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
             const { naturalWidth, naturalHeight } = e.currentTarget;
@@ -123,11 +131,11 @@ export default function BlogPostPage() {
                     <img
                         {...props}
                         onLoad={onImgLoad}
-                        className="w-full h-auto rounded-sm"
+                        className="w-full h-auto rounded-2xl"
                         alt={props.alt || ""}
                     />
                     {props.alt && (
-                        <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-widest font-medium">
+                        <p className="text-center text-xs text-[#6B7280] mt-4 uppercase tracking-widest font-medium">
                             {props.alt}
                         </p>
                     )}
@@ -139,7 +147,7 @@ export default function BlogPostPage() {
     if (loading) {
         return (
             <div className="bg-white min-h-screen flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-6 h-6 border-2 border-[#C41E3A] border-t-transparent rounded-full animate-spin"></div>
             </div>
         );
     }
@@ -147,10 +155,10 @@ export default function BlogPostPage() {
     if (error || !post) {
         return (
             <div className="max-w-2xl mx-auto px-4 py-32 text-center">
-                <p className="text-gray-500 mb-8">{error || "Entry not found"}</p>
+                <p className="text-[#6B7280] mb-8">{error || "Entry not found"}</p>
                 <Link
                     href="/blog"
-                    className="text-sm font-bold uppercase tracking-widest text-gray-900 border-b border-gray-900 pb-1"
+                    className="text-sm font-bold uppercase tracking-widest text-[#0D0D14] border-b border-[#C41E3A] pb-1"
                 >
                     Back to Blog
                 </Link>
@@ -164,7 +172,7 @@ export default function BlogPostPage() {
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 <Link
                     href="/blog"
-                    className="group inline-flex items-center text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
+                    className="group inline-flex items-center text-xs font-bold uppercase tracking-widest text-[#6B7280] hover:text-[#0D0D14] transition-colors"
                 >
                     <ArrowLeft className="w-3.5 h-3.5 mr-2 transform group-hover:-translate-x-1 transition-transform" />
                     Blog
@@ -174,23 +182,23 @@ export default function BlogPostPage() {
             <article className="max-w-6xl mx-auto px-4 sm:px-6">
                 {/* Header */}
                 <header className="mb-16">
-                    <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-8">
+                    <div className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest text-[#6B7280] mb-8">
                         <span>{formatDate(post.published_at || post.created_at)}</span>
-                        <span className="w-1 h-1 bg-gray-200 rounded-full"></span>
+                        <span className="w-1 h-1 bg-[#E5E7EB] rounded-full"></span>
                         <span>{getReadingTime(post.content)}</span>
                     </div>
 
-                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-8">
+                    <h1 className={`${syne.className} text-4xl md:text-5xl font-bold tracking-[-1px] text-[#0D0D14] leading-tight mb-8`}>
                         {post.title}
                     </h1>
 
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center">
-                            <User className="w-5 h-5 text-gray-400" />
+                        <div className="w-10 h-10 rounded-full bg-[#F8F9FC] border border-[#E5E7EB] flex items-center justify-center">
+                            <User className="w-5 h-5 text-[#6B7280]" />
                         </div>
                         <div>
-                            <span className="block text-sm font-bold text-gray-900">{post.author_name}</span>
-                            <span className="block text-[11px] text-gray-400 uppercase tracking-widest">Author</span>
+                            <span className="block text-sm font-bold text-[#0D0D14]">{post.author_name}</span>
+                            <span className="block text-[11px] text-[#6B7280] uppercase tracking-widest">Author</span>
                         </div>
                     </div>
                 </header>
@@ -203,7 +211,7 @@ export default function BlogPostPage() {
                                 src={post.cover_image}
                                 alt={post.title}
                                 onLoad={handleImageLoad}
-                                className="w-full h-auto rounded-sm"
+                                className="w-full h-auto rounded-2xl"
                             />
                         </div>
                     </div>
@@ -213,13 +221,13 @@ export default function BlogPostPage() {
                 <div
                     ref={contentRef}
                     className="prose prose-neutral prose-lg max-w-none 
-                    prose-headings:text-gray-900 prose-headings:font-bold prose-headings:tracking-tight
-                    prose-p:text-gray-600 prose-p:leading-relaxed prose-p:mb-8
-                    prose-a:text-gray-900 prose-a:underline prose-a:underline-offset-4 prose-a:decoration-gray-200 hover:prose-a:decoration-gray-900 prose-a:transition-colors
-                    prose-img:rounded-sm prose-img:my-16 prose-img:mx-auto
+                    prose-headings:text-[#0D0D14] prose-headings:font-bold prose-headings:tracking-tight
+                    prose-p:text-[#6B7280] prose-p:leading-relaxed prose-p:mb-8
+                    prose-a:text-[#0D0D14] prose-a:underline prose-a:underline-offset-4 prose-a:decoration-[#E5E7EB] hover:prose-a:decoration-[#C41E3A] prose-a:transition-colors
+                    prose-img:rounded-2xl prose-img:my-16 prose-img:mx-auto
                     prose-img:[data-orientation='portrait']:max-w-2xl prose-img:[data-orientation='portrait']:block prose-img:[data-orientation='portrait']:mx-auto
-                    prose-blockquote:border-l-gray-900 prose-blockquote:font-medium prose-blockquote:text-gray-900 prose-blockquote:italic
-                    prose-code:text-gray-900 prose-code:bg-gray-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded">
+                    prose-blockquote:border-l-[#C41E3A] prose-blockquote:font-medium prose-blockquote:text-[#0D0D14] prose-blockquote:italic
+                    prose-code:text-[#0D0D14] prose-code:bg-[#F8F9FC] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded">
 
                     {isHTML(post.content || "") ? (
                         <div
@@ -249,8 +257,8 @@ export default function BlogPostPage() {
 
                 {/* Attachments Section */}
                 {post.pdfs && post.pdfs.length > 0 && (
-                    <div className="mt-20 pt-16 border-t border-gray-100">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-10">
+                    <div className="mt-20 pt-16 border-t border-[#E5E7EB]">
+                        <h3 className="text-xs font-bold text-[#6B7280] uppercase tracking-[0.2em] mb-10">
                             Attachments
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -260,22 +268,22 @@ export default function BlogPostPage() {
                                     href={pdf.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="group flex items-center justify-between p-6 bg-gray-50 hover:bg-white transition-all duration-300 border border-gray-100 hover:border-gray-900 rounded-sm"
+                                    className="group flex items-center justify-between p-6 bg-[#F8F9FC] hover:bg-white transition-all duration-300 border border-[#E5E7EB] hover:border-[#C41E3A] rounded-2xl"
                                 >
                                     <div className="flex items-center gap-4 min-w-0">
-                                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-gray-100 group-hover:border-gray-200 transition-colors">
-                                            <FileText className="w-6 h-6 text-[#B00000]" />
+                                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center border border-[#E5E7EB] group-hover:border-[#E5E7EB] transition-colors">
+                                            <FileText className="w-6 h-6 text-[#C41E3A]" />
                                         </div>
                                         <div className="min-w-0">
-                                            <span className="block text-sm font-bold text-gray-900 truncate">
+                                            <span className="block text-sm font-bold text-[#0D0D14] truncate">
                                                 {pdf.name}
                                             </span>
-                                            <span className="block text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-1">
+                                            <span className="block text-[10px] text-[#6B7280] font-medium uppercase tracking-wider mt-1">
                                                 PDF Document
                                             </span>
                                         </div>
                                     </div>
-                                    <Download className="w-5 h-5 text-gray-300 group-hover:text-gray-900 transition-colors" />
+                                    <Download className="w-5 h-5 text-[#E5E7EB] group-hover:text-[#0D0D14] transition-colors" />
                                 </a>
                             ))}
                         </div>
@@ -283,31 +291,31 @@ export default function BlogPostPage() {
                 )}
 
                 {/* Detailed Footer */}
-                <footer className="mt-32 pt-16 border-t border-gray-100">
+                <footer className="mt-32 pt-16 border-t border-[#E5E7EB]">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                         <div className="max-w-xs">
-                            <h4 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-4">Newsletter</h4>
-                            <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                            <h4 className="text-sm font-bold text-[#0D0D14] uppercase tracking-widest mb-4">Newsletter</h4>
+                            <p className="text-sm text-[#6B7280] leading-relaxed mb-6">
                                 Receive our latest entries directly in your inbox.
                             </p>
                             <div className="flex gap-2">
                                 <input
                                     type="email"
                                     placeholder="Email address"
-                                    className="flex-1 bg-gray-50 border border-gray-100 px-4 py-2 text-sm focus:outline-none focus:border-gray-900 transition-colors"
+                                    className="flex-1 bg-[#F8F9FC] border border-[#E5E7EB] px-4 py-2 text-sm focus:outline-none focus:border-[#C41E3A] transition-colors"
                                 />
-                                <button className="bg-gray-900 text-white px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors">
+                                <button className="bg-[#C41E3A] text-white px-4 py-2 text-xs font-bold uppercase tracking-widest hover:bg-[#8B0000] transition-colors">
                                     Join
                                 </button>
                             </div>
                         </div>
 
                         <div className="flex gap-4">
-                            <button className="p-3 border border-gray-100 hover:border-gray-900 transition-colors" title="Share via Twitter">
-                                <Share2 className="w-4 h-4 text-gray-400 hover:text-gray-900" />
+                            <button className="p-3 border border-[#E5E7EB] hover:border-[#C41E3A] transition-colors" title="Share via Twitter">
+                                <Share2 className="w-4 h-4 text-[#6B7280] hover:text-[#0D0D14]" />
                             </button>
-                            <button className="p-3 border border-gray-100 hover:border-gray-900 transition-colors" title="Save for later">
-                                <Bookmark className="w-4 h-4 text-gray-400 hover:text-gray-900" />
+                            <button className="p-3 border border-[#E5E7EB] hover:border-[#C41E3A] transition-colors" title="Save for later">
+                                <Bookmark className="w-4 h-4 text-[#6B7280] hover:text-[#0D0D14]" />
                             </button>
                         </div>
                     </div>

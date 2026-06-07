@@ -180,6 +180,11 @@ export default function ShoppingCart() {
                                     {items.map((item) => {
                                         const priceInfo = calculateItemPrice(item);
                                         const nextTierMsg = getNextTierMessage(item);
+                                        const stockLimit =
+                                            item.type === "physical" && typeof item.stock_quantity === "number"
+                                                ? Math.max(item.stock_quantity, 0)
+                                                : null;
+                                        const atStockLimit = stockLimit !== null && item.quantity >= stockLimit;
 
                                         return (
                                             <div
@@ -256,17 +261,29 @@ export default function ShoppingCart() {
                                                                 {item.quantity}
                                                             </span>
                                                             <button
-                                                                onClick={() =>
+                                                                onClick={() => {
+                                                                    if (atStockLimit) return;
                                                                     updateQuantity(
                                                                         item.id,
                                                                         item.quantity + 1
-                                                                    )
-                                                                }
-                                                                className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-sm"
+                                                                    );
+                                                                }}
+                                                                disabled={atStockLimit}
+                                                                className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                                             >
                                                                 <Plus className="w-3 h-3" />
                                                             </button>
                                                         </div>
+                                                    )}
+
+                                                    {stockLimit !== null && (
+                                                        <p className={`mt-1 text-[11px] ${atStockLimit ? "text-red-600" : "text-gray-400"}`}>
+                                                            {stockLimit === 0
+                                                                ? "Out of stock"
+                                                                : atStockLimit
+                                                                    ? `Only ${stockLimit} unit${stockLimit === 1 ? "" : "s"} available in stock`
+                                                                    : `${stockLimit} unit${stockLimit === 1 ? "" : "s"} in stock`}
+                                                        </p>
                                                     )}
                                                 </div>
                                                 <button

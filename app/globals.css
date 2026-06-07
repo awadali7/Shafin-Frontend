@@ -13,6 +13,26 @@
     --color-foreground: var(--foreground);
     --font-heading: var(--font-heading);
     --font-body: var(--font-body);
+
+    /* Brand palette — DiagTools shop redesign */
+    --color-brand-red: #B00000;
+    --color-brand-dark: #0A0A0A;
+    --color-brand-dark-2: #111111;
+    --color-brand-gold: #F5A623;
+    --color-brand-green: #27AE60;
+    --color-brand-gray: #6B7280;
+    --color-whatsapp: #25D366;
+
+    --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -468px 0;
+    }
+    100% {
+        background-position: 468px 0;
+    }
 }
 
 /* Single theme - no dark mode */
@@ -67,57 +87,8 @@ h6 {
     font-weight: 500;
 }
 
-/* WhatsApp Floating Button Styles */
 a {
     text-decoration: none;
-}
-
-.floating_btn {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    width: 100px;
-    height: 100px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-@keyframes pulsing {
-    to {
-        box-shadow: 0 0 0 30px rgba(232, 76, 61, 0);
-    }
-}
-
-.contact_icon {
-    background-color: #42db87;
-    color: #fff;
-    width: 60px;
-    height: 60px;
-    font-size: 30px;
-    border-radius: 50px;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transform: translatey(0px);
-    box-shadow: 0 0 0 0 #42db87;
-    -webkit-animation: pulsing 1.25s infinite cubic-bezier(0.66, 0, 0, 1);
-    -moz-animation: pulsing 1.25s infinite cubic-bezier(0.66, 0, 0, 1);
-    -ms-animation: pulsing 1.25s infinite cubic-bezier(0.66, 0, 0, 1);
-    animation: pulsing 1.25s infinite cubic-bezier(0.66, 0, 0, 1);
-    font-weight: normal;
-    font-family: sans-serif;
-    text-decoration: none !important;
-    transition: all 300ms ease-in-out;
-}
-
-.text_icon {
-    margin-top: 8px;
-    color: #707070;
-    font-size: 13px;
 }
 
 /* Blog Content Styles - Support for HTML content including images, iframes, videos */

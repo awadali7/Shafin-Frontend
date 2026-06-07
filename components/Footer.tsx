@@ -34,7 +34,7 @@ export default function Footer() {
     }
 
     return (
-        <footer className="bg-white border-t border-gray-200">
+        <footer className="bg-white border-t-2 border-brand-red">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
                     {/* Company Info */}
@@ -103,33 +103,33 @@ export default function Footer() {
                         <h3 className="text-lg font-semibold text-slate-900 mb-4">
                             Follow Us
                         </h3>
-                        <div className="flex space-x-4">
+                        <div className="flex gap-3">
                             <a
                                 href="https://www.instagram.com/diagtools.in?igsh=dWx3MmpkOGs4aHQ="
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-600 hover:text-[#B00000] transition-colors"
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:border-brand-red hover:bg-brand-red hover:text-white"
                                 aria-label="Instagram"
                             >
-                                <Instagram className="w-6 h-6" />
+                                <Instagram className="w-5 h-5" />
                             </a>
                             <a
                                 href="https://www.facebook.com/share/182iG6zhSp/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-600 hover:text-[#B00000] transition-colors"
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:border-brand-red hover:bg-brand-red hover:text-white"
                                 aria-label="Facebook"
                             >
-                                <Facebook className="w-6 h-6" />
+                                <Facebook className="w-5 h-5" />
                             </a>
                             <a
                                 href="https://youtube.com/@diagwheels?si=Ji913duMc8Bg63VX"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-600 hover:text-[#B00000] transition-colors"
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition-colors hover:border-brand-red hover:bg-brand-red hover:text-white"
                                 aria-label="YouTube"
                             >
-                                <Youtube className="w-6 h-6" />
+                                <Youtube className="w-5 h-5" />
                             </a>
                         </div>
                     </div>
@@ -158,12 +158,9 @@ export default function Footer() {
 
                 {/* Bottom Bar */}
                 <div className="border-t border-gray-200 pt-8 mt-8">
-                    <div className="text-center">
-                        <p className="text-gray-500 text-sm">
-                            © {new Date().getFullYear()} DiagTools. All rights
-                            reserved.
-                        </p>
-                    </div>
+                    <p className="text-center text-gray-500 text-xs">
+                        © {new Date().getFullYear()} DiagTools. All rights reserved.
+                    </p>
                 </div>
             </div>
         </footer>

@@ -90,6 +90,7 @@ export default function CheckoutPage() {
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [quote, setQuote] = useState<OrderQuote | null>(null);
     const [isQuoteLoading, setIsQuoteLoading] = useState(false);
+    const [quoteError, setQuoteError] = useState<string | null>(null);
 
 
     useEffect(() => {
@@ -140,6 +141,7 @@ export default function CheckoutPage() {
 
         if (!canShowOrderSummary || items.length === 0) {
             setQuote(null);
+            setQuoteError(null);
             setIsQuoteLoading(false);
             return () => {
                 active = false;
@@ -152,9 +154,16 @@ export default function CheckoutPage() {
                 const response = await ordersApi.quote(quotePayload);
                 if (!active) return;
                 setQuote(response.data || null);
-            } catch {
+                setQuoteError(null);
+            } catch (err: any) {
                 if (!active) return;
                 setQuote(null);
+                const message =
+                    err?.response?.data?.message ||
+                    err?.data?.message ||
+                    err?.message ||
+                    "Unable to calculate order total. Please review your cart.";
+                setQuoteError(message);
             } finally {
                 if (active) {
                     setIsQuoteLoading(false);
@@ -471,6 +480,15 @@ export default function CheckoutPage() {
                 return;
             }
 
+            // Out-of-stock / insufficient inventory: show inline instead of a generic alert
+            if (
+                typeof errorResponse.message === "string" &&
+                /stock/i.test(errorResponse.message)
+            ) {
+                setQuoteError(errorResponse.message);
+                return;
+            }
+
             alert(err?.message || "Checkout failed");
         }
     };
@@ -724,9 +742,20 @@ export default function CheckoutPage() {
                                 </div>
                             </div>
 
+                            {quoteError && (
+                                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                                    <p className="text-sm font-medium text-red-700">
+                                        {quoteError}
+                                    </p>
+                                    <p className="text-xs text-red-600 mt-1">
+                                        Please update the quantities in your cart before placing the order.
+                                    </p>
+                                </div>
+                            )}
+
                             <button
                                 type="submit"
-                                disabled={isProcessingPayment}
+                                disabled={isProcessingPayment || !!quoteError}
                                 className="w-full px-6 py-3 bg-[#B00000] text-white rounded-lg font-medium hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isProcessingPayment
