@@ -18,6 +18,8 @@ export interface ProductExtraInfo {
     zip_file_path: string;
     image_files?: ProductExtraInfoFile[];
     pdf_files?: ProductExtraInfoFile[];
+    image_count?: number;
+    pdf_count?: number;
     created_at: string;
     updated_at: string;
 }

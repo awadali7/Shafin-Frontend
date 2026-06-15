@@ -7,8 +7,12 @@ import { productExtraInfoApi, ProductExtraInfo, ProductExtraInfoFile } from "@/l
 import { adminApi } from "@/lib/api/admin";
 import type { User } from "@/lib/api/types";
 import RichTextEditor from "./RichTextEditor";
+import { ImageWithSkeleton } from "@/components/ui/ImageWithSkeleton";
 
 type FormMode = "add" | "edit";
+
+const normalizeForSearch = (value?: string) =>
+    (value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 export const ProductExtraInfoTab: React.FC = () => {
     const [formMode, setFormMode] = useState<FormMode>("add");
@@ -21,6 +25,7 @@ export const ProductExtraInfoTab: React.FC = () => {
     const [viewingInfo, setViewingInfo] = useState<ProductExtraInfo | null>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [selectedPdfUrl, setSelectedPdfUrl] = useState("");
+    const [fileSearchTerm, setFileSearchTerm] = useState("");
 
     // Form state
     const [title, setTitle] = useState("");
@@ -49,8 +54,6 @@ export const ProductExtraInfoTab: React.FC = () => {
             info.title,
             info.slug,
             info.body?.replace(/<[^>]*>/g, " "),
-            ...(info.image_files?.map((image) => image.name) || []),
-            ...(info.pdf_files?.map((pdf) => pdf.name) || []),
         ]
             .filter(Boolean)
             .join(" ")
@@ -107,6 +110,7 @@ export const ProductExtraInfoTab: React.FC = () => {
         } else {
             setSelectedPdfUrl("");
         }
+        setFileSearchTerm("");
     }, [viewingInfo]);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -347,7 +351,12 @@ export const ProductExtraInfoTab: React.FC = () => {
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                     {existingImages.map((img, index) => (
                                         <div key={img.url} className="relative group rounded-md overflow-hidden bg-gray-100 aspect-video">
-                                            <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                                            <ImageWithSkeleton
+                                                src={img.url}
+                                                alt={img.name}
+                                                wrapperClassName="absolute inset-0"
+                                                className="w-full h-full object-cover"
+                                            />
                                             <button
                                                 onClick={() => removeExistingImage(index)}
                                                 className="absolute top-1 right-1 p-1 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 hover:text-red-500"
@@ -490,6 +499,14 @@ export const ProductExtraInfoTab: React.FC = () => {
         const hasPdfs = (viewingInfo.pdf_files?.length || 0) > 0;
         const hasNoAttachments = !hasImages && !hasPdfs;
 
+        const normalizedFileSearch = normalizeForSearch(fileSearchTerm);
+        const filteredImages = (viewingInfo.image_files || []).filter((image) =>
+            !normalizedFileSearch || normalizeForSearch(image.name).includes(normalizedFileSearch)
+        );
+        const filteredPdfs = (viewingInfo.pdf_files || []).filter((pdf) =>
+            !normalizedFileSearch || normalizeForSearch(pdf.name).includes(normalizedFileSearch)
+        );
+
         return (
             <div className="p-6 space-y-6">
                 <div className="flex items-center justify-between gap-4">
@@ -532,14 +549,33 @@ export const ProductExtraInfoTab: React.FC = () => {
                     </div>
                 ) : null}
 
-                {hasImages ? (
+                {(hasImages || hasPdfs) ? (
+                    <div className="relative max-w-md">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            value={fileSearchTerm}
+                            onChange={(e) => setFileSearchTerm(e.target.value)}
+                            placeholder="Search images and PDFs by name"
+                            className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 shadow-sm focus:border-[#B00000] focus:outline-none focus:ring-2 focus:ring-[#B00000]/15"
+                        />
+                    </div>
+                ) : null}
+
+                {(hasImages || hasPdfs) && filteredImages.length === 0 && filteredPdfs.length === 0 ? (
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                        No images or PDFs matched &quot;{fileSearchTerm.trim()}&quot;.
+                    </div>
+                ) : null}
+
+                {filteredImages.length > 0 ? (
                     <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
                         <div className="flex items-center gap-2 mb-4">
                             <ImageIcon className="w-5 h-5 text-[#B00000]" />
                             <h3 className="text-lg font-semibold text-gray-900">Images</h3>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {viewingInfo.image_files?.map((image) => (
+                            {filteredImages.map((image) => (
                                 <a
                                     key={image.url}
                                     href={image.url}
@@ -547,7 +583,12 @@ export const ProductExtraInfoTab: React.FC = () => {
                                     rel="noopener noreferrer"
                                     className="block rounded-lg overflow-hidden border border-gray-200 bg-gray-50 hover:shadow-md transition-shadow"
                                 >
-                                    <img src={image.url} alt={image.name} className="w-full h-56 object-cover" />
+                                    <ImageWithSkeleton
+                                        src={image.url}
+                                        alt={image.name}
+                                        wrapperClassName="w-full h-56"
+                                        className="w-full h-56 object-cover"
+                                    />
                                     <div className="p-3 text-sm text-gray-700 truncate">{image.name}</div>
                                 </a>
                             ))}
@@ -555,14 +596,14 @@ export const ProductExtraInfoTab: React.FC = () => {
                     </div>
                 ) : null}
 
-                {hasPdfs ? (
+                {filteredPdfs.length > 0 ? (
                     <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
                         <div className="flex items-center gap-2 mb-4">
                             <FileText className="w-5 h-5 text-[#B00000]" />
                             <h3 className="text-lg font-semibold text-gray-900">PDF Documents</h3>
                         </div>
                         <div className="flex flex-wrap gap-2 mb-4">
-                            {viewingInfo.pdf_files?.map((pdf) => (
+                            {filteredPdfs.map((pdf) => (
                                 <button
                                     key={pdf.url}
                                     onClick={() => setSelectedPdfUrl(pdf.url)}
@@ -633,7 +674,7 @@ export const ProductExtraInfoTab: React.FC = () => {
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search by title, slug, body text, image name, or PDF name"
+                                placeholder="Search by title, slug, or body text"
                                 className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm text-gray-900 shadow-sm focus:border-[#B00000] focus:outline-none focus:ring-2 focus:ring-[#B00000]/15"
                             />
                         </div>
@@ -675,6 +716,14 @@ export const ProductExtraInfoTab: React.FC = () => {
                                                     <span className="flex items-center gap-1">
                                                         <Calendar className="w-4 h-4" />
                                                         {new Date(info.created_at).toLocaleDateString()}
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <ImageIcon className="w-4 h-4" />
+                                                        {info.image_count ?? 0}
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <FileText className="w-4 h-4" />
+                                                        {info.pdf_count ?? 0}
                                                     </span>
                                                 </div>
                                             </div>

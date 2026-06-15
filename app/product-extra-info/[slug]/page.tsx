@@ -3,11 +3,15 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, FileText, Image as ImageIcon, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, FileText, Image as ImageIcon, Loader2, Lock, Search } from "lucide-react";
 import LoginDrawer from "@/components/LoginDrawer";
 import RegisterDrawer from "@/components/RegisterDrawer";
 import { useAuth } from "@/contexts/AuthContext";
 import { productExtraInfoApi, ProductExtraInfo } from "@/lib/api/product-extra-info";
+import { ImageWithSkeleton } from "@/components/ui/ImageWithSkeleton";
+
+const normalizeForSearch = (value?: string) =>
+    (value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 export default function ProductExtraInfoPage() {
     const params = useParams();
@@ -19,6 +23,7 @@ export default function ProductExtraInfoPage() {
     const [error, setError] = useState<string | null>(null);
     const [info, setInfo] = useState<ProductExtraInfo | null>(null);
     const [selectedPdfUrl, setSelectedPdfUrl] = useState("");
+    const [fileSearchTerm, setFileSearchTerm] = useState("");
     const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [isRegisterDrawerOpen, setIsRegisterDrawerOpen] = useState(false);
 
@@ -118,6 +123,15 @@ export default function ProductExtraInfoPage() {
         );
     }
 
+    const normalizedFileSearch = normalizeForSearch(fileSearchTerm);
+    const filteredImages = (info.image_files || []).filter((image) =>
+        !normalizedFileSearch || normalizeForSearch(image.name).includes(normalizedFileSearch)
+    );
+    const filteredPdfs = (info.pdf_files || []).filter((pdf) =>
+        !normalizedFileSearch || normalizeForSearch(pdf.name).includes(normalizedFileSearch)
+    );
+    const hasFiles = (info.image_files?.length || 0) > 0 || (info.pdf_files?.length || 0) > 0;
+
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
@@ -160,7 +174,28 @@ export default function ProductExtraInfoPage() {
                             </section>
                         ) : null}
 
-                        {(info.image_files?.length || 0) > 0 ? (
+                        {hasFiles ? (
+                            <section className="space-y-2">
+                                <div className="relative max-w-md">
+                                    <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type="text"
+                                        value={fileSearchTerm}
+                                        onChange={(e) => setFileSearchTerm(e.target.value)}
+                                        placeholder="Search images and PDFs by name"
+                                        className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 shadow-sm focus:border-[#B00000] focus:outline-none focus:ring-2 focus:ring-[#B00000]/15"
+                                    />
+                                </div>
+                            </section>
+                        ) : null}
+
+                        {hasFiles && filteredImages.length === 0 && filteredPdfs.length === 0 ? (
+                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                                No images or PDFs matched &quot;{fileSearchTerm.trim()}&quot;.
+                            </div>
+                        ) : null}
+
+                        {filteredImages.length > 0 ? (
                             <section className="space-y-4">
                                 <div className="flex items-center gap-2">
                                     <ImageIcon className="w-5 h-5 text-[#B00000]" />
@@ -169,7 +204,7 @@ export default function ProductExtraInfoPage() {
                                     </h2>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                                    {info.image_files?.map((image) => (
+                                    {filteredImages.map((image) => (
                                         <a
                                             key={image.url}
                                             href={image.url}
@@ -177,9 +212,10 @@ export default function ProductExtraInfoPage() {
                                             rel="noopener noreferrer"
                                             className="block rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 hover:shadow-md transition-shadow"
                                         >
-                                            <img
+                                            <ImageWithSkeleton
                                                 src={image.url}
                                                 alt={image.name}
+                                                wrapperClassName="w-full h-60"
                                                 className="w-full h-60 object-cover"
                                             />
                                             <div className="p-3 text-sm text-gray-700 truncate">
