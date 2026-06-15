@@ -127,7 +127,7 @@ export default function ShopPage() {
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(searchQuery);
-        }, 300);
+        }, 500);
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
@@ -380,29 +380,32 @@ export default function ShopPage() {
                 </div>
             </header>
 
-            {/* ── Cascading category filter ── */}
-            <div className="border-b border-[#E5E7EB] bg-white px-4 sm:px-6 lg:px-8 py-3">
-                <CascadingCategoryFilter
-                    key={categoryFilterResetKey}
-                    products={categoryProducts.length > 0 ? categoryProducts : products}
-                    onFilterChange={setSelectedCategoryPath}
+            {/* ── Sticky category + filter/sort bar (offset below the fixed site header) ── */}
+            <div className="sticky top-14 z-20 bg-white lg:top-[72px]">
+                {/* Cascading category filter */}
+                <div className="border-b border-[#E5E7EB] bg-white px-4 sm:px-6 lg:px-8 py-3">
+                    <CascadingCategoryFilter
+                        key={categoryFilterResetKey}
+                        products={categoryProducts.length > 0 ? categoryProducts : products}
+                        onFilterChange={setSelectedCategoryPath}
+                    />
+                </div>
+
+                {/* Filter & sort bar */}
+                <FilterBar
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    typeFilter={typeFilter}
+                    onTypeChange={setTypeFilter}
+                    inStockOnly={inStockOnly}
+                    onInStockChange={setInStockOnly}
+                    priceRangeId={priceRangeId}
+                    onPriceRangeChange={setPriceRangeId}
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
+                    onClearAll={handleClearAll}
                 />
             </div>
-
-            {/* ── Filter & sort bar ── */}
-            <FilterBar
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                typeFilter={typeFilter}
-                onTypeChange={setTypeFilter}
-                inStockOnly={inStockOnly}
-                onInStockChange={setInStockOnly}
-                priceRangeId={priceRangeId}
-                onPriceRangeChange={setPriceRangeId}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                onClearAll={handleClearAll}
-            />
 
             {/* ── Featured strip ── */}
             {!debouncedSearch && selectedCategoryPath.length === 0 && (

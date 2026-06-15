@@ -111,9 +111,11 @@ const CIRCUIT_PATTERN =
 function getYouTubeThumbnail(url?: string): string | null {
     if (!url) return null;
     const match = url.match(
-        /(?:youtube\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/
+        /(?:youtube\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/,
     );
-    return match ? `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg` : null;
+    return match
+        ? `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`
+        : null;
 }
 
 function useCountUp(end: number, active: boolean, duration = 1800) {
@@ -160,7 +162,13 @@ function StatCounter({
     );
 }
 
-function Avatar({ label, className = "" }: { label: string; className?: string }) {
+function Avatar({
+    label,
+    className = "",
+}: {
+    label: string;
+    className?: string;
+}) {
     return (
         <div
             className={`flex items-center justify-center rounded-full bg-linear-to-br from-[#C41E3A] to-[#8B0000] font-semibold text-white ${className}`}
@@ -177,7 +185,9 @@ function HeroVideoCard({ videoUrl }: { videoUrl?: string }) {
     const thumbnail = getYouTubeThumbnail(videoUrl);
     // Not every video has a maxresdefault thumbnail — hqdefault always exists
     const thumbnailSrc =
-        thumbnailFailed && thumbnail ? thumbnail.replace("maxresdefault", "hqdefault") : thumbnail;
+        thumbnailFailed && thumbnail
+            ? thumbnail.replace("maxresdefault", "hqdefault")
+            : thumbnail;
 
     if (playing && videoUrl) {
         return (
@@ -211,7 +221,8 @@ function HeroVideoCard({ videoUrl }: { videoUrl?: string }) {
                     onError={() => setThumbnailFailed(true)}
                     onLoad={(e) => {
                         // YouTube serves a 120x90 gray placeholder (with a 200/404) when no maxres thumbnail exists
-                        if (e.currentTarget.naturalWidth <= 120) setThumbnailFailed(true);
+                        if (e.currentTarget.naturalWidth <= 120)
+                            setThumbnailFailed(true);
                     }}
                     className="absolute inset-0 h-full w-full object-cover"
                 />
@@ -299,8 +310,9 @@ export default function LandingPage() {
         description:
             "India's leading provider of advanced automotive diagnostic tools, key programming solutions, and specialized online training",
         url: process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com",
-        logo: `${process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com"
-            }/images/logo/header-logo.png`,
+        logo: `${
+            process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com"
+        }/images/logo/header-logo.png`,
         contactPoint: {
             "@type": "ContactPoint",
             telephone: "+91-8714388741",
@@ -345,8 +357,9 @@ export default function LandingPage() {
             "@type": "SearchAction",
             target: {
                 "@type": "EntryPoint",
-                urlTemplate: `${process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com"
-                    }/courses?search={search_term_string}`,
+                urlTemplate: `${
+                    process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com"
+                }/courses?search={search_term_string}`,
             },
             "query-input": "required name=search_term_string",
         },
@@ -388,12 +401,19 @@ export default function LandingPage() {
                         }}
                         aria-hidden="true"
                     />
-                    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                    <div
+                        className="pointer-events-none absolute inset-0"
+                        aria-hidden="true"
+                    >
                         {HERO_PARTICLES.map((p, i) => (
                             <span
                                 key={i}
                                 className="landing-particle"
-                                style={{ left: p.left, top: p.top, animationDelay: p.delay }}
+                                style={{
+                                    left: p.left,
+                                    top: p.top,
+                                    animationDelay: p.delay,
+                                }}
                             />
                         ))}
                     </div>
@@ -402,19 +422,11 @@ export default function LandingPage() {
                         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[55fr_45fr] lg:gap-16">
                             {/* Left column */}
                             <div>
-                                <motion.span
-                                    initial={{ opacity: 0, y: 12 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5 }}
-                                    className="inline-flex items-center gap-2 rounded-full border border-[#C41E3A]/40 bg-[#C41E3A]/10 px-4 py-2 text-xs font-semibold tracking-[0.5px] text-white/90 uppercase"
-                                >
-                                    🇮🇳 India&rsquo;s #1 Automotive Platform
-                                </motion.span>
-
                                 <h1
                                     className={`${syne.className} mt-6 text-4xl leading-[1.1] font-bold tracking-[-1.5px] text-white sm:text-5xl lg:text-[64px] lg:leading-[72px] lg:tracking-[-2px]`}
                                 >
-                                    {settings.hero_title || "Master Automotive Diagnostics"}
+                                    {settings.hero_title ||
+                                        "Master Automotive Diagnostics"}
                                     <br />
                                     <span className="bg-linear-to-r from-[#C41E3A] to-[#F59E0B] bg-clip-text text-transparent">
                                         Like a Pro
@@ -426,48 +438,51 @@ export default function LandingPage() {
                                         "India's leading e-learning platform for advanced automotive diagnostics, key programming, ECM repairing, and specialized training in multiple Indian languages."}
                                 </p>
 
-                                <div className="mt-8 flex flex-wrap gap-3">
-                                    {["Malayalam", "English", "Hindi & Tamil"].map((lang) => (
-                                        <span
-                                            key={lang}
-                                            className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-gray-300"
-                                        >
-                                            <CheckCircle2 className="h-4 w-4 text-[#10B981]" aria-hidden="true" />
-                                            {lang}
-                                        </span>
-                                    ))}
-                                </div>
-
                                 <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                                     <button
                                         type="button"
-                                        onClick={() => setIsRegisterDrawerOpen(true)}
+                                        onClick={() =>
+                                            setIsRegisterDrawerOpen(true)
+                                        }
                                         className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#C41E3A] to-[#8B0000] px-5 text-base font-semibold text-white shadow-[0_4px_24px_rgba(196,30,58,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(196,30,58,0.6)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF4D6D]"
                                     >
                                         Start Learning Free
-                                        <ArrowRight className="h-5 w-5" aria-hidden="true" />
+                                        <ArrowRight
+                                            className="h-5 w-5"
+                                            aria-hidden="true"
+                                        />
                                     </button>
                                     <Link
                                         href="/courses"
                                         className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl border border-white/30 px-5 text-base font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                                     >
-                                        <Play className="h-4 w-4 fill-white" aria-hidden="true" />
+                                        <Play
+                                            className="h-4 w-4 fill-white"
+                                            aria-hidden="true"
+                                        />
                                         Watch Demo
                                     </Link>
                                 </div>
 
                                 <div className="mt-10 flex items-center gap-4">
-                                    <div className="flex -space-x-3" aria-hidden="true">
-                                        {["RM", "SK", "AV", "PJ", "NT"].map((label, i) => (
-                                            <Avatar
-                                                key={i}
-                                                label={label}
-                                                className="h-10 w-10 text-xs ring-2 ring-[#0A0A0F]"
-                                            />
-                                        ))}
+                                    <div
+                                        className="flex -space-x-3"
+                                        aria-hidden="true"
+                                    >
+                                        {["RM", "SK", "AV", "PJ", "NT"].map(
+                                            (label, i) => (
+                                                <Avatar
+                                                    key={i}
+                                                    label={label}
+                                                    className="h-10 w-10 text-xs ring-2 ring-[#0A0A0F]"
+                                                />
+                                            ),
+                                        )}
                                     </div>
                                     <p className="text-sm text-gray-400">
-                                        <span className="font-semibold text-white">2,500+</span>{" "}
+                                        <span className="font-semibold text-white">
+                                            2,500+
+                                        </span>{" "}
                                         mechanics enrolled
                                     </p>
                                 </div>
@@ -476,7 +491,9 @@ export default function LandingPage() {
                             {/* Right column */}
                             <div>
                                 <div className="relative rounded-2xl border border-white/5 bg-[#111118] p-3 shadow-[0_0_40px_rgba(196,30,58,0.3)] sm:p-4">
-                                    <HeroVideoCard videoUrl={settings.hero_video_url} />
+                                    <HeroVideoCard
+                                        videoUrl={settings.hero_video_url}
+                                    />
                                 </div>
                                 <div className="mt-6 grid grid-cols-3 gap-3">
                                     {[
@@ -488,8 +505,12 @@ export default function LandingPage() {
                                             key={label}
                                             className="rounded-xl border border-white/10 bg-white/5 px-3 py-4 text-center"
                                         >
-                                            <p className="text-lg font-bold text-white">{value}</p>
-                                            <p className="mt-1 text-xs text-gray-400">{label}</p>
+                                            <p className="text-lg font-bold text-white">
+                                                {value}
+                                            </p>
+                                            <p className="mt-1 text-xs text-gray-400">
+                                                {label}
+                                            </p>
                                         </div>
                                     ))}
                                 </div>
@@ -499,35 +520,39 @@ export default function LandingPage() {
                 </section>
 
                 {/* 2. Trust bar / logo strip */}
-                <section className="bg-[#F8F9FC] py-[60px]" aria-label="Trusted by automotive professionals">
+                <section
+                    className="bg-[#F8F9FC] py-[60px]"
+                    aria-label="Trusted by automotive professionals"
+                >
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <p className="text-center text-xs font-semibold tracking-[0.5px] text-gray-500 uppercase">
                             Trusted by automotive professionals across India
                         </p>
-                        <div className="mt-10 overflow-hidden mask-[linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-                            <div className="landing-marquee flex w-max items-center gap-20">
-                                {[...TRUST_PARTNERS, ...TRUST_PARTNERS].map((partner, i) => (
-                                    <div
-                                        key={i}
-                                        className="relative h-16 w-32 shrink-0 grayscale transition-all duration-300 hover:grayscale-0"
-                                    >
-                                        <Image
-                                            src={partner.src}
-                                            alt={partner.alt}
-                                            fill
-                                            className="object-contain"
-                                            sizes="128px"
-                                            loading="lazy"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
+                        <div className="mt-10 flex flex-wrap items-center justify-center gap-12">
+                            {TRUST_PARTNERS.map((partner, i) => (
+                                <div
+                                    key={i}
+                                    className="relative h-36 w-72 shrink-0 grayscale transition-all duration-300 hover:grayscale-0"
+                                >
+                                    <Image
+                                        src={partner.src}
+                                        alt={partner.alt}
+                                        fill
+                                        className="object-contain"
+                                        sizes="288px"
+                                        loading="lazy"
+                                    />
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </section>
 
                 {/* 3. Why Choose DiagTools — feature grid */}
-                <section className="bg-white py-24" aria-label="Why choose DiagTools">
+                <section
+                    className="bg-white py-24"
+                    aria-label="Why choose DiagTools"
+                >
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="mx-auto max-w-3xl text-center">
                             <span className="inline-flex items-center rounded-full bg-[#C41E3A]/10 px-4 py-1.5 text-xs font-semibold tracking-[0.5px] text-[#C41E3A] uppercase">
@@ -539,8 +564,9 @@ export default function LandingPage() {
                                 Everything You Need to Master Automotive Tech
                             </h2>
                             <p className="mt-4 text-lg text-[#6B7280]">
-                                A complete ecosystem combining world-class diagnostic tools with
-                                specialized technical education.
+                                A complete ecosystem combining world-class
+                                diagnostic tools with specialized technical
+                                education.
                             </p>
                         </div>
                         <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -550,12 +576,18 @@ export default function LandingPage() {
                                     initial={{ opacity: 0, y: 24 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
-                                    transition={{ duration: 0.5, delay: index * 0.08 }}
+                                    transition={{
+                                        duration: 0.5,
+                                        delay: index * 0.08,
+                                    }}
                                     className="group relative overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white p-8 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_16px_48px_rgba(196,30,58,0.15)]"
                                 >
                                     <span className="absolute top-0 left-0 h-0.5 w-0 bg-[#C41E3A] transition-all duration-300 group-hover:w-10" />
                                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#C41E3A]/10 text-[#C41E3A]">
-                                        <feature.Icon className="h-6 w-6" aria-hidden="true" />
+                                        <feature.Icon
+                                            className="h-6 w-6"
+                                            aria-hidden="true"
+                                        />
                                     </span>
                                     <h3 className="mt-6 text-2xl leading-[32px] font-semibold text-[#0D0D14]">
                                         {feature.title}
@@ -570,7 +602,10 @@ export default function LandingPage() {
                 </section>
 
                 {/* 4. Featured Courses — dark grid */}
-                <section className="bg-[#0A0A0F] py-24" aria-label="Featured courses">
+                <section
+                    className="bg-[#0A0A0F] py-24"
+                    aria-label="Featured courses"
+                >
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="mx-auto max-w-3xl text-center">
                             <span className="inline-flex items-center rounded-full bg-[#F59E0B]/15 px-4 py-1.5 text-xs font-semibold tracking-[0.5px] text-[#F59E0B] uppercase">
@@ -582,8 +617,8 @@ export default function LandingPage() {
                                 Master the Latest Diagnostic Techniques
                             </h2>
                             <p className="mt-4 text-lg text-gray-400">
-                                Practical, instructor-led courses built for real workshop
-                                challenges.
+                                Practical, instructor-led courses built for real
+                                workshop challenges.
                             </p>
                         </div>
 
@@ -603,7 +638,10 @@ export default function LandingPage() {
                                         initial={{ opacity: 0, y: 24 }}
                                         whileInView={{ opacity: 1, y: 0 }}
                                         viewport={{ once: true }}
-                                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                                        transition={{
+                                            duration: 0.5,
+                                            delay: index * 0.1,
+                                        }}
                                     >
                                         <Link
                                             href={`/courses/${course.slug}`}
@@ -611,7 +649,10 @@ export default function LandingPage() {
                                         >
                                             <div className="relative aspect-video w-full overflow-hidden">
                                                 <Image
-                                                    src={course.cover_image || "/images/placeholder-course.png"}
+                                                    src={
+                                                        course.cover_image ||
+                                                        "/images/placeholder-course.png"
+                                                    }
                                                     alt={`${course.name} - ${course.description || "Automotive diagnostic training course"}`}
                                                     fill
                                                     className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -619,11 +660,17 @@ export default function LandingPage() {
                                                     loading="lazy"
                                                 />
                                                 <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent" />
-                                                {typeof course.video_count === "number" && course.video_count > 0 && (
-                                                    <span className="absolute top-4 right-4 rounded-full bg-[#F59E0B] px-3 py-1 text-xs font-semibold tracking-[0.5px] text-[#0A0A0F] uppercase">
-                                                        {course.video_count} {course.video_count === 1 ? "Lesson" : "Lessons"}
-                                                    </span>
-                                                )}
+                                                {typeof course.video_count ===
+                                                    "number" &&
+                                                    course.video_count > 0 && (
+                                                        <span className="absolute top-4 right-4 rounded-full bg-[#F59E0B] px-3 py-1 text-xs font-semibold tracking-[0.5px] text-[#0A0A0F] uppercase">
+                                                            {course.video_count}{" "}
+                                                            {course.video_count ===
+                                                            1
+                                                                ? "Lesson"
+                                                                : "Lessons"}
+                                                        </span>
+                                                    )}
                                             </div>
                                             <div className="p-5">
                                                 <h3 className="text-lg font-semibold text-white transition-colors group-hover:text-[#FF4D6D]">
@@ -635,11 +682,16 @@ export default function LandingPage() {
                                                 </p>
                                                 <div className="mt-5 flex items-center justify-between">
                                                     <span className="text-lg font-bold text-white">
-                                                        {course.price > 0 ? `₹${course.price.toLocaleString("en-IN")}` : "Free"}
+                                                        {course.price > 0
+                                                            ? `₹${course.price.toLocaleString("en-IN")}`
+                                                            : "Free"}
                                                     </span>
                                                     <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#C41E3A] px-4 py-2 text-sm font-semibold text-white transition-colors group-hover:bg-[#8B0000]">
                                                         Enroll
-                                                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                                                        <ArrowRight
+                                                            className="h-4 w-4"
+                                                            aria-hidden="true"
+                                                        />
                                                     </span>
                                                 </div>
                                             </div>
@@ -656,7 +708,10 @@ export default function LandingPage() {
                                     className="inline-flex items-center gap-2 rounded-xl border border-[#C41E3A]/50 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#C41E3A]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF4D6D]"
                                 >
                                     View All Courses
-                                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                                    <ArrowRight
+                                        className="h-4 w-4"
+                                        aria-hidden="true"
+                                    />
                                 </Link>
                             </div>
                         )}
@@ -664,7 +719,10 @@ export default function LandingPage() {
                 </section>
 
                 {/* 5. Featured Products — e-commerce grid */}
-                <section className="bg-[#F8F9FC] py-24" aria-label="Featured products">
+                <section
+                    className="bg-[#F8F9FC] py-24"
+                    aria-label="Featured products"
+                >
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="mx-auto max-w-3xl text-center">
                             <span className="inline-flex items-center rounded-full bg-[#C41E3A]/10 px-4 py-1.5 text-xs font-semibold tracking-[0.5px] text-[#C41E3A] uppercase">
@@ -676,8 +734,8 @@ export default function LandingPage() {
                                 Professional Diagnostic Equipment
                             </h2>
                             <p className="mt-4 text-lg text-[#6B7280]">
-                                Explore our collection of digital and physical products for
-                                automotive professionals.
+                                Explore our collection of digital and physical
+                                products for automotive professionals.
                             </p>
                         </div>
 
@@ -692,9 +750,11 @@ export default function LandingPage() {
                         ) : (
                             <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                                 {featuredProducts.map((product, index) => {
-                                    const effectivePrice = product.offer_price ?? product.price;
+                                    const effectivePrice =
+                                        product.offer_price ?? product.price;
                                     const hasDiscount =
-                                        typeof product.offer_price === "number" &&
+                                        typeof product.offer_price ===
+                                            "number" &&
                                         product.offer_price < product.price;
                                     return (
                                         <motion.div
@@ -702,7 +762,10 @@ export default function LandingPage() {
                                             initial={{ opacity: 0, y: 24 }}
                                             whileInView={{ opacity: 1, y: 0 }}
                                             viewport={{ once: true }}
-                                            transition={{ duration: 0.5, delay: index * 0.08 }}
+                                            transition={{
+                                                duration: 0.5,
+                                                delay: index * 0.08,
+                                            }}
                                         >
                                             <Link
                                                 href={`/shop/${product.slug}`}
@@ -710,7 +773,10 @@ export default function LandingPage() {
                                             >
                                                 <div className="relative aspect-square w-full overflow-hidden bg-[#F8F9FC]">
                                                     <Image
-                                                        src={product.cover_image || "/images/placeholder-product.png"}
+                                                        src={
+                                                            product.cover_image ||
+                                                            "/images/placeholder-product.png"
+                                                        }
                                                         alt={`${product.name} - ${product.description || "Automotive diagnostic equipment"}`}
                                                         fill
                                                         className="object-contain p-6 transition-transform duration-500 group-hover:scale-105"
@@ -729,16 +795,25 @@ export default function LandingPage() {
                                                     </h3>
                                                     <div className="mt-3 flex items-center gap-2">
                                                         <span className="text-lg font-bold text-[#C41E3A]">
-                                                            ₹{effectivePrice?.toLocaleString("en-IN") || "0"}
+                                                            ₹
+                                                            {effectivePrice?.toLocaleString(
+                                                                "en-IN",
+                                                            ) || "0"}
                                                         </span>
                                                         {hasDiscount && (
                                                             <span className="text-sm text-gray-400 line-through">
-                                                                ₹{product.price.toLocaleString("en-IN")}
+                                                                ₹
+                                                                {product.price.toLocaleString(
+                                                                    "en-IN",
+                                                                )}
                                                             </span>
                                                         )}
                                                     </div>
                                                     <span className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#C41E3A] py-3 text-sm font-semibold text-white transition-colors group-hover:bg-[#8B0000]">
-                                                        <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+                                                        <ShoppingBag
+                                                            className="h-4 w-4"
+                                                            aria-hidden="true"
+                                                        />
                                                         View Product
                                                     </span>
                                                 </div>
@@ -756,7 +831,10 @@ export default function LandingPage() {
                                     className="inline-flex items-center gap-2 rounded-xl border border-[#C41E3A]/40 px-6 py-3 text-sm font-semibold text-[#C41E3A] transition-colors hover:bg-[#C41E3A]/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C41E3A]"
                                 >
                                     Browse All Products
-                                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                                    <ArrowRight
+                                        className="h-4 w-4"
+                                        aria-hidden="true"
+                                    />
                                 </Link>
                             </div>
                         )}
@@ -770,19 +848,41 @@ export default function LandingPage() {
                 >
                     <div
                         className="absolute inset-0 opacity-5"
-                        style={{ backgroundImage: CIRCUIT_PATTERN, backgroundRepeat: "repeat" }}
+                        style={{
+                            backgroundImage: CIRCUIT_PATTERN,
+                            backgroundRepeat: "repeat",
+                        }}
                         aria-hidden="true"
                     />
                     <div className="relative mx-auto grid max-w-6xl grid-cols-2 divide-y divide-white/20 px-4 sm:px-6 lg:grid-cols-4 lg:divide-x lg:divide-y-0 lg:px-8">
-                        <StatCounter value={9} suffix="+" label="Expert Courses" />
-                        <StatCounter value={2500} suffix="+" label="Students Enrolled" />
-                        <StatCounter value={95} suffix="%" label="Completion Rate" />
-                        <StatCounter value={50} suffix="+" label="Certified Experts" />
+                        <StatCounter
+                            value={9}
+                            suffix="+"
+                            label="Expert Courses"
+                        />
+                        <StatCounter
+                            value={2500}
+                            suffix="+"
+                            label="Students Enrolled"
+                        />
+                        <StatCounter
+                            value={95}
+                            suffix="%"
+                            label="Completion Rate"
+                        />
+                        <StatCounter
+                            value={50}
+                            suffix="+"
+                            label="Certified Experts"
+                        />
                     </div>
                 </section>
 
                 {/* 7. Testimonials */}
-                <section className="bg-[#F8F9FC] py-24" aria-label="Student reviews">
+                <section
+                    className="bg-[#F8F9FC] py-24"
+                    aria-label="Student reviews"
+                >
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="mx-auto max-w-3xl text-center">
                             <span className="inline-flex items-center rounded-full bg-[#C41E3A]/10 px-4 py-1.5 text-xs font-semibold tracking-[0.5px] text-[#C41E3A] uppercase">
@@ -801,23 +901,45 @@ export default function LandingPage() {
                                     initial={{ opacity: 0, y: 24 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
-                                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                                    transition={{
+                                        duration: 0.5,
+                                        delay: index * 0.1,
+                                    }}
                                     className="rounded-2xl bg-white p-8 shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
                                 >
-                                    <div className="flex items-center gap-1 text-[#F59E0B]" aria-label="5 out of 5 stars">
-                                        {Array.from({ length: 5 }).map((_, i) => (
-                                            <Star key={i} className="h-4 w-4 fill-current" aria-hidden="true" />
-                                        ))}
+                                    <div
+                                        className="flex items-center gap-1 text-[#F59E0B]"
+                                        aria-label="5 out of 5 stars"
+                                    >
+                                        {Array.from({ length: 5 }).map(
+                                            (_, i) => (
+                                                <Star
+                                                    key={i}
+                                                    className="h-4 w-4 fill-current"
+                                                    aria-hidden="true"
+                                                />
+                                            ),
+                                        )}
                                     </div>
-                                    <Quote className="mt-4 h-6 w-6 text-[#C41E3A]/30" aria-hidden="true" />
+                                    <Quote
+                                        className="mt-4 h-6 w-6 text-[#C41E3A]/30"
+                                        aria-hidden="true"
+                                    />
                                     <blockquote className="mt-2 text-base leading-relaxed text-gray-700 italic">
                                         &ldquo;{testimonial.quote}&rdquo;
                                     </blockquote>
                                     <figcaption className="mt-6 flex items-center gap-3">
-                                        <Avatar label={testimonial.initials} className="h-11 w-11 text-sm" />
+                                        <Avatar
+                                            label={testimonial.initials}
+                                            className="h-11 w-11 text-sm"
+                                        />
                                         <div>
-                                            <p className="text-sm font-semibold text-[#0D0D14]">{testimonial.name}</p>
-                                            <p className="text-xs text-gray-500">{testimonial.role}</p>
+                                            <p className="text-sm font-semibold text-[#0D0D14]">
+                                                {testimonial.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {testimonial.role}
+                                            </p>
                                         </div>
                                     </figcaption>
                                 </motion.figure>
@@ -827,7 +949,10 @@ export default function LandingPage() {
                 </section>
 
                 {/* 8. CTA */}
-                <section className="relative overflow-hidden bg-[#0A0A0F] py-24" aria-label="Call to action">
+                <section
+                    className="relative overflow-hidden bg-[#0A0A0F] py-24"
+                    aria-label="Call to action"
+                >
                     <div
                         className="pointer-events-none absolute top-1/2 left-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#C41E3A]/30 blur-[100px]"
                         aria-hidden="true"
@@ -839,8 +964,9 @@ export default function LandingPage() {
                             Ready to Become a Diagnostics Expert?
                         </h2>
                         <p className="mt-4 text-lg text-gray-400">
-                            Join thousands of mechanics and workshop owners mastering modern
-                            automotive technology with DiagTools.
+                            Join thousands of mechanics and workshop owners
+                            mastering modern automotive technology with
+                            DiagTools.
                         </p>
                         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                             <button
@@ -849,7 +975,10 @@ export default function LandingPage() {
                                 className="inline-flex h-[52px] items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#C41E3A] to-[#8B0000] px-6 text-base font-semibold text-white shadow-[0_4px_24px_rgba(196,30,58,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(196,30,58,0.6)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF4D6D]"
                             >
                                 Join Free Today
-                                <ArrowRight className="h-5 w-5" aria-hidden="true" />
+                                <ArrowRight
+                                    className="h-5 w-5"
+                                    aria-hidden="true"
+                                />
                             </button>
                             <Link
                                 href="/courses"

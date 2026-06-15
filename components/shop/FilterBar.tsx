@@ -220,7 +220,7 @@ export default function FilterBar({
     );
 
     return (
-        <div className="sticky top-0 z-20 border-b border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
+        <div className="border-b border-[#E5E7EB] bg-white/95 backdrop-blur-sm">
             <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-3">
                     {/* Search */}
