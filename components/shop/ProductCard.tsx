@@ -95,12 +95,12 @@ export default function ProductCard({
             <div className="relative">
                 <Link
                     href={`/shop/${product.slug}`}
-                    className={`block overflow-hidden rounded-t-2xl ${
-                        tall ? "aspect-3/4" : "aspect-video"
+                    className={`relative block overflow-hidden rounded-t-2xl ${
+                        tall ? "aspect-[3/4]" : "aspect-square sm:aspect-video"
                     }`}
                     aria-label={`View ${product.name}`}
                 >
-                    <div className="relative h-full w-full bg-[#F8F9FC]">
+                    <div className="absolute inset-0 bg-[#F8F9FC]">
                         <img
                             src={product.image}
                             alt={product.name}

@@ -15,7 +15,7 @@ export default function FeaturedStrip({ products, user, userKycStatus, onAddToCa
     if (products.length === 0) return null;
 
     return (
-        <section aria-label="Featured products" className="border-b border-[#E5E7EB] bg-[#F9FAFB]">
+        <section aria-label="Featured products" className="hidden border-b border-[#E5E7EB] bg-[#F9FAFB] sm:block">
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 <h2 className="mb-4 text-lg font-bold text-[#0D0D14]">
                     <span aria-hidden="true">⚡</span> Top Picks for You
