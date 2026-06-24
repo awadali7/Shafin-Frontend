@@ -96,7 +96,7 @@ export default function ProductCard({
                 <Link
                     href={`/shop/${product.slug}`}
                     className={`relative block overflow-hidden rounded-t-2xl ${
-                        tall ? "aspect-[3/4]" : "aspect-square sm:aspect-video"
+                        tall ? "aspect-square" : "aspect-square sm:aspect-video"
                     }`}
                     aria-label={`View ${product.name}`}
                 >
