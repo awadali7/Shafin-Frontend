@@ -15,7 +15,7 @@ export default function MainContent({
 }) {
     return (
         <main
-            className={`pt-[73px] min-h-screen ${className}`}
+            className={`pt-[100px] lg:pt-[116px] min-h-screen ${className}`}
         >
             {children}
         </main>

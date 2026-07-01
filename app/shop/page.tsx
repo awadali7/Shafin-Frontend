@@ -381,7 +381,7 @@ export default function ShopPage() {
             </header>
 
             {/* ── Sticky category + filter/sort bar (offset below the fixed site header) ── */}
-            <div className="sticky top-14 z-20 bg-white lg:top-[72px]">
+            <div className="sticky top-[100px] z-20 bg-white lg:top-[116px]">
                 {/* Cascading category filter */}
                 <div className="border-b border-[#E5E7EB] bg-white px-4 sm:px-6 lg:px-8 py-3">
                     <CascadingCategoryFilter

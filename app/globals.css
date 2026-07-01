@@ -24,6 +24,8 @@
     --color-whatsapp: #25D366;
 
     --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+    --animate-flag-wave: flag-wave 2.4s ease-in-out infinite;
+    --animate-banner-shine: banner-shine 3.2s linear infinite;
 }
 
 @keyframes shimmer {
@@ -32,6 +34,33 @@
     }
     100% {
         background-position: 468px 0;
+    }
+}
+
+/* Flutters a flag-shaped element like cloth moving in the wind */
+@keyframes flag-wave {
+    0%,
+    100% {
+        transform: rotate(0deg) skewY(0deg) scaleX(1);
+    }
+    25% {
+        transform: rotate(3deg) skewY(5deg) scaleX(0.97);
+    }
+    50% {
+        transform: rotate(-2deg) skewY(-4deg) scaleX(1.02);
+    }
+    75% {
+        transform: rotate(2deg) skewY(4deg) scaleX(0.98);
+    }
+}
+
+/* Diagonal light sweep used as the banner's background "wind" texture */
+@keyframes banner-shine {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 120px 0;
     }
 }
 

@@ -12,6 +12,7 @@ interface AdminTabsProps {
     | "kyc"
     | "product_kyc"
     | "products"
+    | "offer_products"
     | "orders"
     | "digital_files"
     | "gallery"
@@ -28,6 +29,7 @@ interface AdminTabsProps {
             | "kyc"
             | "product_kyc"
             | "products"
+            | "offer_products"
             | "orders"
             | "digital_files"
             | "gallery"
@@ -54,6 +56,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
         { id: "requests" as const, label: "Course Purchases" },
         { id: "courses" as const, label: "Courses" },
         { id: "products" as const, label: "Products" },
+        { id: "offer_products" as const, label: "Offer Products" },
         { id: "digital_files" as const, label: "Digital Files" },
         { id: "orders" as const, label: "Orders", count: pendingOrdersCount },
         { id: "blogs" as const, label: "Blogs" },

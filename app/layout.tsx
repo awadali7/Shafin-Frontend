@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import OfferBanner from "@/components/OfferBanner";
 import Footer from "@/components/Footer";
 import { SidebarProvider } from "@/components/SidebarContext";
 import MainContent from "@/components/MainContent";
@@ -154,6 +155,7 @@ export default function RootLayout({
                             <PushNotificationInitializer />
                             <div className="min-h-screen bg-slate-50 flex flex-col">
                                 <Header />
+                                <OfferBanner />
                                 <ConditionalSidebar />
                                 <MainContent className="flex-1">
                                     {children}

@@ -49,6 +49,7 @@ import { BlogsTab } from "@/components/admin/BlogsTab";
 import { KYCTab } from "@/components/admin/KYCTab";
 import { ProductKYCTab } from "@/components/admin/ProductKYCTab";
 import { ProductsTab } from "@/components/admin/ProductsTab";
+import { OfferProductsTab } from "@/components/admin/OfferProductsTab";
 import { OrdersTab } from "@/components/admin/OrdersTab";
 import { KYCModal } from "@/components/admin/KYCModal";
 import { ProductKYCModal } from "@/components/admin/ProductKYCModal";
@@ -82,6 +83,7 @@ type AdminTab =
     | "kyc"
     | "product_kyc"
     | "products"
+    | "offer_products"
     | "orders"
     | "digital_files"
     | "gallery"
@@ -91,7 +93,7 @@ type AdminTab =
 
 const VALID_TABS: AdminTab[] = [
     "dashboard", "users", "requests", "courses", "blogs",
-    "kyc", "product_kyc", "products", "orders", "digital_files", "gallery", "product_extra_info", "courier_boxes", "settings",
+    "kyc", "product_kyc", "products", "offer_products", "orders", "digital_files", "gallery", "product_extra_info", "courier_boxes", "settings",
 ];
 
 const fileToDataURL = (file: File): Promise<string> => {
@@ -308,7 +310,7 @@ function AdminPageContent() {
 
     const fetchData = async () => {
         // Products/Orders tabs manage their own fetching to keep this page stable
-        if (activeTab === "products" || activeTab === "orders") {
+        if (activeTab === "products" || activeTab === "offer_products" || activeTab === "orders") {
             setLoading(false);
             setError(null);
             return;
@@ -1753,6 +1755,7 @@ function AdminPageContent() {
                 )}
 
                 {activeTab === "products" && <ProductsTab />}
+                {activeTab === "offer_products" && <OfferProductsTab />}
                 {activeTab === "digital_files" && <DigitalFilesTab />}
 
                 {activeTab === "orders" && <OrdersTab />}
