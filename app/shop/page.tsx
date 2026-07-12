@@ -15,7 +15,6 @@ import FilterBar, {
     type SortOption,
     type TypeFilter,
 } from "@/components/shop/FilterBar";
-import FeaturedStrip from "@/components/shop/FeaturedStrip";
 
 const FALLBACK_IMAGE =
     "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&h=400&fit=crop";
@@ -100,7 +99,6 @@ export default function ShopPage() {
     const [userKycStatus, setUserKycStatus] = useState<UserDashboardData["kyc_status"] | null>(null);
     const [products, setProducts] = useState<ShopProduct[]>([]);
     const [categoryProducts, setCategoryProducts] = useState<ShopProduct[]>([]);
-    const [featuredProducts, setFeaturedProducts] = useState<ShopProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -205,25 +203,6 @@ export default function ShopPage() {
             }
         })();
 
-        return () => {
-            mounted = false;
-        };
-    }, []);
-
-    // Fetch featured products for the "Top Picks" strip
-    useEffect(() => {
-        let mounted = true;
-        (async () => {
-            try {
-                const resp = await productsApi.getFeatured();
-                if (!mounted) return;
-                const list = Array.isArray(resp.data) ? resp.data : [];
-                setFeaturedProducts(list.map(mapApiProductToShopProduct));
-            } catch (e) {
-                if (!mounted) return;
-                console.error("Failed to load featured products:", e);
-            }
-        })();
         return () => {
             mounted = false;
         };
@@ -381,7 +360,7 @@ export default function ShopPage() {
             </header>
 
             {/* ── Sticky category + filter/sort bar (offset below the fixed site header) ── */}
-            <div className="sticky top-[100px] z-20 bg-white lg:top-[116px]">
+            <div className="sticky top-14 z-20 bg-white lg:top-[72px]">
                 {/* Cascading category filter */}
                 <div className="border-b border-[#E5E7EB] bg-white px-4 sm:px-6 lg:px-8 py-3">
                     <CascadingCategoryFilter
@@ -406,16 +385,6 @@ export default function ShopPage() {
                     onClearAll={handleClearAll}
                 />
             </div>
-
-            {/* ── Featured strip ── */}
-            {!debouncedSearch && selectedCategoryPath.length === 0 && (
-                <FeaturedStrip
-                    products={featuredProducts}
-                    user={user}
-                    userKycStatus={userKycStatus}
-                    onAddToCart={handleAddToCart}
-                />
-            )}
 
             {/* ── Main grid ── */}
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
