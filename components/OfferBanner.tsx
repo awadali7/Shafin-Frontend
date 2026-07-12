@@ -22,19 +22,8 @@ export default function OfferBanner() {
             />
 
             <div className="relative flex w-full max-w-7xl items-center justify-center gap-2.5 sm:gap-4">
-                {/* Waving flag — pole + fluttering pennant cut with clip-path */}
-                <span className="relative flex h-6 w-5 shrink-0 items-start" aria-hidden="true">
-                    <span className="absolute left-0 top-0 h-6 w-[2px] rounded-full bg-white/85" />
-                    <span
-                        className="absolute left-[2px] top-0 h-4 w-5 origin-left animate-flag-wave bg-gradient-to-br from-brand-gold to-[#E08E00] shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
-                        style={{
-                            clipPath: "polygon(0 0, 100% 18%, 78% 50%, 100% 82%, 0 100%)",
-                        }}
-                    />
-                </span>
-
                 <p className="truncate text-xs font-bold tracking-wide text-white sm:text-sm">
-                    🔥 <span className="hidden sm:inline">Exclusive Offers Live — </span>
+                    <span className="hidden sm:inline">Exclusive Offers Live — </span>
                     Save big on top diagnostic tools
                 </p>
 
