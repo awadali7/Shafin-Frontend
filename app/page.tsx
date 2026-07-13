@@ -565,11 +565,11 @@ export default function LandingPage() {
                         <p className="text-center text-xs font-semibold tracking-[0.5px] text-gray-500 uppercase">
                             Trusted by automotive professionals across India
                         </p>
-                        <div className="mt-10 flex flex-wrap items-center justify-center gap-12">
+                        <div className="mt-10 grid grid-cols-3 items-center gap-6">
                             {TRUST_PARTNERS.map((partner, i) => (
                                 <div
                                     key={i}
-                                    className="relative h-48 w-96 shrink-0 grayscale transition-all duration-300 hover:grayscale-0"
+                                    className="relative h-36 w-full grayscale transition-all duration-300 hover:grayscale-0"
                                 >
                                     <Image
                                         src={partner.src}
@@ -639,12 +639,12 @@ export default function LandingPage() {
                                                 {discount}% OFF
                                             </span>
                                             {/* Image */}
-                                            <div className="relative aspect-square w-full overflow-hidden bg-white/5">
+                                            <div className="relative aspect-video w-full overflow-hidden bg-white">
                                                 <Image
                                                     src={product.cover_image || "/images/placeholder-product.png"}
                                                     alt={product.name}
                                                     fill
-                                                    className="object-contain p-5 transition-transform duration-500 group-hover:scale-105"
+                                                    className="object-contain transition-transform duration-500 group-hover:scale-105"
                                                     sizes="260px"
                                                     loading="lazy"
                                                 />
@@ -896,9 +896,9 @@ export default function LandingPage() {
                                         >
                                             <Link
                                                 href={`/shop/${product.slug}`}
-                                                className="group block h-full overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)]"
+                                                className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(0,0,0,0.08)]"
                                             >
-                                                <div className="relative aspect-square w-full overflow-hidden bg-[#F8F9FC]">
+                                                <div className="relative aspect-video w-full overflow-hidden bg-white">
                                                     <Image
                                                         src={
                                                             product.cover_image ||
@@ -906,18 +906,13 @@ export default function LandingPage() {
                                                         }
                                                         alt={`${product.name} - ${product.description || "Automotive diagnostic equipment"}`}
                                                         fill
-                                                        className="object-contain p-6 transition-transform duration-500 group-hover:scale-105"
+                                                        className="object-contain transition-transform duration-500 group-hover:scale-105"
                                                         sizes="(max-width: 768px) 100vw, 25vw"
                                                         loading="lazy"
                                                     />
                                                 </div>
-                                                <div className="p-5">
-                                                    {product.category && (
-                                                        <span className="inline-block rounded-full bg-gray-100 px-3 py-1 text-xs font-medium tracking-[0.5px] text-gray-500 uppercase">
-                                                            {product.category}
-                                                        </span>
-                                                    )}
-                                                    <h3 className="mt-3 line-clamp-2 min-h-[2.5rem] text-base font-semibold text-[#0D0D14]">
+                                                <div className="flex flex-1 flex-col p-5">
+                                                    <h3 className="line-clamp-2 min-h-10 text-base font-semibold text-[#0D0D14]">
                                                         {product.name}
                                                     </h3>
                                                     <div className="mt-3 flex items-center gap-2">
@@ -936,13 +931,15 @@ export default function LandingPage() {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <span className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#C41E3A] py-3 text-sm font-semibold text-white transition-colors group-hover:bg-[#8B0000]">
+                                                    <div className="mt-auto pt-5">
+                                                        <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#C41E3A] py-3 text-sm font-semibold text-white transition-colors group-hover:bg-[#8B0000]">
                                                         <ShoppingBag
                                                             className="h-4 w-4"
                                                             aria-hidden="true"
                                                         />
                                                         View Product
                                                     </span>
+                                                    </div>
                                                 </div>
                                             </Link>
                                         </motion.div>
