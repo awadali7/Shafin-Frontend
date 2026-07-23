@@ -50,6 +50,7 @@ import { KYCTab } from "@/components/admin/KYCTab";
 import { ProductKYCTab } from "@/components/admin/ProductKYCTab";
 import { ProductsTab } from "@/components/admin/ProductsTab";
 import { OfferProductsTab } from "@/components/admin/OfferProductsTab";
+import { LandingBannersTab } from "@/components/admin/LandingBannersTab";
 import { OrdersTab } from "@/components/admin/OrdersTab";
 import { KYCModal } from "@/components/admin/KYCModal";
 import { ProductKYCModal } from "@/components/admin/ProductKYCModal";
@@ -89,11 +90,12 @@ type AdminTab =
     | "gallery"
     | "product_extra_info"
     | "courier_boxes"
+    | "landing_banners"
     | "settings";
 
 const VALID_TABS: AdminTab[] = [
     "dashboard", "users", "requests", "courses", "blogs",
-    "kyc", "product_kyc", "products", "offer_products", "orders", "digital_files", "gallery", "product_extra_info", "courier_boxes", "settings",
+    "kyc", "product_kyc", "products", "offer_products", "orders", "digital_files", "gallery", "product_extra_info", "courier_boxes", "landing_banners", "settings",
 ];
 
 const fileToDataURL = (file: File): Promise<string> => {
@@ -1764,6 +1766,7 @@ function AdminPageContent() {
 
                 {activeTab === "product_extra_info" && <ProductExtraInfoTab />}
                 {activeTab === "courier_boxes" && <CourierBoxesTab />}
+                {activeTab === "landing_banners" && <LandingBannersTab />}
 
                 {activeTab === "settings" && <SettingsTab />}
 

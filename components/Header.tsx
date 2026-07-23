@@ -96,7 +96,7 @@ export default function Header() {
                 {/* Logo — centered on mobile, left-aligned on desktop */}
                 <Link href="/" className="flex-1 lg:flex-none flex justify-center lg:justify-start items-center mx-1 lg:mx-0 lg:mr-8 group">
                     <Image
-                        src="/images/logo/header-logo.png"
+                        src="/images/logo/logo.jpeg"
                         alt="DIAGTOOLS"
                         width={1000}
                         height={1000}

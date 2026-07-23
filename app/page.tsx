@@ -9,8 +9,6 @@ import {
     ArrowRight,
     BookOpen,
     Car,
-    ChevronLeft,
-    ChevronRight,
     Cog,
     GraduationCap,
     Play,
@@ -25,6 +23,7 @@ import LoginDrawer from "@/components/LoginDrawer";
 import { coursesApi } from "@/lib/api/courses";
 import { productsApi } from "@/lib/api/products";
 import { settingsApi, type PublicSettings } from "@/lib/api/settings";
+import { landingBannersApi, getBannerImageUrl, type LandingBanner } from "@/lib/api/landingBanners";
 import type { Course, Product } from "@/lib/api/types";
 
 // Display font for the landing page only — the rest of the site keeps Bricolage Grotesque
@@ -247,11 +246,11 @@ export default function LandingPage() {
     const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
     const [courses, setCourses] = useState<Course[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
-    const [offerProducts, setOfferProducts] = useState<Product[]>([]);
+    const [banners, setBanners] = useState<LandingBanner[]>([]);
+    const [bannerIndex, setBannerIndex] = useState(0);
     const [settings, setSettings] = useState<PublicSettings>({});
     const [loadingCourses, setLoadingCourses] = useState(true);
     const [loadingProducts, setLoadingProducts] = useState(true);
-    const offerSliderRef = useRef<HTMLDivElement>(null);
 
     // Fetch featured courses
     useEffect(() => {
@@ -287,39 +286,19 @@ export default function LandingPage() {
         fetchProducts();
     }, []);
 
-    // Fetch offer products (all pages, filter client-side)
+    // Fetch landing banners
     useEffect(() => {
-        const fetchOffers = async () => {
-            try {
-                const all: Product[] = [];
-                let page = 1;
-                let totalPages = 1;
-                while (page <= totalPages) {
-                    const resp = await productsApi.list({ page, limit: 100 });
-                    if (Array.isArray(resp.data)) all.push(...resp.data);
-                    totalPages = resp.pagination?.totalPages ?? 1;
-                    page++;
-                }
-                setOfferProducts(
-                    all
-                        .filter(
-                            (p) =>
-                                p.offer_price != null &&
-                                Number(p.offer_price) > 0 &&
-                                Number(p.offer_price) < Number(p.price)
-                        )
-                        .sort(
-                            (a, b) =>
-                                Number(a.offer_price) / Number(a.price) -
-                                Number(b.offer_price) / Number(b.price)
-                        )
-                );
-            } catch (e) {
-                console.error("Error fetching offer products:", e);
-            }
-        };
-        fetchOffers();
+        landingBannersApi.getActive().then((resp) => {
+            if (Array.isArray(resp.data)) setBanners(resp.data);
+        }).catch(() => {});
     }, []);
+
+    // Auto-advance banner slider
+    useEffect(() => {
+        if (banners.length <= 1) return;
+        const t = setInterval(() => setBannerIndex((i) => (i + 1) % banners.length), 4000);
+        return () => clearInterval(t);
+    }, [banners.length]);
 
     // Fetch public settings
     useEffect(() => {
@@ -556,6 +535,48 @@ export default function LandingPage() {
                     </div>
                 </section>
 
+                {/* Landing banners slider */}
+                {banners.length > 0 && (
+                    <section className="bg-[#0A0A0F] pb-14 pt-6 sm:pb-20 sm:pt-8" aria-label="Promotional banners">
+                        <div className="mx-auto w-[70%]">
+                            {/* Slider frame */}
+                            <div className="relative overflow-hidden rounded-2xl ring-1 ring-white/8 shadow-[0_24px_64px_rgba(0,0,0,0.6)]">
+                                {/* Slides */}
+                                <div className="relative aspect-video w-full bg-brand-dark-2">
+                                    {banners.map((banner, i) => (
+                                        <div
+                                            key={banner.id}
+                                            className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+                                            style={{ opacity: i === bannerIndex ? 1 : 0, zIndex: i === bannerIndex ? 1 : 0 }}
+                                            aria-hidden={i !== bannerIndex}
+                                        >
+                                            <img
+                                                src={getBannerImageUrl(banner.image_url)}
+                                                alt=""
+                                                className="h-full w-full object-contain"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Dots */}
+                                {banners.length > 1 && (
+                                    <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2">
+                                        {banners.map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setBannerIndex(i)}
+                                                className={`h-1.5 rounded-full transition-all duration-300 ${i === bannerIndex ? "w-6 bg-[#C41E3A]" : "w-1.5 bg-white/30 hover:bg-white/50"}`}
+                                                aria-label={`Go to banner ${i + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
                 {/* 2. Trust bar / logo strip */}
                 <section
                     className="bg-[#F8F9FC] py-[60px]"
@@ -585,102 +606,7 @@ export default function LandingPage() {
                     </div>
                 </section>
 
-                {/* 2b. Exclusive Offers slider */}
-                {offerProducts.length > 0 && (
-                    <section className="bg-[#0D0D14] py-16 sm:py-20" aria-label="Exclusive product offers">
-                        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                            {/* Section header */}
-                            <div className="flex items-center justify-between gap-4">
-                                <div>
-                                    <h2 className={`${syne.className} text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl`}>
-                                        Exclusive Offers
-                                    </h2>
-                                    <p className="mt-1.5 text-sm text-white/50">
-                                        Limited-time prices on top diagnostic equipment
-                                    </p>
-                                </div>
-                                {offerProducts.length > 1 && (
-                                    <div className="flex shrink-0 gap-2">
-                                        <button
-                                            onClick={() => offerSliderRef.current?.scrollBy({ left: -1240, behavior: "smooth" })}
-                                            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white"
-                                            aria-label="Scroll left"
-                                        >
-                                            <ChevronLeft className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => offerSliderRef.current?.scrollBy({ left: 1240, behavior: "smooth" })}
-                                            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white"
-                                            aria-label="Scroll right"
-                                        >
-                                            <ChevronRight className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
 
-                            {/* Slider — 1 full-width card visible */}
-                            <div
-                                ref={offerSliderRef}
-                                className="mt-8 flex gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                            >
-                                {offerProducts.map((product) => {
-                                    const price = Number(product.price);
-                                    const offerPrice = Number(product.offer_price);
-                                    const discount = Math.round(((price - offerPrice) / price) * 100);
-                                    return (
-                                        <Link
-                                            key={product.id}
-                                            href={`/shop/${product.slug}`}
-                                            className="group relative aspect-video w-full shrink-0 overflow-hidden rounded-2xl"
-                                        >
-                                            {/* Full-bleed background image */}
-                                            <Image
-                                                src={product.cover_image || "/images/placeholder-product.png"}
-                                                alt={product.name}
-                                                fill
-                                                className="object-contain transition-transform duration-700 group-hover:scale-105"
-                                                sizes="100vw"
-                                                loading="lazy"
-                                            />
-                                            {/* Gradient overlay — dark at bottom, fades up */}
-                                            <div className="absolute inset-0 bg-linear-to-t from-black via-black/55 to-transparent" />
-
-                                            {/* Discount badge — top left */}
-                                            <span className="absolute top-5 left-5 z-10 rounded-full bg-[#C41E3A] px-4 py-1.5 text-sm font-bold tracking-wide text-white shadow-lg">
-                                                {discount}% OFF
-                                            </span>
-
-                                            {/* Content — bottom */}
-                                            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-7 sm:p-8">
-                                                <div>
-                                                    <p className="text-xl font-bold text-white drop-shadow sm:text-2xl lg:text-3xl">
-                                                        {product.name}
-                                                    </p>
-                                                    <div className="mt-3 flex items-baseline gap-3">
-                                                        <span className="text-3xl font-extrabold text-brand-gold drop-shadow lg:text-4xl">
-                                                            ₹{offerPrice.toLocaleString("en-IN")}
-                                                        </span>
-                                                        <span className="text-base text-white/45 line-through">
-                                                            ₹{price.toLocaleString("en-IN")}
-                                                        </span>
-                                                    </div>
-                                                    <p className="mt-1 text-sm text-brand-gold/80">
-                                                        You save ₹{(price - offerPrice).toLocaleString("en-IN")}
-                                                    </p>
-                                                </div>
-                                                <span className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-[#C41E3A] px-6 py-3 text-sm font-semibold text-white shadow-lg transition-colors group-hover:bg-[#8B0000]">
-                                                    <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-                                                    View Offer
-                                                </span>
-                                            </div>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </section>
-                )}
 
                 {/* 3. Why Choose DiagTools — feature grid */}
                 <section

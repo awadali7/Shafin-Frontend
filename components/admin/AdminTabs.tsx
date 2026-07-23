@@ -18,6 +18,7 @@ interface AdminTabsProps {
     | "gallery"
     | "product_extra_info"
     | "courier_boxes"
+    | "landing_banners"
     | "settings";
     onTabChange: (
         tab:
@@ -35,6 +36,7 @@ interface AdminTabsProps {
             | "gallery"
             | "product_extra_info"
             | "courier_boxes"
+            | "landing_banners"
             | "settings"
     ) => void;
     // Notification counts
@@ -64,6 +66,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
         { id: "product_kyc" as const, label: "Product KYC", count: pendingProductKycCount },
         { id: "product_extra_info" as const, label: "Product Extra Info" },
         { id: "courier_boxes" as const, label: "Courier Boxes" },
+        { id: "landing_banners" as const, label: "Landing Banners" },
         { id: "gallery" as const, label: "Gallery" },
         { id: "settings" as const, label: "Settings" },
     ];
@@ -77,7 +80,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
                             key={tab.id}
                             onClick={() => onTabChange(tab.id)}
                             className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${activeTab === tab.id
-                                ? "border-[#B00000] text-[#B00000]"
+                                ? "border-brand-red text-brand-red"
                                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                                 }`}
                         >
