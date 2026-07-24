@@ -537,8 +537,8 @@ export default function LandingPage() {
 
                 {/* Landing banners slider */}
                 {banners.length > 0 && (
-                    <section className="bg-[#0A0A0F] pb-14 pt-6 sm:pb-20 sm:pt-8" aria-label="Promotional banners">
-                        <div className="mx-auto w-[70%]">
+                    <section className="bg-[#0A0A0F] px-4 pb-10 pt-4 sm:px-6 sm:pb-14 sm:pt-6 lg:px-0 lg:pb-20 lg:pt-8" aria-label="Promotional banners">
+                        <div className="mx-auto w-full sm:w-[85%] lg:w-[70%]">
                             {/* Slider frame */}
                             <div className="relative overflow-hidden rounded-2xl ring-1 ring-white/8 shadow-[0_24px_64px_rgba(0,0,0,0.6)]">
                                 {/* Slides */}

@@ -98,9 +98,9 @@ export default function Header() {
                     <Image
                         src="/images/logo/logo.jpeg"
                         alt="DIAGTOOLS"
-                        width={1000}
-                        height={1000}
-                        className="h-9 lg:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                        width={400}
+                        height={120}
+                        className="h-8 sm:h-9 md:h-10 lg:h-12 w-auto max-w-[140px] sm:max-w-40 lg:max-w-[200px] object-contain transition-transform duration-300 group-hover:scale-105"
                         priority
                     />
                 </Link>
