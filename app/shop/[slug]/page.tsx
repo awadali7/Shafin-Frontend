@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Syne } from "next/font/google";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -27,13 +26,6 @@ import { productsApi } from "@/lib/api/products";
 import { authApi } from "@/lib/api/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Product, UserDashboardData } from "@/lib/api/types";
-
-// Display font for this page only — the rest of the site keeps Bricolage Grotesque
-const syne = Syne({
-    subsets: ["latin"],
-    weight: ["700", "800"],
-    display: "swap",
-});
 
 type ProductType = "physical" | "digital";
 type DigitalFileFormat = "zip" | "rar";
@@ -546,7 +538,7 @@ export default function ProductDetailPage() {
                     <div>
                         {/* Product Title */}
                         <div className="flex items-start justify-between gap-3 mb-3">
-                            <h1 className={`${syne.className} text-lg sm:text-2xl font-bold tracking-[-0.5px] text-[#0D0D14] leading-snug`}>
+                            <h1 className="product-name text-lg sm:text-2xl font-bold tracking-[-0.5px] text-[#0D0D14] leading-snug">
                                 {product.name}
                             </h1>
 
@@ -1194,7 +1186,7 @@ export default function ProductDetailPage() {
             {product && !product.isContactOnly && (
                 <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#E5E7EB] px-4 py-3 flex items-center gap-3 shadow-lg">
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs text-[#6B7280] truncate">{product.name}</p>
+                        <p className="product-name text-xs text-[#6B7280] truncate">{product.name}</p>
                         {showPriceAndAddToCartGlobal ? (
                             <p className="text-base font-bold text-[#C41E3A]">
                                 ₹{(product.offer_price && product.offer_price > 0 && product.offer_price < product.price ? product.offer_price : product.price).toLocaleString("en-IN")}

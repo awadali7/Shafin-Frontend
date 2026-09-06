@@ -13,6 +13,7 @@
     --color-foreground: var(--foreground);
     --font-heading: var(--font-heading);
     --font-body: var(--font-body);
+    --font-product-name: var(--font-product-name);
 
     /* Brand palette — DiagTools shop redesign */
     --color-brand-red: #B00000;
@@ -66,7 +67,7 @@
 
 /* Single theme - no dark mode */
 
-/* Base body font - Onset Regular */
+/* Base body font - IBM Plex Sans */
 body {
     background: var(--background);
     color: var(--foreground);
@@ -83,7 +84,14 @@ h6 {
     font-family: var(--font-heading), "Bricolage Grotesque", sans-serif;
 }
 
-/* Paragraphs, lists, and links - Onset Regular */
+/* Product names (shop cards, product detail, cart, checkout, downloads) -
+   IBM Plex Sans Condensed. Kept as its own class, not on h1-h6, so it doesn't
+   affect unrelated headings that happen to wrap a product name. */
+.product-name {
+    font-family: var(--font-product-name), var(--font-heading), sans-serif;
+}
+
+/* Paragraphs, lists, and links - IBM Plex Sans */
 p,
 li,
 a,

@@ -145,7 +145,7 @@ export default function ProductCard({
             {/* Body */}
             <div className="flex flex-1 flex-col p-4">
                 <Link href={`/shop/${product.slug}`}>
-                    <h3 className="mb-2 line-clamp-2 min-h-10 text-[15px] font-semibold leading-snug text-[#0D0D14] hover:text-brand-red">
+                    <h3 className="product-name mb-2 line-clamp-2 min-h-10 text-[15px] font-semibold leading-snug text-[#0D0D14] hover:text-brand-red">
                         {product.name}
                     </h3>
                 </Link>

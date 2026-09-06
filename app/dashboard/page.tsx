@@ -761,7 +761,7 @@ const [isLoginDrawerOpen, setIsLoginDrawerOpen] = useState(false);
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-slate-900 truncate">
+                                                    <p className="product-name text-sm font-medium text-slate-900 truncate">
                                                         {download.product_name}
                                                     </p>
                                                     <p className="text-xs text-gray-500">

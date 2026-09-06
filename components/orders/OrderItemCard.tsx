@@ -52,7 +52,7 @@ export const OrderItemCard: React.FC<OrderItemCardProps> = ({
       <div className="flex-1 min-w-0">
         <Link
           href={`/shop/${productSlug}`}
-          className="text-sm font-medium text-slate-900 hover:text-[#B00000] transition-colors line-clamp-2"
+          className="product-name text-sm font-medium text-slate-900 hover:text-[#B00000] transition-colors line-clamp-2"
         >
           {productName}
         </Link>

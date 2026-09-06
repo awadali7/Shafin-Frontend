@@ -1,78 +1,21 @@
-# Font Setup Instructions
+# Font Setup
 
 ## Fonts Configured
 
-1. **Bricolage Grotesque** - Used for all headings (h1, h2, h3, h4, h5, h6)
-   - ✅ Already set up via Google Fonts
-   - No additional files needed
+1. **Bricolage Grotesque** - Used for all headings (h1-h6)
+2. **IBM Plex Sans** - Used for body text, lists, links, and form controls
 
-2. **Onset Regular** - Used for paragraphs, lists, links, and body text
-   - ⚠️ Needs font files to be added
+Both are loaded via `next/font/google` in `app/layout.tsx` - no manual font files needed.
 
-## Setting Up Onset Font
-
-Since Onset is not available on Google Fonts, you'll need to add the font files manually:
-
-### Step 1: Get Onset Font Files
-
-1. Download the Onset font files (.woff2 and/or .woff formats)
-2. Place them in the `public/fonts/` directory
-
-### Step 2: Font File Structure
-
-Your font files should be organized like this:
-
-```
-frontend/
-└── public/
-    └── fonts/
-        ├── Onset-Regular.woff2  (preferred format)
-        └── Onset-Regular.woff   (fallback format)
-```
-
-### Step 3: Font File Naming
-
-The font files should be named exactly:
-- `Onset-Regular.woff2` (or `.woff`)
-
-If your files have different names, update the paths in `app/layout.tsx`:
-
-```typescript
-const onsetRegular = localFont({
-    src: [
-        {
-            path: "../public/fonts/YOUR-FONT-FILE-NAME.woff2",
-            weight: "400",
-            style: "normal",
-        },
-    ],
-    variable: "--font-body",
-});
-```
-
-### Alternative: Use a Different Font for Body Text
-
-If you don't have Onset font files, you can temporarily use a Google Font for body text. Update `app/layout.tsx`:
-
-```typescript
-import { Bricolage_Grotesque, Inter } from "next/font/google";
-
-const bodyFont = Inter({
-    variable: "--font-body",
-    subsets: ["latin"],
-    weight: ["400"],
-});
-```
-
-## Testing
-
-After adding the font files:
-1. Restart your Next.js development server
-2. Check the browser console for any font loading errors
-3. Inspect elements to verify fonts are applied correctly
+IBM Plex Sans was chosen over a generic sans (previously Inter, before that an
+unfinished plan to use a custom "Onset Regular" font) for its technical/engineered
+feel, which matches the diagnostic-tools brand, and its clean alphanumeric
+rendering for product/part codes (e.g. "DP032626").
 
 ## Current Font Usage
 
-- **Headings** (`h1`, `h2`, `h3`, `h4`, `h5`, `h6`): Bricolage Grotesque
-- **Body text** (`p`, `li`, `a`, `span`, etc.): Onset Regular (or fallback: Arial)
+- **Headings** (`h1`-`h6`): Bricolage Grotesque (`--font-heading`)
+- **Body text** (`p`, `li`, `a`, `span`, `div`, `button`, `input`, `textarea`,
+  `select`, `label`): IBM Plex Sans (`--font-body`)
 
+Fallback stack for both: `Arial, Helvetica, sans-serif` (see `app/globals.css`).

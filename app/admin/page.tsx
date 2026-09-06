@@ -1311,7 +1311,7 @@ function AdminPageContent() {
         // Order index will be auto-set after videos are loaded
     };
 
-    const fetchVideos = async (courseId: string) => {
+    const fetchVideos = async (courseId: string): Promise<Video[]> => {
         setLoadingVideos(true);
         setError(null);
         try {
@@ -1338,12 +1338,14 @@ function AdminPageContent() {
                     ...courseVideosMap,
                     [courseId]: videosList,
                 });
+                return videosList;
             }
         } catch (err: any) {
             setError(err.message || "Failed to fetch videos");
         } finally {
             setLoadingVideos(false);
         }
+        return [];
     };
 
     const handleAddVideo = () => {
@@ -1586,7 +1588,7 @@ function AdminPageContent() {
                         ? "Video updated successfully!"
                         : "Video created successfully!"
                 );
-                await fetchVideos(selectedCourse.id);
+                const refreshedVideos = await fetchVideos(selectedCourse.id);
                 // Force refresh the expandable list if it's currently expanded
                 if (expandedCourseId === selectedCourse.id) {
                     // Clear the cache to force a refresh
@@ -1619,11 +1621,13 @@ function AdminPageContent() {
                     if (editingVideo) {
                         setEditingVideo(null);
                     } else {
-                        // Calculate next order index after adding video
+                        // Calculate next order index from the just-refreshed list
+                        // (not the outer `videos` state, which is stale here since
+                        // this closure was created before fetchVideos() resolved)
                         const maxOrderIndex =
-                            videos.length > 0
+                            refreshedVideos.length > 0
                                 ? Math.max(
-                                    ...videos.map((v) => v.order_index || 0)
+                                    ...refreshedVideos.map((v) => v.order_index || 0)
                                 )
                                 : -1;
                         const nextOrderIndex = maxOrderIndex + 1;

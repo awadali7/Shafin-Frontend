@@ -817,7 +817,7 @@ export default function CheckoutPage() {
                                         </div>
                                     )}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-900 line-clamp-2">
+                                        <p className="product-name text-sm font-medium text-slate-900 line-clamp-2">
                                             {item.name}
                                         </p>
                                         <p className="text-xs text-gray-500">

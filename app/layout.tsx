@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Inter } from "next/font/google";
-import localFont from "next/font/local";
+import {
+    Bricolage_Grotesque,
+    IBM_Plex_Sans,
+    IBM_Plex_Sans_Condensed,
+} from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
@@ -23,35 +26,25 @@ const bricolageGrotesque = Bricolage_Grotesque({
     display: "swap",
 });
 
-// Onset Regular for body text (paragraphs, lists, links)
-// TODO: Replace with Onset font when files are added to public/fonts/
-// For now, using Inter as a temporary fallback
-// To use Onset, uncomment the localFont code below and add font files to public/fonts/
-const onsetRegular = Inter({
+// IBM Plex Sans for body text (paragraphs, lists, links, form controls) -
+// technical/engineered feel that matches the diagnostic-tools brand, with
+// clean alphanumeric rendering for product/part codes (e.g. "DP032626").
+const bodyFont = IBM_Plex_Sans({
     variable: "--font-body",
     subsets: ["latin"],
-    weight: ["400"],
+    weight: ["400", "500", "600"],
     display: "swap",
 });
 
-// Uncomment this when Onset font files are added to public/fonts/ directory:
-// const onsetRegular = localFont({
-//     src: [
-//         {
-//             path: "../public/fonts/Onset-Regular.woff2",
-//             weight: "400",
-//             style: "normal",
-//         },
-//         {
-//             path: "../public/fonts/Onset-Regular.woff",
-//             weight: "400",
-//             style: "normal",
-//         },
-//     ],
-//     variable: "--font-body",
-//     fallback: ["Arial", "Helvetica", "sans-serif"],
-//     display: "swap",
-// });
+// IBM Plex Sans Condensed for product names - same technical family as the
+// body font, but condensed so long product titles (e.g. "APACHE 2V (6PIN)
+// DISPLAY - DP032626") fit cleanly in card/list layouts without wrapping badly.
+const productNameFont = IBM_Plex_Sans_Condensed({
+    variable: "--font-product-name",
+    subsets: ["latin"],
+    weight: ["500", "600"],
+    display: "swap",
+});
 
 export const metadata: Metadata = {
     title: {
@@ -146,7 +139,7 @@ export default function RootLayout({
                 />
             </head>
             <body
-                className={`${bricolageGrotesque.variable} ${onsetRegular.variable} antialiased`}
+                className={`${bricolageGrotesque.variable} ${bodyFont.variable} ${productNameFont.variable} antialiased`}
             >
                 <AuthProvider>
                     <CartProvider>

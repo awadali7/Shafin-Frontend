@@ -845,7 +845,7 @@ export default function LandingPage() {
                                                     />
                                                 </div>
                                                 <div className="flex flex-1 flex-col p-5">
-                                                    <h3 className="line-clamp-2 min-h-10 text-base font-semibold text-[#0D0D14]">
+                                                    <h3 className="product-name line-clamp-2 min-h-10 text-base font-semibold text-[#0D0D14]">
                                                         {product.name}
                                                     </h3>
                                                     <div className="mt-3 flex items-center gap-2">

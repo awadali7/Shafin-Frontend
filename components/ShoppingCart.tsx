@@ -201,7 +201,7 @@ export default function ShoppingCart() {
                                                     </div>
                                                 )}
                                                 <div className="flex-1 min-w-0">
-                                                    <h3 className="text-xs font-medium text-slate-900 mb-0.5 line-clamp-2">
+                                                    <h3 className="product-name text-xs font-medium text-slate-900 mb-0.5 line-clamp-2">
                                                         {item.name}
                                                     </h3>
                                                     <p className="text-xs text-gray-500 mb-2">
