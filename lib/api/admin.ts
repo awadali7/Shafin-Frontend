@@ -221,4 +221,20 @@ export const adminApi = {
         link.remove();
         window.URL.revokeObjectURL(url);
     },
+
+    grantDigitalFileAccess: async (data: {
+        filename: string;
+        user_id: string;
+        access_start: string;
+        access_end: string;
+    }): Promise<ApiResponse<any>> => {
+        return apiClient.post<any>("/admin/digital-files/grant-access", data);
+    },
+
+    revokeDigitalFileAccess: async (data: {
+        filename: string;
+        user_id: string;
+    }): Promise<ApiResponse<any>> => {
+        return apiClient.post<any>("/admin/digital-files/revoke-access", data);
+    },
 };

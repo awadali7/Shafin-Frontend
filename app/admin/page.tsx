@@ -1303,12 +1303,11 @@ function AdminPageContent() {
             title: "",
             video_url: "",
             description: "",
-            order_index: 0, // Will be auto-updated after videos load
+            order_index: 0,
             pdfs: [],
             markdown: "",
         });
         await fetchVideos(course.id);
-        // Order index will be auto-set after videos are loaded
     };
 
     const fetchVideos = async (courseId: string): Promise<Video[]> => {
@@ -1350,18 +1349,11 @@ function AdminPageContent() {
 
     const handleAddVideo = () => {
         setEditingVideo(null);
-        // Calculate next order index
-        const maxOrderIndex =
-            videos.length > 0
-                ? Math.max(...videos.map((v) => v.order_index || 0))
-                : -1;
-        const nextOrderIndex = maxOrderIndex + 1;
-
         setVideoFormData({
             title: "",
             video_url: "",
             description: "",
-            order_index: nextOrderIndex,
+            order_index: 0,
             pdfs: [],
             markdown: "",
         });
@@ -1388,43 +1380,6 @@ function AdminPageContent() {
         setError(null);
         setVideoFormSuccess(null);
     };
-
-    // Auto-update order_index when videos change (only when not editing)
-    useEffect(() => {
-        if (
-            !editingVideo &&
-            videos.length > 0 &&
-            selectedCourse &&
-            isVideoModalOpen
-        ) {
-            const maxOrderIndex = Math.max(
-                ...videos.map((v) => v.order_index || 0)
-            );
-            const nextOrderIndex = maxOrderIndex + 1;
-
-            // Only update if current order_index is 0 or less than/equal to max
-            if (
-                videoFormData.order_index === 0 ||
-                videoFormData.order_index <= maxOrderIndex
-            ) {
-                setVideoFormData((prev) => ({
-                    ...prev,
-                    order_index: nextOrderIndex,
-                }));
-            }
-        } else if (
-            !editingVideo &&
-            videos.length === 0 &&
-            selectedCourse &&
-            isVideoModalOpen
-        ) {
-            // No videos yet, set to 0
-            setVideoFormData((prev) => ({
-                ...prev,
-                order_index: 0,
-            }));
-        }
-    }, [videos, editingVideo, selectedCourse, isVideoModalOpen]);
 
     const handleDeleteVideo = (video: Video) => {
         setVideoToDelete(video);
@@ -1588,7 +1543,7 @@ function AdminPageContent() {
                         ? "Video updated successfully!"
                         : "Video created successfully!"
                 );
-                const refreshedVideos = await fetchVideos(selectedCourse.id);
+                await fetchVideos(selectedCourse.id);
                 // Force refresh the expandable list if it's currently expanded
                 if (expandedCourseId === selectedCourse.id) {
                     // Clear the cache to force a refresh
@@ -1621,22 +1576,11 @@ function AdminPageContent() {
                     if (editingVideo) {
                         setEditingVideo(null);
                     } else {
-                        // Calculate next order index from the just-refreshed list
-                        // (not the outer `videos` state, which is stale here since
-                        // this closure was created before fetchVideos() resolved)
-                        const maxOrderIndex =
-                            refreshedVideos.length > 0
-                                ? Math.max(
-                                    ...refreshedVideos.map((v) => v.order_index || 0)
-                                )
-                                : -1;
-                        const nextOrderIndex = maxOrderIndex + 1;
-
                         setVideoFormData({
                             title: "",
                             video_url: "",
                             description: "",
-                            order_index: nextOrderIndex,
+                            order_index: 0,
                             pdfs: [],
                             markdown: "",
                         });
@@ -3429,19 +3373,9 @@ function AdminPageContent() {
                                                                     ) || 0,
                                                             })
                                                         }
-                                                        className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent ${!editingVideo
-                                                            ? "bg-gray-50 cursor-not-allowed"
-                                                            : ""
-                                                            }`}
-                                                        placeholder="Auto-generated"
-                                                        readOnly={!editingVideo}
+                                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B00000] focus:border-transparent"
+                                                        placeholder="Order index"
                                                     />
-                                                    {!editingVideo && (
-                                                        <p className="text-xs text-gray-500 mt-1">
-                                                            Automatically set to
-                                                            next available index
-                                                        </p>
-                                                    )}
                                                 </div>
                                             </div>
 

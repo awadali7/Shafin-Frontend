@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { Copy, Trash2, FileArchive, Upload, Clock, HardDrive, Check, Download, Search } from "lucide-react";
+import { Copy, Trash2, FileArchive, Upload, Clock, HardDrive, Check, Download, Search, UserPlus, UserMinus } from "lucide-react";
 import { adminApi } from "@/lib/api/admin";
+import { DigitalFileGrantAccessModal } from "./DigitalFileGrantAccessModal";
 
 type DigitalFile = {
     name: string;
@@ -46,6 +47,23 @@ export const DigitalFilesTab = () => {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [customName, setCustomName] = useState("");
+
+    // Grant Access Modal State
+    const [showGrantAccessModal, setShowGrantAccessModal] = useState(false);
+    const [selectedFileForGrant, setSelectedFileForGrant] = useState<DigitalFile | null>(null);
+    const [grantAccessMode, setGrantAccessMode] = useState<"grant" | "remove">("grant");
+
+    const handleGrantAccessClick = (file: DigitalFile) => {
+        setSelectedFileForGrant(file);
+        setGrantAccessMode("grant");
+        setShowGrantAccessModal(true);
+    };
+
+    const handleRevokeAccessClick = (file: DigitalFile) => {
+        setSelectedFileForGrant(file);
+        setGrantAccessMode("remove");
+        setShowGrantAccessModal(true);
+    };
 
     const filteredFiles = useMemo(() => {
         if (!search.trim()) return files;
@@ -293,7 +311,21 @@ export const DigitalFilesTab = () => {
                                             <FileArchive className="w-6 h-6" />
                                         </div>
                                         <div className="flex items-center">
-                                            <button 
+                                            <button
+                                                onClick={() => handleGrantAccessClick(file)}
+                                                className="p-1.5 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Grant Access to User"
+                                            >
+                                                <UserPlus className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleRevokeAccessClick(file)}
+                                                className="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Remove Access from User"
+                                            >
+                                                <UserMinus className="w-4 h-4" />
+                                            </button>
+                                            <button
                                                 onClick={() => handleDelete(file.name)}
                                                 className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
                                                 title="Delete File"
@@ -364,6 +396,18 @@ export const DigitalFilesTab = () => {
                     })}
                 </div>
             )}
+
+            {/* Grant Access Modal */}
+            <DigitalFileGrantAccessModal
+                file={selectedFileForGrant}
+                isOpen={showGrantAccessModal}
+                initialMode={grantAccessMode}
+                onClose={() => {
+                    setShowGrantAccessModal(false);
+                    setSelectedFileForGrant(null);
+                }}
+                onSuccess={() => {}}
+            />
         </div>
     );
 };

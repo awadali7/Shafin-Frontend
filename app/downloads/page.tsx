@@ -6,6 +6,7 @@ import { Download, Loader2, Package, Eye, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { entitlementsApi } from "@/lib/api/entitlements";
 import { productExtraInfoApi } from "@/lib/api/product-extra-info";
+import { digitalFilesApi } from "@/lib/api/digital-files";
 import { apiClient } from "@/lib/api/client";
 import type { ProductEntitlement } from "@/lib/api/types";
 import LoginDrawer from "@/components/LoginDrawer";
@@ -19,6 +20,7 @@ function formatDate(dateString: string) {
 
 type ExtendedEntitlement = ProductEntitlement & {
     isExtraInfo?: boolean;
+    isDigitalFile?: boolean;
 };
 
 export default function DownloadsPage() {
@@ -69,11 +71,12 @@ export default function DownloadsPage() {
                 try {
                     setLoading(true);
                     setError(null);
-                    const [entResp, extraInfoResp] = await Promise.all([
+                    const [entResp, extraInfoResp, digitalFileResp] = await Promise.all([
                         entitlementsApi.my(),
-                        productExtraInfoApi.getMyAccesses().catch(() => ({ data: [] }))
+                        productExtraInfoApi.getMyAccesses().catch(() => ({ data: [] })),
+                        digitalFilesApi.getMyAccess().catch(() => ({ data: [] })),
                     ]);
-                    
+
                     const standardItems = Array.isArray(entResp.data) ? entResp.data : [];
                     const extraInfoItems = Array.isArray(extraInfoResp?.data) ? extraInfoResp.data.map((access: any) => ({
                         entitlement_id: access.id,
@@ -89,9 +92,24 @@ export default function DownloadsPage() {
                         cover_image: access.cover_image || null,
                         isExtraInfo: true,
                     })) : [];
+                    const digitalFileItems = Array.isArray(digitalFileResp?.data) ? digitalFileResp.data.map((access: any) => ({
+                        entitlement_id: access.access_id,
+                        source: access.source || "admin_grant",
+                        granted_at: access.granted_at,
+                        product_id: "digital-file-" + access.access_id,
+                        product_type: "digital" as any,
+                        name: access.filename,
+                        slug: access.filename,
+                        category: "Digital File",
+                        type: "digital" as any,
+                        digital_file_name: access.filename,
+                        digital_file_format: (access.filename.split(".").pop() || "file") as any,
+                        cover_image: null,
+                        isDigitalFile: true,
+                    })) : [];
 
                     // Combine and sort by date
-                    const combined = [...standardItems, ...extraInfoItems].sort((a, b) => {
+                    const combined = [...standardItems, ...extraInfoItems, ...digitalFileItems].sort((a, b) => {
                         return new Date(b.granted_at).getTime() - new Date(a.granted_at).getTime();
                     });
                     
@@ -116,8 +134,11 @@ export default function DownloadsPage() {
 
         try {
             setDownloadingSlug(ent.slug);
+            const downloadPath = ent.isDigitalFile
+                ? `/users/digital-files/${encodeURIComponent(ent.slug)}/download`
+                : `/products/${ent.slug}/download`;
             const resp = await fetch(
-                `${apiBaseUrl}/products/${ent.slug}/download`,
+                `${apiBaseUrl}${downloadPath}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
