@@ -1,5 +1,15 @@
 import React from "react";
+import type { Metadata } from "next";
 import { Phone, Mail, MapPin } from "lucide-react";
+
+export const metadata: Metadata = {
+    title: "Terms & Conditions",
+    description:
+        "Read the terms and conditions for using DiagTools' automotive diagnostic training courses, digital products, and tools.",
+    alternates: {
+        canonical: "/terms",
+    },
+};
 
 export default function TermsPage() {
     const currentDate = new Date().toLocaleDateString("en-US", {

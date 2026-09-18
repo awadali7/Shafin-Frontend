@@ -1,5 +1,15 @@
 import React from "react";
+import type { Metadata } from "next";
 import { Mail, Shield, Lock, Eye, FileText } from "lucide-react";
+
+export const metadata: Metadata = {
+    title: "Privacy Policy",
+    description:
+        "Read DiagTools' privacy policy to understand how we collect, use, and protect your personal data across our automotive diagnostic training platform.",
+    alternates: {
+        canonical: "/privacy-policy",
+    },
+};
 
 export default function PrivacyPolicy() {
     const currentDate = new Date().toLocaleDateString("en-US", {

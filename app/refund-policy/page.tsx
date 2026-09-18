@@ -1,5 +1,15 @@
 import React from "react";
+import type { Metadata } from "next";
 import { Truck, Ban, AlertCircle } from "lucide-react";
+
+export const metadata: Metadata = {
+    title: "Refund Policy",
+    description:
+        "Read DiagTools' refund and cancellation policy for courses, digital products, and physical diagnostic tools.",
+    alternates: {
+        canonical: "/refund-policy",
+    },
+};
 
 export default function RefundPolicy() {
     const currentDate = new Date().toLocaleDateString("en-US", {

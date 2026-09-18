@@ -325,9 +325,9 @@ export default function LandingPage() {
         name: "DiagTools",
         description:
             "India's leading provider of advanced automotive diagnostic tools, key programming solutions, and specialized online training",
-        url: process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com",
+        url: process.env.NEXT_PUBLIC_SITE_URL || "https://www.diagtools.in",
         logo: `${
-            process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com"
+            process.env.NEXT_PUBLIC_SITE_URL || "https://www.diagtools.in"
         }/images/logo/header-logo.png`,
         contactPoint: {
             "@type": "ContactPoint",
@@ -368,13 +368,13 @@ export default function LandingPage() {
         "@context": "https://schema.org",
         "@type": "WebSite",
         name: "DiagTools",
-        url: process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com",
+        url: process.env.NEXT_PUBLIC_SITE_URL || "https://www.diagtools.in",
         potentialAction: {
             "@type": "SearchAction",
             target: {
                 "@type": "EntryPoint",
                 urlTemplate: `${
-                    process.env.NEXT_PUBLIC_API_URL || "https://diagtools.com"
+                    process.env.NEXT_PUBLIC_SITE_URL || "https://www.diagtools.in"
                 }/courses?search={search_term_string}`,
             },
             "query-input": "required name=search_term_string",

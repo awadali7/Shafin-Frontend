@@ -1,5 +1,15 @@
 import React from "react";
+import type { Metadata } from "next";
 import { Phone, Mail, MessageSquare, Clock, MapPin } from "lucide-react";
+
+export const metadata: Metadata = {
+    title: "Admission Team",
+    description:
+        "Get in touch with the DiagTools admission team for course enrollment, program details, and guidance on automotive diagnostic training.",
+    alternates: {
+        canonical: "/admission-team",
+    },
+};
 
 export default function AdmissionTeam() {
     return (

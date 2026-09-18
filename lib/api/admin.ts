@@ -157,6 +157,15 @@ export const adminApi = {
         }>(`/admin/users/${id}/login-details`);
     },
 
+    // Release a user's Pinout app device lock so they can log in on a new device
+    resetPinoutDevice: async (
+        id: string
+    ): Promise<ApiResponse<{ user_id: string; sessions_revoked: number }>> => {
+        return apiClient.delete<{ user_id: string; sessions_revoked: number }>(
+            `/admin/users/${id}/pinout-device`
+        );
+    },
+
     // Create announcement (Admin only)
     createAnnouncement: async (data: {
         title: string;
