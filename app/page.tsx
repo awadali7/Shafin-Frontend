@@ -338,7 +338,8 @@ export default function LandingPage() {
         },
         address: {
             "@type": "PostalAddress",
-            addressLocality: "Muvattupezha",
+            streetAddress: "Pezhakkappilly",
+            addressLocality: "Muvattupuzha",
             addressRegion: "Kerala",
             postalCode: "686673",
             addressCountry: "IN",

@@ -446,9 +446,9 @@ export default function TermsPage() {
                                     <div className="flex items-start space-x-3">
                                         <MapPin className="w-5 h-5 text-slate-600 mt-0.5 shrink-0" />
                                         <div className="text-slate-700">
-                                            Pan Square, Pezhakapilly,
+                                            Pan Square, Pezhakkappilly,
                                             <br />
-                                            Muvattupuzha, Ernkulam, Kerala
+                                            Muvattupuzha, Ernakulam, Kerala
                                             <br />
                                             Pin: 686673
                                         </div>

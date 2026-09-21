@@ -149,7 +149,7 @@ export default function Footer() {
                             <li className="flex items-start space-x-3">
                                 <MapPin className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
                                 <span className="text-gray-600 text-sm">
-                                    Ernakulam, Kerala - 686673
+                                    Pezhakkappilly, Muvattupuzha, Keralam 686673
                                 </span>
                             </li>
                         </ul>

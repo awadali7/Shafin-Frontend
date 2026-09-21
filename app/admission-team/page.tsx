@@ -105,8 +105,8 @@ export default function AdmissionTeam() {
                                 <MapPin className="w-6 h-6 text-[#B00000] mt-1 shrink-0" />
                                 <div className="text-slate-700 text-lg">
                                     <p className="font-bold text-slate-900 mb-2">DiagTools Hub</p>
-                                    <p>Pan Square, Pezhakapilly,</p>
-                                    <p>Muvattupuzha, Ernkulam, Kerala</p>
+                                    <p>Pan Square, Pezhakkappilly,</p>
+                                    <p>Muvattupuzha, Ernakulam, Kerala</p>
                                     <p>Pin: 686673</p>
                                 </div>
                             </div>
