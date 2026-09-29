@@ -23,9 +23,6 @@ export interface User {
     last_login_at?: string;
     last_login_ip?: string;
     last_login_device?: DeviceInfo;
-    pinout_device_id?: string | null;
-    pinout_device_info?: DeviceInfo | null;
-    pinout_device_bound_at?: string | null;
     created_at?: string;
     updated_at?: string;
 }
@@ -47,7 +44,6 @@ export interface DeviceInfo {
     browser: string;
     os: string;
     userAgent: string;
-    deviceName?: string; // Pinout app sessions only
 }
 
 export interface Session {
@@ -253,6 +249,7 @@ export interface DashboardStats {
     kyc_verified: number;
     kyc_rejected: number;
     product_kyc_pending: number;
+    app_users_pending?: number;
     // Blogs
     total_blogs: number;
     published_blogs: number;

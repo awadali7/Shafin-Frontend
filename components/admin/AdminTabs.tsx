@@ -19,6 +19,7 @@ interface AdminTabsProps {
     | "product_extra_info"
     | "courier_boxes"
     | "landing_banners"
+    | "app_data"
     | "settings";
     onTabChange: (
         tab:
@@ -37,12 +38,14 @@ interface AdminTabsProps {
             | "product_extra_info"
             | "courier_boxes"
             | "landing_banners"
+            | "app_data"
             | "settings"
     ) => void;
     // Notification counts
     pendingOrdersCount?: number;
     pendingCourseKycCount?: number;
     pendingProductKycCount?: number;
+    pendingAppUsersCount?: number;
 }
 
 export const AdminTabs: React.FC<AdminTabsProps> = ({
@@ -51,6 +54,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
     pendingOrdersCount = 0,
     pendingCourseKycCount = 0,
     pendingProductKycCount = 0,
+    pendingAppUsersCount = 0,
 }) => {
     const tabs = [
         { id: "dashboard" as const, label: "Dashboard" },
@@ -64,6 +68,7 @@ export const AdminTabs: React.FC<AdminTabsProps> = ({
         { id: "blogs" as const, label: "Blogs" },
         { id: "kyc" as const, label: "Course KYC", count: pendingCourseKycCount },
         { id: "product_kyc" as const, label: "Product KYC", count: pendingProductKycCount },
+        { id: "app_data" as const, label: "App Data", count: pendingAppUsersCount },
         { id: "product_extra_info" as const, label: "Product Extra Info" },
         { id: "courier_boxes" as const, label: "Courier Boxes" },
         { id: "landing_banners" as const, label: "Landing Banners" },

@@ -60,6 +60,7 @@ import { GrantAccessModal } from "@/components/admin/GrantAccessModal";
 import { SettingsTab } from "@/components/admin/SettingsTab";
 import { ProductExtraInfoTab } from "@/components/admin/ProductExtraInfoTab";
 import { CourierBoxesTab } from "@/components/admin/CourierBoxesTab";
+import { AppDataTab } from "@/components/admin/AppDataTab";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { formatDate, generateSlug } from "@/components/admin/utils";
 import { StatusBadge } from "@/components/admin/StatusBadge";
@@ -91,11 +92,12 @@ type AdminTab =
     | "product_extra_info"
     | "courier_boxes"
     | "landing_banners"
+    | "app_data"
     | "settings";
 
 const VALID_TABS: AdminTab[] = [
     "dashboard", "users", "requests", "courses", "blogs",
-    "kyc", "product_kyc", "products", "offer_products", "orders", "digital_files", "gallery", "product_extra_info", "courier_boxes", "landing_banners", "settings",
+    "kyc", "product_kyc", "products", "offer_products", "orders", "digital_files", "gallery", "product_extra_info", "courier_boxes", "landing_banners", "app_data", "settings",
 ];
 
 const fileToDataURL = (file: File): Promise<string> => {
@@ -170,10 +172,6 @@ function AdminPageContent() {
         total_sessions_count: number;
     } | null>(null);
     const [loadingLoginDetails, setLoadingLoginDetails] = useState(false);
-    const [resettingPinoutDevice, setResettingPinoutDevice] = useState(false);
-    const [pinoutDeviceError, setPinoutDeviceError] = useState<string | null>(
-        null
-    );
 
     // Course modal states
     const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -313,6 +311,18 @@ function AdminPageContent() {
             fetchData();
         }
     }, [authLoading, isAuth, user, router]);
+
+    // Keeps tab badges current after a tab changes a pending count
+    const refreshStats = async () => {
+        try {
+            const statsResponse = await adminApi.getDashboardStats();
+            if (statsResponse.success && statsResponse.data) {
+                setStats(statsResponse.data);
+            }
+        } catch {
+            // badges are best effort
+        }
+    };
 
     const fetchData = async () => {
         // Products/Orders tabs manage their own fetching to keep this page stable
@@ -655,33 +665,9 @@ function AdminPageContent() {
         setIsDeleteModalOpen(true);
     };
 
-    const handleResetPinoutDevice = async (user: User) => {
-        if (
-            !window.confirm(
-                `Reset the Pinout app device for ${user.email}? They will be logged out of the app and can log in on a new device.`
-            )
-        ) {
-            return;
-        }
-
-        setResettingPinoutDevice(true);
-        setPinoutDeviceError(null);
-        try {
-            await adminApi.resetPinoutDevice(user.id);
-            await handleViewLoginDetails(user);
-        } catch (err) {
-            setPinoutDeviceError(
-                err instanceof Error ? err.message : "Failed to reset device"
-            );
-        } finally {
-            setResettingPinoutDevice(false);
-        }
-    };
-
     const handleViewLoginDetails = async (user: User) => {
         setLoadingLoginDetails(true);
         setLoginDetails(null);
-        setPinoutDeviceError(null);
         setIsLoginDetailsModalOpen(true);
 
         try {
@@ -1661,6 +1647,7 @@ function AdminPageContent() {
                 pendingOrdersCount={stats?.pending_orders || 0}
                 pendingCourseKycCount={stats?.kyc_pending || 0}
                 pendingProductKycCount={stats?.product_kyc_pending || 0}
+                pendingAppUsersCount={stats?.app_users_pending || 0}
             />
 
             {/* Content */}
@@ -1742,6 +1729,9 @@ function AdminPageContent() {
 
                 {activeTab === "product_extra_info" && <ProductExtraInfoTab />}
                 {activeTab === "courier_boxes" && <CourierBoxesTab />}
+                {activeTab === "app_data" && (
+                    <AppDataTab onPendingCountChange={refreshStats} />
+                )}
                 {activeTab === "landing_banners" && <LandingBannersTab />}
 
                 {activeTab === "settings" && <SettingsTab />}
@@ -2249,68 +2239,6 @@ function AdminPageContent() {
                                             </div>
                                         </div>
 
-                                        {/* Pinout App Device */}
-                                        <div className="border border-gray-200 rounded-lg p-4">
-                                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                                <div className="flex items-start gap-3">
-                                                    <Smartphone className="w-5 h-5 text-brand-red mt-1 shrink-0" />
-                                                    <div>
-                                                        <h3 className="text-lg font-semibold text-slate-900">
-                                                            Pinout App Device
-                                                        </h3>
-                                                        {loginDetails.user
-                                                            .pinout_device_id ? (
-                                                            <p className="text-sm text-gray-600">
-                                                                <span className="font-medium text-slate-900">
-                                                                    {loginDetails
-                                                                        .user
-                                                                        .pinout_device_info
-                                                                        ?.deviceName ||
-                                                                        "Unknown device"}
-                                                                </span>
-                                                                {loginDetails
-                                                                    .user
-                                                                    .pinout_device_bound_at &&
-                                                                    ` · registered ${formatDate(
-                                                                        loginDetails
-                                                                            .user
-                                                                            .pinout_device_bound_at
-                                                                    )}`}
-                                                            </p>
-                                                        ) : (
-                                                            <p className="text-sm text-brand-gray">
-                                                                No device registered. The next device to log in will be saved.
-                                                            </p>
-                                                        )}
-                                                        {pinoutDeviceError && (
-                                                            <p className="text-sm text-brand-red mt-1">
-                                                                {pinoutDeviceError}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                {loginDetails.user
-                                                    .pinout_device_id && (
-                                                        <button
-                                                            onClick={() =>
-                                                                handleResetPinoutDevice(
-                                                                    loginDetails.user
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                resettingPinoutDevice
-                                                            }
-                                                            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-brand-red text-brand-red text-sm font-medium hover:bg-brand-red hover:text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                                                        >
-                                                            {resettingPinoutDevice && (
-                                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                            )}
-                                                            Reset device
-                                                        </button>
-                                                    )}
-                                            </div>
-                                        </div>
-
                                         {/* Sessions Summary */}
                                         <div className="bg-blue-50 rounded-lg p-4">
                                             <div className="flex items-center justify-between">
@@ -2392,18 +2320,6 @@ function AdminPageContent() {
                                                                                         Active
                                                                                     </span>
                                                                                 )}
-                                                                                <span
-                                                                                    className={`px-2 py-1 rounded-full text-xs font-medium ${session.client ===
-                                                                                        "pinout"
-                                                                                        ? "bg-brand-red/10 text-brand-red"
-                                                                                        : "bg-gray-100 text-gray-700"
-                                                                                        }`}
-                                                                                >
-                                                                                    {session.client ===
-                                                                                        "pinout"
-                                                                                        ? `Pinout app${deviceInfo.deviceName ? ` · ${deviceInfo.deviceName}` : ""}`
-                                                                                        : "Web"}
-                                                                                </span>
                                                                             </div>
                                                                             <div className="grid grid-cols-2 gap-4 text-sm">
                                                                                 <div>
