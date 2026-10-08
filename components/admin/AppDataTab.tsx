@@ -189,6 +189,7 @@ export const AppDataTab: React.FC<AppDataTabProps> = ({ onPendingCountChange }) 
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial Number</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
@@ -199,7 +200,7 @@ export const AppDataTab: React.FC<AppDataTabProps> = ({ onPendingCountChange }) 
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading && users.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-10 text-center">
+                                <td colSpan={7} className="px-6 py-10 text-center">
                                     <Loader2 className="w-5 h-5 animate-spin text-brand-red mx-auto" aria-label="Loading" />
                                 </td>
                             </tr>
@@ -209,15 +210,20 @@ export const AppDataTab: React.FC<AppDataTabProps> = ({ onPendingCountChange }) 
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-slate-900">{user.full_name}</div>
                                         <div className="text-sm text-gray-500">{user.email}</div>
-                                        {user.phone && (
+                                        <div className="text-xs text-gray-400">Joined {formatDate(user.created_at)}</div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {user.phone ? (
                                             <a
                                                 href={`tel:${user.phone}`}
-                                                className="block text-sm text-gray-500 hover:text-brand-red"
+                                                className="text-sm text-slate-900 hover:text-brand-red"
                                             >
                                                 {user.phone}
                                             </a>
+                                        ) : (
+                                            // Accounts that submitted their serial before the app asked for a phone
+                                            <span className="text-sm text-gray-400">Not given</span>
                                         )}
-                                        <div className="text-xs text-gray-400">Joined {formatDate(user.created_at)}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {user.serial_number ? (
@@ -302,7 +308,7 @@ export const AppDataTab: React.FC<AppDataTabProps> = ({ onPendingCountChange }) 
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">
+                                <td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-500">
                                     {search
                                         ? `No app users found for "${search}"`
                                         : filter === "all"
