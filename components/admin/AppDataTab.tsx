@@ -141,7 +141,7 @@ export const AppDataTab: React.FC<AppDataTabProps> = ({ onPendingCountChange }) 
                         />
                         <input
                             type="text"
-                            placeholder="Search name, email, or serial…"
+                            placeholder="Search name, email, phone, or serial…"
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
                             aria-label="Search app users"
@@ -209,6 +209,14 @@ export const AppDataTab: React.FC<AppDataTabProps> = ({ onPendingCountChange }) 
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-slate-900">{user.full_name}</div>
                                         <div className="text-sm text-gray-500">{user.email}</div>
+                                        {user.phone && (
+                                            <a
+                                                href={`tel:${user.phone}`}
+                                                className="block text-sm text-gray-500 hover:text-brand-red"
+                                            >
+                                                {user.phone}
+                                            </a>
+                                        )}
                                         <div className="text-xs text-gray-400">Joined {formatDate(user.created_at)}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -335,6 +343,11 @@ export const AppDataTab: React.FC<AppDataTabProps> = ({ onPendingCountChange }) 
                                 <p>
                                     Serial: <span className="font-mono text-slate-900">{rejecting.serial_number}</span>
                                 </p>
+                                {rejecting.phone && (
+                                    <p>
+                                        Phone: <span className="text-slate-900">{rejecting.phone}</span>
+                                    </p>
+                                )}
                                 <p className="text-gray-500">
                                     {rejecting.status === "approved"
                                         ? "They will lose access to the app files. "

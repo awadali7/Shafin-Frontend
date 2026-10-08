@@ -14,6 +14,8 @@ export interface AppUser {
     full_name: string;
     email: string;
     serial_number: string | null;
+    // Given with the serial; null for accounts that submitted before it was asked
+    phone: string | null;
     status: AppUserStatus;
     rejection_reason: string | null;
     serial_submitted_at: string | null;
