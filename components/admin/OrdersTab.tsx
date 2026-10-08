@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useState, useMemo } from "react";
 import { CheckCircle, Loader2, Package, Download, MapPin, Phone, Mail, ChevronDown, ChevronUp, Printer, FileText, Truck, Calendar, Save, ExternalLink, Search } from "lucide-react";
@@ -258,8 +258,8 @@ export const OrdersTab: React.FC = () => {
                 addText(item.product_name, margin + 2, yPosition, 9);
                 addText(item.product_type, margin + 90, yPosition, 9);
                 addText(String(item.quantity), margin + 120, yPosition, 9);
-                addText(`â‚¹${Number(item.unit_price).toFixed(2)}`, margin + 140, yPosition, 9);
-                addText(`â‚¹${(Number(item.unit_price) * Number(item.quantity)).toFixed(2)}`, pageWidth - margin - 2, yPosition, 9, false, 'right');
+                addText(`₹${Number(item.unit_price).toFixed(2)}`, margin + 140, yPosition, 9);
+                addText(`₹${(Number(item.unit_price) * Number(item.quantity)).toFixed(2)}`, pageWidth - margin - 2, yPosition, 9, false, 'right');
                 yPosition += 2;
             });
 
@@ -269,18 +269,18 @@ export const OrdersTab: React.FC = () => {
 
             const totalsX = pageWidth - margin - 50;
             addText("Subtotal:", totalsX, yPosition, 10);
-            addText(`â‚¹${Number(order.subtotal).toFixed(2)}`, pageWidth - margin - 2, yPosition, 10, false, 'right');
+            addText(`₹${Number(order.subtotal).toFixed(2)}`, pageWidth - margin - 2, yPosition, 10, false, 'right');
             yPosition += 6;
             if (Number(order.shipping_cost) > 0) {
                 addText("Shipping:", totalsX, yPosition, 10);
-                addText(`â‚¹${Number(order.shipping_cost).toFixed(2)}`, pageWidth - margin - 2, yPosition, 10, false, 'right');
+                addText(`₹${Number(order.shipping_cost).toFixed(2)}`, pageWidth - margin - 2, yPosition, 10, false, 'right');
                 yPosition += 6;
             }
             pdf.setDrawColor(0, 0, 0);
             pdf.line(totalsX, yPosition, pageWidth - margin, yPosition);
             yPosition += 6;
             addText("Total:", totalsX, yPosition, 12, true);
-            addText(`â‚¹${Number(order.total).toFixed(2)}`, pageWidth - margin - 2, yPosition, 12, true, 'right');
+            addText(`₹${Number(order.total).toFixed(2)}`, pageWidth - margin - 2, yPosition, 12, true, 'right');
             yPosition += 15;
 
             if (details?.payment_provider) {
@@ -357,7 +357,7 @@ export const OrdersTab: React.FC = () => {
                 </style>
             </head>
             <body>
-                <button class="print-button no-print" onclick="window.print()">ðŸ–¨ï¸ Print Label</button>
+                <button class="print-button no-print" onclick="window.print()">🖨️ Print Label</button>
                 <div class="shipping-label">
                     <div class="header">
                         <div class="logo-section">
@@ -382,22 +382,22 @@ export const OrdersTab: React.FC = () => {
                     </div>
                     <div class="addresses">
                         <div class="address-box">
-                            <div class="address-title">ðŸ“¦ Ship To</div>
+                            <div class="address-title">📦 Ship To</div>
                             <div class="address-content">
                                 <div class="address-name">${details?.first_name || order.first_name} ${details?.last_name || order.last_name}</div>
                                 ${details?.address || 'N/A'}<br>
                                 ${details?.city || 'N/A'}, ${details?.state || 'N/A'} - ${details?.pincode || 'N/A'}<br><br>
-                                ðŸ“ž ${details?.phone || 'N/A'}<br>
-                                âœ‰ï¸ ${details?.email || order.user_email}
+                                📞 ${details?.phone || 'N/A'}<br>
+                                ✉️ ${details?.email || order.user_email}
                             </div>
                         </div>
                         <div class="address-box">
-                            <div class="address-title">ðŸ“¤ Ship From</div>
+                            <div class="address-title">📤 Ship From</div>
                             <div class="address-content">
                                 <div class="address-name">DIAGTOOLS</div>
                                 Pezhakkappilly, Muvattupuzha, Keralam 686673<br><br>
-                                ðŸ“ž +91-8714388741<br>
-                                âœ‰ï¸ contact@diagtools.in
+                                📞 +91-8714388741<br>
+                                ✉️ contact@diagtools.in
                             </div>
                         </div>
                     </div>
@@ -415,7 +415,7 @@ export const OrdersTab: React.FC = () => {
         printWindow.document.close();
     };
 
-    // â”€â”€â”€ Batch Print Shipping Labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Batch Print Shipping Labels ─────────────────────────────────────────
     const chunkArray = <T,>(arr: T[], size: number): T[][] => {
         const out: T[][] = [];
         for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -491,7 +491,7 @@ export const OrdersTab: React.FC = () => {
                 const label1 = buildLabel(targetOrders[pi * 2], chunk[0], false);
                 const label2 = chunk[1]
                     ? buildLabel(targetOrders[pi * 2 + 1], chunk[1], true)
-                    : `<div class="label second blank"><div style="color:#ccc;font-size:11pt;text-align:center;padding-top:30mm;">â€” cut here / blank â€”</div></div>`;
+                    : `<div class="label second blank"><div style="color:#ccc;font-size:11pt;text-align:center;padding-top:30mm;">— cut here / blank —</div></div>`;
                 return `<div class="page">${label1}${label2}</div>`;
             }).join('');
 
@@ -523,7 +523,7 @@ export const OrdersTab: React.FC = () => {
   @media print{@page{size:A4 portrait;margin:0;}body{margin:0;}.no-print{display:none;}.page{page-break-after:always;}}
 </style>
 </head><body>
-<div class="no-print"><button class="pbtn" onclick="window.print()">ðŸ–¨ Print All (${detailsArr.length} labels)</button></div>
+<div class="no-print"><button class="pbtn" onclick="window.print()">🖨 Print All (${detailsArr.length} labels)</button></div>
 ${pages}
 </body></html>`;
 
@@ -549,7 +549,7 @@ ${pages}
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
                             <input
                                 type="text"
-                                placeholder="Search orders, customerâ€¦"
+                                placeholder="Search orders, customer…"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#B00000] focus:border-transparent w-52"
@@ -592,12 +592,12 @@ ${pages}
                         className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#B00000] text-white rounded-lg text-xs font-medium hover:bg-red-800 transition-colors disabled:opacity-60 whitespace-nowrap"
                     >
                         {printingLabels ? (
-                            <><Loader2 className="w-4 h-4 animate-spin" /> Preparingâ€¦</>
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Preparing…</>
                         ) : (
                             <><Printer className="w-4 h-4" /> Print Shipping Labels (2 per A4)</>
                         )}
                     </button>
-                    <span className="text-[11px] text-gray-400">Only physical orders â€¢ Cut A4 in half to get 2 labels</span>
+                    <span className="text-[11px] text-gray-400">Only physical orders • Cut A4 in half to get 2 labels</span>
                 </div>
             </div>
 
@@ -623,7 +623,7 @@ ${pages}
                 <div className="bg-blue-50 rounded-lg p-3 col-span-2 lg:col-span-1">
                     <p className="text-[11px] text-blue-700 uppercase font-medium">Total Revenue</p>
                     <p className="text-xl font-bold text-blue-800 mt-0.5">
-                        â‚¹{orders.filter((o) => ["paid", "shipped", "dispatched"].includes(o.status)).reduce((sum, o) => sum + Number(o.total), 0).toFixed(2)}
+                        ₹{orders.filter((o) => ["paid", "shipped", "dispatched"].includes(o.status)).reduce((sum, o) => sum + Number(o.total), 0).toFixed(2)}
                     </p>
                 </div>
             </div>
@@ -721,8 +721,8 @@ ${pages}
                                             <StatusPill status={order.status} />
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap align-top">
-                                            <div className="text-sm font-semibold text-[#B00000]">â‚¹{Number(order.total).toFixed(2)}</div>
-                                            <div className="text-xs text-gray-500">Subtotal: â‚¹{Number(order.subtotal).toFixed(2)}</div>
+                                            <div className="text-sm font-semibold text-[#B00000]">₹{Number(order.total).toFixed(2)}</div>
+                                            <div className="text-xs text-gray-500">Subtotal: ₹{Number(order.subtotal).toFixed(2)}</div>
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap align-top">
                                             <div className="flex items-center gap-2">
@@ -966,7 +966,7 @@ ${pages}
                                                                     </div>
                                                                     <div className="text-right ml-2 shrink-0">
                                                                         <div className="text-sm text-gray-600">Qty: {item.quantity}</div>
-                                                                        <div className="text-sm font-semibold text-[#B00000]">â‚¹{Number(item.unit_price).toFixed(2)}</div>
+                                                                        <div className="text-sm font-semibold text-[#B00000]">₹{Number(item.unit_price).toFixed(2)}</div>
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -1029,11 +1029,11 @@ ${pages}
                                                                 )}
                                                                 <div className="flex justify-between pt-2 border-t border-gray-200">
                                                                     <span className="text-gray-600">Subtotal:</span>
-                                                                    <span className="font-medium text-slate-900">â‚¹{Number(orderDetails.order?.subtotal || 0).toFixed(2)}</span>
+                                                                    <span className="font-medium text-slate-900">₹{Number(orderDetails.order?.subtotal || 0).toFixed(2)}</span>
                                                                 </div>
                                                                 <div className="flex justify-between font-semibold text-base">
                                                                     <span className="text-slate-900">Total:</span>
-                                                                    <span className="text-[#B00000]">â‚¹{Number(orderDetails.order?.total || 0).toFixed(2)}</span>
+                                                                    <span className="text-[#B00000]">₹{Number(orderDetails.order?.total || 0).toFixed(2)}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
