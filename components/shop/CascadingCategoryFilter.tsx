@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo } from "react";
 import { ChevronDown, X } from "lucide-react";
 
 interface Product {
@@ -11,15 +11,15 @@ interface Product {
 
 interface CascadingCategoryFilterProps {
     products: Product[];
+    selectedPath: string[];
     onFilterChange: (selectedPath: string[]) => void;
 }
 
 export default function CascadingCategoryFilter({
     products,
+    selectedPath,
     onFilterChange,
 }: CascadingCategoryFilterProps) {
-    const [selectedPath, setSelectedPath] = useState<string[]>([]);
-
     // Build category hierarchy tree from products
     const categoryTree = useMemo(() => {
         const tree: { [key: string]: Set<string> } = {
@@ -69,22 +69,17 @@ export default function CascadingCategoryFilter({
 
     // Handle category selection
     const handleSelect = (level: number, category: string) => {
-        const newPath = [...selectedPath.slice(0, level), category];
-        setSelectedPath(newPath);
-        onFilterChange(newPath);
+        onFilterChange([...selectedPath.slice(0, level), category]);
     };
 
     // Clear filter
     const handleClear = () => {
-        setSelectedPath([]);
         onFilterChange([]);
     };
 
     // Remove selection from a specific level
     const handleRemoveLevel = (level: number) => {
-        const newPath = selectedPath.slice(0, level);
-        setSelectedPath(newPath);
-        onFilterChange(newPath);
+        onFilterChange(selectedPath.slice(0, level));
     };
 
     // Calculate how many levels to show (max 4)

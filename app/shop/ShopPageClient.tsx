@@ -21,6 +21,30 @@ const FALLBACK_IMAGE =
 
 const ITEMS_PER_PAGE = 20;
 
+// Keeps the selected category across a visit to a product page (cleared when tab closes)
+const CATEGORY_PATH_KEY = "shop_category_path";
+
+function readSavedCategoryPath(): string[] {
+    try {
+        const parsed: unknown = JSON.parse(sessionStorage.getItem(CATEGORY_PATH_KEY) ?? "[]");
+        return Array.isArray(parsed) ? parsed.filter((c): c is string => typeof c === "string") : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveCategoryPath(path: string[]) {
+    try {
+        if (path.length > 0) {
+            sessionStorage.setItem(CATEGORY_PATH_KEY, JSON.stringify(path));
+        } else {
+            sessionStorage.removeItem(CATEGORY_PATH_KEY);
+        }
+    } catch {
+        // Storage unavailable: the filter still works, it just won't be remembered
+    }
+}
+
 function mapApiProductToShopProduct(p: Product): ShopProduct {
     return {
         id: p.id,
@@ -105,9 +129,6 @@ export default function ShopPageClient() {
 
     // Hierarchical category drill-down path (e.g. ["Vehicle", "Motorcycle", "Yezdi"])
     const [selectedCategoryPath, setSelectedCategoryPath] = useState<string[]>([]);
-    // Bumped on "Clear All" so CascadingCategoryFilter (which owns its selection internally)
-    // remounts and resets its dropdowns back to empty in sync with selectedCategoryPath.
-    const [categoryFilterResetKey, setCategoryFilterResetKey] = useState(0);
 
     // Filter bar state
     const [searchQuery, setSearchQuery] = useState("");
@@ -120,6 +141,17 @@ export default function ShopPageClient() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pagination, setPagination] = useState<PaginationInfo | null>(null);
     const { addToCart, setIsOpen } = useCart();
+
+    // Restore the category after mount (sessionStorage isn't available during SSR)
+    useEffect(() => {
+        const savedPath = readSavedCategoryPath();
+        if (savedPath.length > 0) setSelectedCategoryPath(savedPath);
+    }, []);
+
+    const handleCategoryChange = (path: string[]) => {
+        setSelectedCategoryPath(path);
+        saveCategoryPath(path);
+    };
 
     // Debounce search input
     useEffect(() => {
@@ -274,8 +306,7 @@ export default function ShopPageClient() {
 
     const handleClearAll = () => {
         setSearchQuery("");
-        setSelectedCategoryPath([]);
-        setCategoryFilterResetKey((k) => k + 1);
+        handleCategoryChange([]);
         setTypeFilter("all");
         setInStockOnly(false);
         setPriceRangeId("any");
@@ -364,9 +395,9 @@ export default function ShopPageClient() {
                 {/* Cascading category filter */}
                 <div className="border-b border-[#E5E7EB] bg-white px-4 sm:px-6 lg:px-8 py-3">
                     <CascadingCategoryFilter
-                        key={categoryFilterResetKey}
                         products={categoryProducts.length > 0 ? categoryProducts : products}
-                        onFilterChange={setSelectedCategoryPath}
+                        selectedPath={selectedCategoryPath}
+                        onFilterChange={handleCategoryChange}
                     />
                 </div>
 
